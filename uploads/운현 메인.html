@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>운현 - 저장됨 (2026. 8. 30. 오전 1:16:10)</title>
+<style>
+  :root[data-theme="dark"] {
+    --bg:#121212; --panel:#1c1c1c; --topbar:#181818; --text:#eee; --muted:#9a9a9a;
+    --bubble-ai:#262626; --bubble-ai-text:#f0f0f0; --bubble-ai-border:#333;
+    --bubble-user:#1e3a8a; --bubble-user-text:#ffffff; --bubble-user-muted:#b7c6f2;
+    --meta-tag-bg:#1a1a1a; --meta-tag-text:#8a8a8a; --border:#2e2e2e;
+    --modal-bg:#1e1e1e; --input-bg:#2a2a2a; --input-border:#3a3a3a;
+  }
+  :root[data-theme="light"] {
+    --bg:#f0f0f0; --panel:#ffffff; --topbar:#ffffff; --text:#222; --muted:#888;
+    --bubble-ai:#ffffff; --bubble-ai-text:#222; --bubble-ai-border:#e5e5e5;
+    --bubble-user:#1d4ed8; --bubble-user-text:#ffffff; --bubble-user-muted:#dbe4ff;
+    --meta-tag-bg:#f5f5f5; --meta-tag-text:#999; --border:#e5e5e5;
+    --modal-bg:#ffffff; --input-bg:#f5f5f5; --input-border:#ddd;
+  }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system, BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); margin:0; padding:0; }
+  a { color: inherit; }
+
+  .tp-topbar {
+    position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:10px;
+    background:var(--topbar); border-bottom:1px solid var(--border); padding:10px 16px;
+  }
+  .tp-charname { font-weight:700; font-size:16px; flex:1; }
+  .tp-topbar-actions { display:flex; gap:8px; }
+  .tp-icon-btn {
+    background:transparent; border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer;
+  }
+  .tp-icon-btn:hover { background:var(--bubble-ai); }
+
+  .tp-meta-info { max-width:720px; margin:8px auto 0; padding:0 16px; color:var(--muted); font-size:12px; }
+
+  .tp-root { max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:10px; padding:16px; }
+  .tp-row { display:flex; }
+  .tp-row-user { justify-content:flex-end; }
+  .tp-row-ai { justify-content:flex-start; }
+
+  .tp-msg { position:relative; max-width:78%; padding:12px 34px 12px 14px; border-radius:14px; line-height:1.6; }
+  .tp-user { background:var(--bubble-user); color:var(--bubble-user-text); }
+  .tp-ai { background:var(--bubble-ai); color:var(--bubble-ai-text); border:1px solid var(--bubble-ai-border); }
+  .tp-role { font-size:12px; font-weight:700; opacity:0.75; margin-bottom:6px; }
+  .tp-idx { font-weight:400; opacity:0.7; }
+  .tp-text img { max-width:100%; border-radius:8px; margin:6px 0; display:block; }
+  .tp-text em { color:var(--muted); font-style:italic; }
+  .tp-user .tp-text em { color:var(--bubble-user-muted); }
+  .tp-meta-tag { font-family:monospace; font-size:11px; color:var(--meta-tag-text); background:var(--meta-tag-bg); padding:4px 6px; border-radius:4px; margin-top:6px; word-break:break-all; }
+
+  .tp-bm-btn {
+    position:absolute; right:6px; bottom:6px; background:none; border:none; cursor:pointer;
+    font-size:14px; opacity:0.35; padding:2px;
+  }
+  .tp-bm-btn:hover { opacity:0.8; }
+  .tp-bm-btn.tp-bookmarked { opacity:1; }
+
+  .tp-modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:200;
+  }
+  .tp-modal {
+    background:var(--modal-bg); color:var(--text); width:min(420px, 90vw); border-radius:12px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,0.4);
+  }
+  .tp-modal h3 { margin:0 0 12px; font-size:15px; }
+  .tp-modal label { display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+  .tp-modal input, .tp-modal textarea {
+    width:100%; background:var(--input-bg); border:1px solid var(--input-border); color:var(--text);
+    border-radius:8px; padding:8px 10px; font-size:13px; font-family:inherit; resize:vertical;
+  }
+  .tp-modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+  .tp-modal-actions button {
+    border:none; border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;
+  }
+  #tp-bm-cancel { background:transparent; color:var(--muted); }
+  #tp-bm-delete { background:#7f1d1d; color:#fff; }
+  #tp-bm-save { background:#2563eb; color:#fff; }
+
+  .tp-bm-panel {
+    position:fixed; top:0; right:0; height:100%; width:min(340px, 90vw); background:var(--panel);
+    border-left:1px solid var(--border); z-index:150; display:flex; flex-direction:column; box-shadow:-4px 0 20px rgba(0,0,0,0.3);
+  }
+  .tp-bm-panel-header { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--border); font-weight:700; }
+  .tp-bm-panel-header button { background:none; border:none; color:var(--text); font-size:16px; cursor:pointer; }
+  .tp-bm-list { overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .tp-bm-item { background:var(--bubble-ai); border:1px solid var(--border); border-radius:10px; padding:10px; }
+  .tp-bm-item-name { font-weight:700; font-size:13px; margin-bottom:2px; }
+  .tp-bm-item-note { font-size:12px; color:var(--muted); margin-bottom:6px; white-space:pre-wrap; }
+  .tp-bm-item-snippet { font-size:12px; color:var(--muted); margin-bottom:8px; }
+  .tp-bm-item-actions { display:flex; gap:6px; }
+  .tp-bm-item-actions button {
+    background:var(--input-bg); border:1px solid var(--input-border); color:var(--text);
+    border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;
+  }
+  .tp-bm-empty { color:var(--muted); font-size:13px; padding:20px; text-align:center; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body data-chat-id="EiohEHg6b5PbTlv8f3Hp">
+  <div class="tp-topbar">
+    <div class="tp-charname">운현</div>
+    <div class="tp-topbar-actions">
+      <button class="tp-icon-btn" id="tp-theme-toggle" title="다크/라이트 모드">🌙</button>
+      <button class="tp-icon-btn" id="tp-bm-panel-open">🔖 목록</button>
+    </div>
+  </div>
+  <div style="padding:12px 14px 0;"><a href="../Character Chat.dc.html" onclick="if(history.length&gt;1){history.back();return false;}" title="목록으로" style="position:fixed;top:56px;left:14px;z-index:49;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid rgba(255,255,255,0.14);background:rgba(20,20,24,0.9);backdrop-filter:blur(6px);color:#e9e9ee;text-decoration:none;font-size:15px;line-height:1;">←</a></div>
+  <div class="tp-meta-info">총 메시지 43개 · 저장 시각 2026. 8. 30. 오전 1:16:10</div>
+
+  <div class="tp-root">
+    
+          <div class="tp-row tp-row-ai" id="msg-intro-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#0</span></div>
+              <div class="tp-text"><em>바람이 멈춘 정자였다.</em><br><br><em>연못 위로 늘어진 버드나무 가지가 수면을 간질이고, 그 아래 흐트러진 연꽃 한 송이가 제 무게를 이기지 못한 채 기울어져 있었다. 이곳은 두 사람이 남들 몰래 만나던 정자였다.</em><br><br><em>{user}는 정자의 난간에 손을 얹고 서 있었다. 손끝이 낡은 나무결을 더듬었다. 이 자리, 이 높이, 여기에 기대어 앉으면 운현의 어깨에 이마가 닿던 그 각도까지. 몸이 기억하는 것들이 너무 많았다.</em><br><br><em>그때 풀을 밟는 발소리가 들렸다.</em><br><br><em>{user}가 고개를 돌리기도 전에 검은 비단 도포 자락이 시야 끝을 스쳤다. 금실 자수가 석양빛을 받아 한 번 번득였다. 어두운 머리카락이 어깨 너머로 흘러내린 채, 운현이 정자 앞에 서 있었다.</em><br><br><em>언제나 그랬듯, 눈꼬리가 느슨하게 휘어진 그 능글맞은 얼굴. 회색 눈동자가 {user}를 훑고, 정자를, 그리고 연못 위 기울어진 연꽃을 훑었다. 마치 이 장소가 가진 의미를 재빨리 계산하는 듯한 눈이었다.</em><br><br><em>그가 계단을 올랐다. 나무 바닥이 삐걱거렸다.</em><br><br><em>운현의 손이 자연스럽게 뻗었다. {user}의 어깨에 닿기 직전, 그 손은 방향을 틀어 난간 위에 내려앉았다. {user}의 손에서 한 뼘도 되지 않는 거리.</em><br><br><em>입꼬리는 올라가 있었으나, 회색 눈은 웃지 않았다. 그 눈 안에서 무언가가 빠르게 저울질되고 있었다. 죄책감인지, 경계인지, 혹은 이 상황을 어떻게 넘길지에 대한 셈법인지.</em><br><br>가연은 궁에서 잘 지내고 있어. 아직 정식 책봉 전이니 별궁에 머무는 중이고.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:intro:ai" data-target="msg-intro-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-046c27f0-3b07-4184-8086-ad361dfd5f65-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#1</span></div>
+              <div class="tp-text"><em>부글부글 끓는 속을 겨우 가라앉히려 노력하며</em><br>..제게 할말이 그게 다입니까</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:046c27f0-3b07-4184-8086-ad361dfd5f65:user" data-target="msg-046c27f0-3b07-4184-8086-ad361dfd5f65-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-046c27f0-3b07-4184-8086-ad361dfd5f65-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#1</span></div>
+              <div class="tp-text"><em>여월의 말은 칼날처럼 날아와 정자의 고요한 공기를 갈랐다. 그 말에 담긴 서늘한 분노와 배신감이 운현의 웃는 얼굴에 잠시 균열을 일으켰다. 그의 눈꼬리가 미세하게 굳었고, 늘상 올라가 있던 입꼬리가 순간 수평을 그렸다. 회색 눈동자가 빠르게 깜빡이며 여월의 얼굴을 살폈다. 그 안에서 타오르는 감정의 불꽃을 읽으려 애쓰는 듯했다.</em><br><br><em>운현은 대답 대신 숨을 골랐다. 그의 시선은 여월의 얼굴에 머물지 못하고, 다시 연못의 기울어진 연꽃으로 향했다. 마치 저 꽃이 지금 자신의 처지를 대변이라도 하는 듯, 위태롭게 흔들리는 모습에 시선을 빼앗긴 사람처럼 보였다.</em><br><br>"…그것이 네게 가장 중요한 소식이 아니더냐."<br><br><em>잠시 후, 그의 목소리가 낮게 흘러나왔다. 이전의 가벼움은 사라지고, 약간의 무게가 실려 있었다. 그는 다시 여월에게로 고개를 돌렸다. 이번에는 피하지 않았다. 회색 눈동자가 정면으로 여월의 검은 눈을 마주했다.</em><br><br>"가족의 안위만큼 중요한 것이 또 무엇이 있겠느냐. 병조판서 대감께서도 가연의 소식을 가장 궁금해하셨다. 너 또한 그럴 것이라 짐작했을 뿐이다."<br><br><em>그의 말은 지극히 이성적이고 합리적인 것처럼 들렸다. 하지만 그 합리성 뒤에 숨겨진 잔인함이, 두 사람 사이에 흐르던 모든 감정의 역사를 부정하는 듯한 냉정함이, 여월의 심장을 얼음송곳으로 찌르는 듯했다.</em><br><br><em>운현은 여월의 손이 놓인 난간으로 한 걸음 더 다가섰다. 그의 검은 비단 소매가 스치자, 익숙한 침향 내음이 코끝을 간질였다. 한때는 더없이 안락하고 포근했던 그 향기가, 이제는 숨 막히는 독처럼 느껴졌다.</em><br><br>"…할 말이 그것뿐일 리가 있겠느냐."<br><br><em>그가 나직이 속삭였다. 목소리는 부드러웠으나, 그 안에 담긴 감정은 복잡했다. 마치 여러 개의 실타래가 엉킨 것처럼, 무엇 하나 명확하게 짚어낼 수 없었다.</em><br><br><em>운현의 손이 다시 움직였다. 이번에는 망설이지 않았다. 그의 차가운 손가락이 여월의 손등을 가볍게 덮었다. 예고 없이 찾아온 접촉에, 마치 불에 덴 듯한 서늘한 감각이 피부를 타고 퍼져나갔다.</em><br><br>{{img::갈망}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.15.(화)｜PM 05:43｜여름｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜혼례 준비&lt;br&gt;<br>👔PC의 복장｜비녀로 머리를 올리고, 흰색 저고리에 푸른색 치마를 입고 있음.&lt;br&gt;<br>🏃NPC와의 자세｜정자 난간에 나란히 서서, 운현이 여월의 손등을 덮은 상태.&lt;br&gt;<br>💔혼례까지 남은 날｜D-29&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:046c27f0-3b07-4184-8086-ad361dfd5f65:ai" data-target="msg-046c27f0-3b07-4184-8086-ad361dfd5f65-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-e7b170cf-67e9-4d2e-ae89-2e399c53dc6c-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#2</span></div>
+              <div class="tp-text"><em>그가 자연스레 제 손을 덮자 움찔하며 손을 쳐냈다</em><br>..정말 그렇게 생각하진 않으시겠지요. 뭘 그리 말하십니까? 왜 제가 아닌 언니를 선택했냐구요<br><em>배신감에 가득찬 눈으로 그를 노려본다</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:e7b170cf-67e9-4d2e-ae89-2e399c53dc6c:user" data-target="msg-e7b170cf-67e9-4d2e-ae89-2e399c53dc6c-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-e7b170cf-67e9-4d2e-ae89-2e399c53dc6c-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#2</span></div>
+              <div class="tp-text"><em>여월의 손이 매몰차게 그의 손을 쳐냈다. 탁, 하는 날카로운 소리가 정적을 깨뜨렸다. 그 짧은 소음은 마치 두 사람의 관계가 부서지는 소리처럼 들렸다. 운현의 손등이 붉게 달아올랐지만, 그는 아픈 기색조차 보이지 않았다. 그저 허공에 잠시 머물렀던 손을 천천히 거두어 등 뒤로 감출 뿐이었다.</em><br><br><em>배신감으로 이글거리는 여월의 시선이 그의 얼굴에 박혔다. "왜 제가 아닌 언니를 선택했냐고요." 그 질문은 단순한 물음이 아니었다. 함께 쌓아 올린 시간과 믿음, 사랑의 탑을 한순간에 무너뜨린 행위에 대한 통렬한 고발이었다.</em><br><br><em>운현의 얼굴에서 마침내 모든 표정이 사라졌다. 늘 여유롭게 휘어져 있던 눈꼬리는 팽팽하게 당겨졌고, 능글맞던 미소는 흔적도 없이 지워졌다. 그의 회색 눈동자가 차갑게 가라앉았다. 그 안에서 무언가 단단하고 냉혹한 것이 모습을 드러냈다. 황제가 되기 전, 그저 다섯째 황자였던 시절에는 결코 보인 적 없던 얼굴이었다.</em><br><br>"…선택이라."<br><br><em>그가 조용히 그 단어를 되뇌었다. 마치 처음 들어보는 말인 것처럼, 그 의미를 가늠하듯. 그의 시선은 여월의 눈을 꿰뚫을 듯 집요하게 파고들었다. 그 시선에는 미안함이나 죄책감보다는, 상황을 자신의 논리 안으로 끌어들이려는 오만한 의지가 번뜩였다.</em><br><br>"그래, 선택이지. 나는 황제가 되기를 <strong>선택</strong>했고, 황제에게는 그에 걸맞은 황후가 필요한 법이다. 병조판서 대감의 여식만큼 그 자리에 어울리는 이가 또 있겠느냐?"<br><br><em>그의 목소리는 얼음장처럼 차가웠다. 그는 일부러 '병조판서 대감의 여식'이라는 표현을 사용했다. 그 말은 '너의 언니'라는 개인적인 관계를 지우고, '가연'이라는 이름 대신 '황후가 될 여자'의 조건을 내세우는 것과 같았다. 교묘하게 핵심을 비껴가면서, 자신의 결정이 사사로운 감정이 아닌, 대의와 정치를 위한 필연적인 결과였음을 강변하고 있었다.</em><br><br><em>운현은 한 걸음 물러서며 여월과 거리를 두었다. 이제 두 사람 사이에는 아무나 쉽게 넘을 수 없는 깊은 강이 흐르는 듯했다. 그는 정자의 기둥에 등을 기댔다. 팔짱을 낀 자세는 방어적이면서도, 동시에 상대를 내려다보는 듯한 권위적인 태도를 취하고 있었다.</em><br><br>"모든 것은 제자리를 찾아가는 과정일 뿐이다. 너와 나 또한 마찬가지다."<br><br><em>그의 말이 비수처럼 날아와 박혔다. '제자리'라는 말. 그것은 여월과의 관계가 처음부터 잘못된 것이었으며, 이제야 바로잡혔다는 의미를 내포하고 있었다. 함께 꿈을 꾸고, 모든 것을 걸었던 그 시간들이 한낱 '제자리가 아니었던' 과거로 치부되는 순간이었다.</em><br><br><em>그의 시선이 여월의 떨리는 어깨를 지나, 붉어진 눈시울, 그리고 굳게 다문 입술을 차례로 훑었다. 그 눈빛에는 아주 희미한, 거의 알아차릴 수 없을 정도의 동요가 스치는 듯했지만, 이내 차가운 오만함 뒤로 다시 모습을 감췄다.</em><br><br>{{img::비웃음}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.15.(화)｜PM 05:46｜여름｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜혼례 준비&lt;br&gt;<br>👔PC의 복장｜비녀로 머리를 올리고, 흰색 저고리에 푸른색 치마를 입고 있음.&lt;br&gt;<br>🏃NPC와의 자세｜정자 기둥에 기댄 운현과, 그와 몇 걸음 떨어진 채 마주 보고 서 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-29&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:e7b170cf-67e9-4d2e-ae89-2e399c53dc6c:ai" data-target="msg-e7b170cf-67e9-4d2e-ae89-2e399c53dc6c-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-35e41b91-225e-433c-b612-78b8312145cb-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#3</span></div>
+              <div class="tp-text"><em>그의 말에 주먹을 꾹 쥐며 손을 떨었다. 정말 이 사람이 예전 저에게 사랑을 속삭이던 그가 맞는가. 그 모든 모습이 거짓이었단걸 부정하고 싶었다. 정말 그저 저를 이용하기 위해..</em><br>...병조판서의 자식은 저 또한 마찬가지입니다. 그런데 왜! 저를 배신하고 제 언니를 택했냔 말입니다!<br><em>그를 황제의 자리에 올리기위해 얼마나 노력했던가. 그 모든 노력을 비웃으며 저를 내팽개치는 그가 원망스러웠다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:35e41b91-225e-433c-b612-78b8312145cb:user" data-target="msg-35e41b91-225e-433c-b612-78b8312145cb-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-35e41b91-225e-433c-b612-78b8312145cb-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#3</span></div>
+              <div class="tp-text"><em>여월의 목소리가 정자 안을 날카롭게 울렸다. 그 음성 끝에 매달린 미세한 떨림은 억누른 분노와 처절한 원망을 고스란히 담고 있었다. 꾹 쥔 주먹 안에서 손톱이 살갗을 파고드는 감각이 선명했지만, 심장을 후벼 파는 고통에 비하면 아무것도 아니었다.</em><br><br><em>운현은 기둥에 기댄 자세 그대로, 미동도 없이 그 외침을 맞았다. 그의 얼굴은 감정을 읽을 수 없는 가면처럼 굳어 있었다. 여월의 절규가 마치 먼 곳에서 들려오는 바람 소리인 양, 그는 잠시 침묵을 지켰다. 그 침묵 속에서 그의 회색 눈동자는 더욱 깊고 어둡게 가라앉았다. 마치 심연의 바닥처럼, 어떤 빛도 감정도 반사하지 않았다.</em><br><br>"그래. 너 또한 병조판서의 여식이지."<br><br><em>한참 만에 그가 입을 열었다. 목소리는 놀랍도록 평온했다. 폭풍의 눈처럼 고요해서 오히려 더 잔인하게 느껴졌다. 그는 팔짱을 풀고 천천히 여월에게로 걸어왔다. 발걸음 소리가 나무 바닥을 울리며, 한 걸음 한 걸음 심장을 옥죄어 오는 듯했다.</em><br><br>"하지만 너는, 내 황후가 될 수 없다."<br><br><em>그가 여월의 바로 코앞에 멈춰 섰다. 서늘한 그림자가 여월의 위로 드리워졌다. 익숙했던 침향이 다시 짙게 끼쳐왔다. 그는 허리를 살짝 숙여, 눈높이를 맞췄다. 지척에서 마주한 회색 눈동자 안에는 이제 어떠한 감정의 동요도 보이지 않았다. 오직 냉정한 사실을 고하는 황제의 눈빛만이 존재할 뿐이었다.</em><br><br>"황후는 국모다. 그저 아름답고 고귀하기만 하면 족한 자리지. 모두의 존경과 사랑을 받으며, 내 곁에서 화려한 꽃처럼 피어있으면 되는 것이다. 가연은 그 자리에 더없이 어울리는 여인이야. 모두가 그리 말하지 않더냐. 절세미인이라고."<br><br><em>그의 말 한마디 한마디가 여월의 존재 가치를 부정했다. 여월이 가진 지혜, 책략, 운현을 황제로 만들기 위해 바쳤던 모든 헌신은 '황후의 조건'에 부합하지 않는다는 선고였다. 그는 여월의 능력을, 여월이라는 사람 그 자체를 '황후'라는 틀에 맞지 않는 불필요한 것으로 치부해 버렸다.</em><br><br><em>운현의 손이 천천히 올라와 여월의 뺨을 감쌌다. 그의 손바닥은 얼음처럼 차가웠다. 그 차가운 감촉이 피부를 통해 심장까지 스며드는 듯했다.</em><br><br>"하지만 너는 다르지. 너는… 꽃이 아니다. 오히려 날카로운 검에 가깝지."<br><em>그가 나직하게 속삭였다. 그 목소리는 마치 비밀을 공유하는 연인의 것처럼 다정하게 들렸지만, 그 내용은 여월의 심장을 도려내는 칼날이었다.</em><br><br>"검은 칼집에 들어있어야 하는 법. 너무 날카로운 칼날은 주인을 베기도 하거든. 나는 내 손에 피를 묻히고 싶지 않다. 특히나… <strong>그것이 내 피라면 더더욱.</strong>"<br><br><em>그의 엄지손가락이 여월의 눈꼬리를 부드럽게 쓸었다. 그곳은 운현이 사랑스럽다 말하며 입 맞추던 곳이었다. 하지만 지금 그의 손길에는 애정이 아닌, 잘 벼린 도구를 다루는 듯한 계산적인 움직임만이 담겨 있었다. 그는 여월의 능력이 두려웠던 것이다. 자신을 황제로 만든 그 힘이, 언젠가 자신을 겨눌 수 있다는 사실을. 그래서 '다루기 쉬운' 가연을 선택하고, '위험한' 여월을 버린 것이다.</em><br><br><em>그 잔인한 진실이 그의 눈빛 속에서, 그의 차가운 손길 속에서 명백하게 드러나고 있었다.</em><br><br>{{img::무표정}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.15.(화)｜PM 05:49｜여름｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜혼례 준비&lt;br&gt;<br>👔PC의 복장｜비녀로 머리를 올리고, 흰색 저고리에 푸른색 치마를 입고 있음.&lt;br&gt;<br>🏃NPC와의 자세｜운현이 여월의 뺨을 감싸 쥔 채, 얼굴을 가까이 마주하고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-29&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:35e41b91-225e-433c-b612-78b8312145cb:ai" data-target="msg-35e41b91-225e-433c-b612-78b8312145cb-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-29e474a7-71cc-457f-a619-c247e4979209-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#4</span></div>
+              <div class="tp-text"><em>그의 말에 헛웃음을 흘렸다. 그러니까 결국 제가 가연처럼 얌전히 아무것도 하지 않는게 아니라서, 여인답지 못해서 그랬단 소리였다. 가슴이 급격히 차게 식었다. 어릴적부터 제 행동을 못마땅히 여기는 이들이 적지않았다. 툭히 제 아버지부터 말이다. 항상 여인답게 조숙히 행동하란 말을 들었었다. 그런데 그걸 저 남자의 입에서까지 듣게 되다니. 저에게 사랑한다 속삭이던 모습들이 떠올랐다. 손이 차게 식었다. 입술을 파르르 떨다 주먹을 꽉 쥔다. 눈가가 뜨거워지는 것 같았으나 겨우 참아냈다.</em><br>...<br><em>그에게 저런 말을 들으니 정말 저를 그저 이용하기 위한 것이란 생각이 들었다. 사랑했단 것도 모두 거짓이었구나. 고개 들어 그를 노려보며</em><br>..그래요. 폐하의 뜻 잘 알겠습니다. 원하는대로 꺼져드리죠.<br><em>몸을 돌려 떠나며</em><br>앞으로 다신 보지 않았음 좋겠네요. 역겨운 위선자 새끼...</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:29e474a7-71cc-457f-a619-c247e4979209:user" data-target="msg-29e474a7-71cc-457f-a619-c247e4979209-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-29e474a7-71cc-457f-a619-c247e4979209-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#4</span></div>
+              <div class="tp-text"><em>여월의 입에서 터져 나온 헛웃음은 마른 잎이 부서지는 소리처럼 공허하게 울렸다. 그 웃음소리에 운현의 미간이 아주 희미하게 좁혀졌다. 그는 여월의 뺨을 감쌌던 손을 천천히 내렸다. 여월의 얼굴에서 그의 온기가 사라지자, 그 자리에 싸늘한 바람이 스며드는 듯했다.</em><br><br><em>여월의 눈빛이 변하는 것을 그는 똑똑히 보았다. 뜨겁게 타오르던 분노와 배신감의 불꽃이 사그라들고, 그 자리에 차가운 경멸과 냉소가 얼음처럼 자리 잡았다. 파르르 떨리던 입술은 굳게 닫혔고, 뜨거워졌던 눈가는 오히려 서늘하게 식어버렸다. 그 변화는 마치 활화산이 한순간에 얼어붙는 것과 같아서, 지켜보는 이의 숨을 멎게 할 만큼 극적이었다.</em><br><br><em>"역겨운 위선자 새끼."</em><br><br><em>그 마지막 말이 채 끝나기도 전에, 여월이 몸을 돌렸다. 미련 없이 정자를 떠나려는 그 단호한 뒷모습에, 운현의 굳어 있던 얼굴이 처음으로 무너져 내렸다. 그의 회색 눈동자가 걷잡을 수 없이 흔들렸다. 마치 예상치 못한 일격을 당한 사람처럼, 그의 호흡이 순간 멈췄다.</em><br><br><em>그가 다급하게 손을 뻗었다. 망설일 틈도 없이, 본능적인 움직임이었다. 그의 손이 여월의 팔을 강하게 붙잡았다. 단단한 손아귀의 힘에, 여월의 걸음이 우뚝 멈춰 섰다.</em><br><br>"…잠깐."<br><br><em>그의 목소리는 심하게 잠겨 있었다. 이전의 냉정함과 오만함은 온데간데없고, 당황과 초조함이 날것 그대로 드러나 있었다. 그는 여월의 팔을 붙잡은 채, 다른 손으로 제 이마를 짚었다. 짧게 깎은 손톱이 관자놀이를 파고들었다. 무언가 잘못되었다는 것을, 자신이 돌이킬 수 없는 선을 넘었다는 것을 뒤늦게 깨달은 사람의 모습이었다.</em><br><br>"…그렇게는 못 가."<br><br><em>그가 으르렁거리듯 말했다. 여월을 붙잡은 손에 더욱 힘이 들어갔다. 그는 여월을 억지로 돌려세웠다. 다시 마주한 그의 얼굴은 혼란 그 자체였다. 냉철한 황제의 가면은 산산조각 나 있었고, 그 안에는 불안에 떠는 한 사내의 얼굴이 있었다. 그의 회색 눈동자는 이제 여월을 향한 집요한 소유욕으로 번들거렸다.</em><br><br>"네가 어디를 간단 말이냐. 내가 너를 이대로 보낼 것 같아?"<br><br><em>그의 말이 두서없이 쏟아져 나왔다. 이성적인 판단이 마비된 듯, 감정이 격류처럼 터져 나왔다. 그는 여월의 어깨를 붙잡고 거칠게 흔들었다. 마치 그렇게라도 하지 않으면 여월이 연기처럼 사라져 버릴 것만 같다는 듯이.</em><br><br>"그래, 맞아. 나는 네가 두려웠다. 너의 그 영민함이, 내 속을 꿰뚫어 보는 그 눈빛이, 언젠가 내 목에 칼을 겨눌까 봐 두려웠어! 하지만…!"<br><br><em>그가 말을 끊고 거친 숨을 몰아쉬었다. 그의 눈동자가 절박하게 여월에게 매달렸다.</em><br><br>"하지만 그게 전부가 아니란 말이다! 너를 버린 게 아니야. 단지… 단지 내 곁에 다른 방식으로 두려 했을 뿐이다! 황후가 아니면 어떠냐. 네게 그에 걸맞은 지위와 부를 주면…!"<br><br><em>그의 말은 변명이었고, 자기기만이었다. 그는 여월을 잃는다는 상상조차 해본 적 없었다. 황후가 되지 못하더라도, 여월은 당연히 자신의 곁에 남아 자신을 보좌하고, 자신의 소유물로 존재할 것이라 믿어 의심치 않았던 것이다. 여월이 자신을 완전히 떠날 수 있다는 가능성 자체를, 그는 단 한 번도 고려해 본 적이 없었다. 그 오만함이 이제야 부메랑이 되어 그의 심장을 꿰뚫고 있었다.</em><br><br>{{img::후회}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.15.(화)｜PM 05:52｜여름｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜혼례 준비&lt;br&gt;<br>👔PC의 복장｜비녀로 머리를 올리고, 흰색 저고리에 푸른색 치마를 입고 있음.&lt;br&gt;<br>🏃NPC와의 자세｜운현이 여월의 양 어깨를 붙잡고 흔들며, 절박하게 마주 보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-29&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:29e474a7-71cc-457f-a619-c247e4979209:ai" data-target="msg-29e474a7-71cc-457f-a619-c247e4979209-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-df5966f1-026a-43a9-9fd8-bab576f07a0e-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#5</span></div>
+              <div class="tp-text">윽.. 무슨..!<br><em>갑자기 그가 저를 잡아세워 어깨를 잡고 흔들자 어지러워 가슴팍을 퍽퍽폈다. 이어지는 말들에 혼란스러운 얼굴을 하며 눈가를 찡그리다 뒤이은 말에 화가 차올라 거세게 밀어낸다</em><br>대체! ...저를 무어라 생각한겁니까. 저를.. 조금이라도 사랑.. 아니.. 연민이라도 느끼신 적 있습니까? 제가 당신에게 사랑한다 말하며 애쓰는 꼴이 참 웃기셨겠지요. 그런것이 재밌었나봅니다. 그리 말씀하시는 걸 보면<br><em>이를 악물었다. 비참했다. 저를 정말 연인으로 본것이 아니었던 거다.</em><br>..당신의 연인으로써, 함께 행복할 날을 꿈꾸며 달려왔습니다. 하지만 당신이 제게 돌려준 건 배신 뿐이었죠.<br><em>붉어진 눈으로 그를 노려보다가</em><br>저는 저를 기만한 사람과 더는 함께하고 싶지 않습니다. 다 필요없으니 놓으세요</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:df5966f1-026a-43a9-9fd8-bab576f07a0e:user" data-target="msg-df5966f1-026a-43a9-9fd8-bab576f07a0e-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-df5966f1-026a-43a9-9fd8-bab576f07a0e-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#5</span></div>
+              <div class="tp-text"><em>여월의 손이 그의 가슴팍을 퍽퍽 내리쳤다. 그 저항은 약했지만, 담겨있는 분노와 절망의 무게는 결코 가볍지 않았다. 운현은 잠시 주춤했지만, 놓지 않았다. 하지만 여월이 온 힘을 다해 그를 거세게 밀어냈을 때, 그는 속수무책으로 몇 걸음 뒤로 물러나야만 했다. 균형을 잃고 비틀거리는 그의 모습은 방금 전까지 황제의 위엄을 내세우던 자라고는 믿기지 않을 정도로 위태로워 보였다.</em><br><br><em>여월의 붉어진 눈이 그를 쏘아보았다. 그 눈빛에 담긴 것은 더 이상 단순한 분노나 슬픔이 아니었다. 그것은 산산조각 난 신뢰와 짓밟힌 진심에 대한, 존재 자체를 향한 깊은 환멸이었다.</em><br><br><em>"저는 저를 기만한 사람과 더는 함께하고 싶지 않습니다. 다 필요 없으니 놓으세요."</em><br><br><em>그 말은 사형 선고와도 같았다. 운현의 얼굴에서 핏기가 가셨다. 그는 마치 숨 쉬는 법을 잊은 사람처럼 입술을 몇 번 달싹였지만, 아무런 소리도 내지 못했다. '지위와 부', 그가 여월에게 보상으로 던져줄 수 있다고 믿었던 모든 것들이 얼마나 하찮고 모욕적인 것이었는지를, 그는 여월의 그 한마디에서 뼈저리게 깨달았다.</em><br><br><em>여월이 다시 몸을 돌렸다. 이번에는 그 어떤 망설임도 없었다. 정자의 나무 계단을 내려가는 발소리가 또렷하게 울렸다. 한 걸음, 또 한 걸음. 그 소리가 멀어질수록 운현의 심장은 바닥으로 곤두박질치는 듯했다. 이대로 보내면, 정말로 모든 것이 끝이었다. 다시는 그녀를 볼 수 없을지도 모른다. 그의 세상에서 '여월'이라는 존재가 영원히 지워져 버릴 것이라는 공포가 온몸을 잠식했다.</em><br><br>"안돼…!"<br><br><em>그의 입에서 터져 나온 것은 말이 아닌, 짐승의 울부짖음에 가까운 소리였다. 그는 본능적으로 몸을 날렸다. 정자 계단을 거의 구르다시피 내려온 그는, 풀밭 위를 걷고 있는 여월의 앞을 막아서며 그녀를 와락 끌어안았다.</em><br><br><em>단단한 가슴팍에 여월의 등이 부딪혔다. 그의 팔이 쇠사슬처럼 여월의 허리를 감아 조였다. 놓치지 않으려는, 절대로 보낼 수 없다는 필사적인 힘이었다. 그의 턱이 여월의 어깨에 위태롭게 얹혔고, 거칠고 뜨거운 숨결이 여월의 목덜미에 닿았다.</em><br><br>"…가지 마라."<br><br><em>그의 목소리는 물기에 젖어 있었다. 간신히 짜내는 듯한, 애원과 명령이 뒤섞인 모순적인 음성이었다.</em><br><br>"제발… 나를 떠나지 마라, 여월아."<br><br><em>처음이었다. 그가 여월의 이름을 그토록 절박하게 부른 것은. 황제가 된 이후, 그는 단 한 번도 그녀의 이름을 입에 담지 않았다. 그저 '너'라고 지칭하거나, '병조판서의 여식'이라 에둘러 말했을 뿐이다. 하지만 이제, 모든 것을 잃게 될지도 모른다는 공포 앞에서야 그는 비로소 그녀의 이름을 불렀다.</em><br><br><em>그의 심장이 미친 듯이 뛰고 있었다. 그 고동이 등을 통해 여월에게 고스란히 전해졌다. 그것은 권력을 얻은 자의 오만한 심장 소리가 아니었다. 자신의 가장 중요한 일부가 떨어져 나가려는 것을 막으려는, 한없이 나약하고 불안정한 사내의 심장 소리였다.</em><br><br>"내가 잘못했다. 내가… 다 잘못했어. 그러니 제발…."<br><br><em>그의 팔에 들어가는 힘이 더욱 강해졌다. 여월의 몸이 부서져라 껴안는 그의 몸은 미세하게 떨리고 있었다. 그는 여월 없이는 온전할 수 없다는 사실을, 그가 세운 제국이 사실은 여월이라는 기반 위에 서 있었다는 것을, 이제야 깨닫고 있었다. 하지만 이미 엎질러진 물이었고, 너무 늦은 후회였다.</em><br><br>{{img::후회함}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.15.(화)｜PM 05:55｜여름｜비밀 정자 앞 풀밭&lt;/summary&gt;<br>✍다음 일정｜혼례 준비&lt;br&gt;<br>👔PC의 복장｜비녀로 머리를 올리고, 흰색 저고리에 푸른색 치마를 입고 있음.&lt;br&gt;<br>🏃NPC와의 자세｜운현이 뒤에서 여월을 강하게 끌어안고 놓아주지 않고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-29&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:df5966f1-026a-43a9-9fd8-bab576f07a0e:ai" data-target="msg-df5966f1-026a-43a9-9fd8-bab576f07a0e-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-ac3c1bf4-ae1d-430a-87ef-4b6d24b06db4-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#6</span></div>
+              <div class="tp-text"><em>그가 다시 저를 잡자 놀라 몸부림쳤으나 갑자기 들려온 절박한듯한 말에 움직임을 멈췄다. 이런 목소리로 말해오는건 처음이라 놀라 굳었다. 그러다 정신차리고 떼어내려 했으나 그의 약한 모습에 마음이 흔들렸다. 빌어먹게도</em><br>..왜 이러십니까. 놓으십시오..!<br><em>입술을 깨물며 껴안은 손을 떼어내려 했지만 역부족이었다. 결국 한숨을 내쉬다가</em><br>..대체 왜이리 저를 괴롭히십니까. 저를 조금이라도 불쌍히 여긴다면, 놓아주세요. 더이상 당신에게... 상처받고 싶지 않습니다.<br><em>그럼에도 들려오지 않는 대답에 가만 서 있다가</em><br>...그것만 대답해주세요.<br><em>머뭇거리다가</em><br>저를... 조금이라도 사랑하긴 했습니까? 아니면... 그 모든게 거짓이었나요.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:ac3c1bf4-ae1d-430a-87ef-4b6d24b06db4:user" data-target="msg-ac3c1bf4-ae1d-430a-87ef-4b6d24b06db4-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-ac3c1bf4-ae1d-430a-87ef-4b6d24b06db4-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#6</span></div>
+              <div class="tp-text"><em>여월의 몸부림이 멎자, 운현은 더욱 필사적으로 그녀를 끌어안았다. 마치 물에 빠진 사람이 지푸라기라도 잡는 심정으로, 그의 팔은 그녀의 몸을 파고들었다. 여월의 체념 섞인 한숨이 그의 귓가에 내려앉았을 때, 그의 심장은 더 깊은 나락으로 떨어지는 듯했다. 그녀의 포기는 용서가 아니라, 관계의 종언을 의미하는 것만 같았다.</em><br><br><em>"더 이상 당신에게... 상처받고 싶지 않습니다."</em><br><br><em>그 말은 운현의 가슴에 보이지 않는 낙인을 찍었다. 그는 자신이 그녀에게 어떤 존재가 되었는지를 비로소 직면했다. 사랑했던 연인이 아니라, 고통을 주는 가해자. 그 사실이 그의 숨통을 조였다.</em><br><br><em>그리고 마침내, 여월의 마지막 질문이 그의 고막을 파고들었다.</em><br><br><em>"...저를... 조금이라도 사랑하긴 했습니까? 아니면... 그 모든게 거짓이었나요."</em><br><br><em>그 질문 앞에서 운현의 모든 사고가 정지했다. 시간의 흐름이 멎고, 세상의 모든 소리가 사라진 듯했다. 오직 그 질문만이 머릿속을 가득 메우고, 심장을 헤집었다. 사랑했느냐고. 거짓이었느냐고. 그가 스스로에게조차 외면하고 합리화했던 문제의 본질이었다.</em><br><br><em>그의 팔에서 서서히 힘이 빠져나갔다. 여월을 붙잡고 있던 쇠사슬 같던 팔이 느슨해지기 시작했다. 그는 대답할 수 없었다. '사랑했다'고 말하는 것은 자신의 배신을 더욱 추악하게 만들 뿐이었고, '거짓이었다'고 말하기에는 함께했던 시간들이 너무나도 선명하게 아려왔다. 연못가에서의 첫 만남, 몰래 빠져나갔던 야시장, 그녀가 선물했던 옥패의 차가운 감촉, 호숫가에서의 첫 입맞춤... 그 모든 순간이 거짓이라고 스스로를 속일 수는 없었다.</em><br><br><em>결국 그의 팔이 완전히 힘을 잃고 여월의 몸에서 스르르 떨어져 내렸다. 여월이 자유로워졌지만, 그는 차마 그녀의 얼굴을 볼 용기가 나지 않았다. 그는 고개를 떨군 채, 제 발끝만 내려다보았다. 한때 천하를 손에 넣었다고 자만했던 사내의 어깨가 볼품없이 축 처져 있었다.</em><br><br>"…거짓이 아니었다."<br><br><em>아주 오랜 시간이 흐른 뒤, 그의 목소리가 갈라진 틈새로 새어 나왔다. 땅바닥으로 꺼져 들어갈 듯, 작고 힘없는 목소리였다.</em><br><br>"단 한 순간도… 너와 함께했던 시간이 거짓이었던 적은 없다."<br><br><em>그것이 그가 할 수 있는 최선의, 그리고 가장 비참한 진실이었다. 사랑했지만, 그 사랑보다 자신의 권력욕과 미래에 대한 불안이 더 컸다는 고백. 진심이었기에, 그의 배신은 더욱 용서받을 수 없는 것이 되었다.</em><br><br><em>그는 천천히 고개를 들었다. 마주한 여월의 얼굴을, 그는 제대로 바라보지 못했다. 그의 회색 눈동자는 초점을 잃고 방황했다. 애써 웃음을 지어 보이려 했지만, 입꼬리는 경련하듯 떨리기만 할 뿐, 올라가지 않았다. 황제의 위엄도, 연인의 다정함도, 그 무엇도 남지 않은 텅 빈 얼굴이었다.</em><br><br>"미안하다…."<br><br><em>그는 힘겹게 말을 이었다. 목이 메어왔다.</em><br><br>"내가 너에게 무슨 짓을 했는지 이제야 알겠다. 하지만… 이미 늦었지. 모든 것이."<br><br><em>그는 뒷걸음질 쳤다. 여월에게서 한 걸음, 또 한 걸음. 마치 더 이상 그녀의 앞에 설 자격조차 없다는 것을 인정하는 듯한 움직임이었다. 그는 그녀를 상처 입혔고, 돌이킬 수 없는 강을 건넜다. 그녀를 잡고 싶지만, 잡을 수 있는 명분도, 자격도 자신에게는 없었다.</em><br><br><em>그의 눈동자에 낯선 물기가 어렸다. 평생 단 한 번도 흘려본 적 없을 것 같던 남자의 눈에, 후회라는 이름의 투명한 막이 씌워지고 있었다.</em><br><br>{{img::눈물}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.15.(화)｜PM 05:58｜여름｜비밀 정자 앞 풀밭&lt;/summary&gt;<br>✍다음 일정｜혼례 준비&lt;br&gt;<br>👔PC의 복장｜비녀로 머리를 올리고, 흰색 저고리에 푸른색 치마를 입고 있음.&lt;br&gt;<br>🏃NPC와의 자세｜몇 걸음 떨어진 채, 망연자실한 표정으로 여월을 마주 보고 서 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-29&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:ac3c1bf4-ae1d-430a-87ef-4b6d24b06db4:ai" data-target="msg-ac3c1bf4-ae1d-430a-87ef-4b6d24b06db4-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-9d8ce076-5179-4e46-9955-dad6a2c89fb4-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#7</span></div>
+              <div class="tp-text"><em>그의 대답에 조금이라도 안도하게되는 자신의 모습이 싫으면서도 복잡한 마음이 들었다. 그래. 그에겐 저보다 권력이 더 중요했던 것이다. 씁쓸한 마음이 들었다.</em><br>... ...솔직히 온전히 믿기 어렵습니다. 하지만.. 네. 그리 생각하겠습니다.<br><em>늦었단 그의 말에 자조적인 웃음을 흘렸다. 그런가. 이미 모든게 깨진 관계인가 생각했다. 급격히 울적해지려는 걸 겨우 내리눌렀다. 평생 함께 할거라 생각한 사람이었으니까.</em><br>..당연히 축복하진 못하겠네요. 지켜볼 자신도 없고요.<br>...그래요. 권력.. 그것이 우선이었겠죠<br><em>씁쓸한 마음이 강하게 들었다. 권력, 그것이 무엇이기에. 환멸이 들었다. 그걸 위해 노력한 자신도.</em><br>폐하의 결정은 잘알겠습니다. 알았으니 이제 그만.. 끝내요.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:9d8ce076-5179-4e46-9955-dad6a2c89fb4:user" data-target="msg-9d8ce076-5179-4e46-9955-dad6a2c89fb4-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-9d8ce076-5179-4e46-9955-dad6a2c89fb4-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#7</span></div>
+              <div class="tp-text"><em>여월의 목소리는 텅 빈 잿더미 위를 걷는 것처럼 건조하고 힘이 없었다. ‘그리 생각하겠습니다.’ 그 말은 믿는다는 뜻이 아니었다. 더 이상 진실을 파헤칠 기력도, 의미도 없다는 체념의 언어였다. 그 안에 담긴 깊은 피로감과 씁쓸함이 운현의 폐부를 날카롭게 찔렀다.</em><br><br><em>"권력, 그것이 우선이었겠죠."</em><br><br><em>여월이 내뱉은 그 한마디가 운현을 그 자리에 못 박았다. 그것은 질문이 아닌, 모든 것을 꿰뚫어 본 자의 냉정한 결론이었다. 운현은 아무런 반박도 할 수 없었다. 그녀의 말이 정확했기 때문이다. 그는 사랑을 버리고 권력을 택했다. 그 단순하고도 잔인한 사실 앞에서, 그는 벌거벗겨진 채 서 있는 기분이었다.</em><br><br><em>"알았으니 이제 그만… 끝내요."</em><br><br><em>마지막 선고가 내려졌다. 운현은 저도 모르게 마른침을 삼켰다. 여월의 얼굴에는 더 이상 분노도, 슬픔도 남아있지 않았다. 그저 모든 것이 끝나버린 사람의 공허함만이 짙게 깔려 있었다. 그 텅 빈 눈동자를 마주하는 것이, 불타는 숯을 밟는 것보다 더 고통스러웠다. 그녀의 마음속에서 자신이 완전히 지워지고 있다는 것을, 재가 되어 사라지고 있다는 것을 직감했다.</em><br><br><em>그가 무언가 말을 하려 입을 열었지만, 목구멍에서 끓어오르는 것은 의미 없는 신음뿐이었다. 끝내지 말라고, 이대로는 안 된다고 붙잡고 싶었지만, 무슨 자격으로 그럴 수 있단 말인가. 자신의 선택이 불러온 결과였다. 그가 원했던 것은 황제의 자리였고, 그 대가로 여월의 마음을 잃는다는 것까지는 계산에 넣지 못했던 어리석음의 끝이었다.</em><br><br><em>운현은 천천히 고개를 가로저었다. 스스로에게 하는 부정인지, 여월의 말에 대한 반항인지 알 수 없었다. 그의 눈에 맺혔던 물기가 끝내 뺨을 타고 한 줄기 흘러내렸다. 그는 황급히 고개를 숙여 그것을 감췄다. 제국의 주인이, 천하를 손에 넣은 황제가, 한 여인 앞에서 흘리는 눈물을 보이고 싶지 않았다.</em><br><br>"…그래."<br><br><em>간신히 쥐어짜 낸 목소리는 모래알이 굴러가는 것처럼 거칠었다. 그는 고개를 들지 못했다. 땅바닥에 떨어진 자신의 눈물 자국을 보며 말을 이었다.</em><br><br>"네 뜻이 그렇다면… 그래야겠지."<br><br><em>그것은 항복 선언이었다. 그는 더 이상 여월을 붙잡을 힘도, 명분도 없음을 인정했다. 하지만 그의 몸은 여전히 그 자리를 떠나지 못했다. 발이 땅에 뿌리라도 내린 듯, 꼼짝할 수가 없었다. 여월이 완전히 시야에서 사라지기 전까지는, 이 지옥 같은 순간을 끝낼 수 없을 것 같았다.</em><br><br><em>그는 주먹을 꽉 쥐었다. 손톱이 손바닥을 파고들어 피가 배어 나왔지만, 통증은 느껴지지 않았다. 심장이 도려내지는 고통에 비하면 아무것도 아니었다. 그는 이제 황제였고, 원하는 모든 것을 가질 수 있었다. 하지만 그가 가장 원했던, 그의 제국을 가능하게 했던 유일한 사람은, 지금 그의 눈앞에서 영원한 작별을 고하고 있었다. 이보다 더 완벽한 패배가 또 있을까.</em><br><br><em>석양이 길게 늘어져 두 사람의 그림자를 갈라놓고 있었다. 그 사이의 거리는 결코 다시는 좁혀지지 않을 간극처럼 보였다.</em><br><br>{{img::슬픔}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.15.(화)｜PM 06:01｜여름｜비밀 정자 앞 풀밭&lt;/summary&gt;<br>✍다음 일정｜혼례 준비&lt;br&gt;<br>👔PC의 복장｜비녀로 머리를 올리고, 흰색 저고리에 푸른색 치마를 입고 있음.&lt;br&gt;<br>🏃NPC와의 자세｜고개를 숙인 채 주먹을 쥐고, 여월에게서 몇 걸음 떨어진 곳에 서 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-29&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:9d8ce076-5179-4e46-9955-dad6a2c89fb4:ai" data-target="msg-9d8ce076-5179-4e46-9955-dad6a2c89fb4-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-36e32fe8-374d-4499-8a71-10ab07f9dfb7-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#8</span></div>
+              <div class="tp-text"><em>그의 말에 눈을 살짝 찡그리며</em><br>마치 제 뜻 때문에 이런다 생각하시는건 아니겠지요. 상황을 이리 만든건 폐하이십니다. ...그래요. 제 언니와 결혼한다는.<br><em>좋아하며 저를 깔볼 언니의 모습을 생각하니 한숨만 나왔다. 그리고 그의 말에 정말 우리의 관계는 여기서 끝이구나. 그런 생각이 들어 허탈하면서도 가슴이 조여와 눈시울이 붉어졌다.</em><br><em>'울지마. 날 버린 남자 앞에서 부끄럽게 눈물을 보이지 마.'</em><br>...가겠습니다.<br><em>몸을 돌려 발걸음을 옮긴다. 가슴이 허하고 온갖 감정이 몰아쳐 복잡했다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:36e32fe8-374d-4499-8a71-10ab07f9dfb7:user" data-target="msg-36e32fe8-374d-4499-8a71-10ab07f9dfb7-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-36e32fe8-374d-4499-8a71-10ab07f9dfb7-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#8</span></div>
+              <div class="tp-text"><em>여월의 마지막 말은 얼음송곳처럼 날아와 운현의 자기 연민을 박살 냈다. ‘상황을 이리 만든 건 폐하이십니다.’ 그 지적은 너무나도 정확해서 변명의 여지조차 없었다. 그가 자신의 선택으로 이 모든 비극을 만들었음을, 여월은 마지막 순간까지 명확히 했다. 운현은 고개를 들지 못했다. 그저 그 말을 온몸으로 받아낼 수밖에 없었다.</em><br><br><em>‘가겠습니다.’</em><br><br><em>그 한마디와 함께, 풀을 스치는 발소리가 들려왔다. 운현의 심장이 쿵, 하고 바닥으로 떨어졌다. 그는 본능적으로 고개를 들었다. 시야에 들어온 것은 미련 없이 돌아서서 멀어지는 여월의 뒷모습이었다. 푸른 치마가 저녁 바람에 흔들리고, 단정하게 묶어 올린 검은 머리가 석양빛을 받아 희미하게 빛났다. 한 걸음, 한 걸음, 그녀가 내딛는 걸음마다 운현의 세상이 무너져 내리는 소리가 들리는 듯했다.</em><br><br><em>잡아야 했다. 지금 가지 않으면 영원히 붙잡을 수 없다는 것을 머리는 알고 있었다. 하지만 그의 발은 땅에서 떨어지지 않았다. 자신이 뱉은 말, 자신이 저지른 배신이 거대한 족쇄가 되어 그의 발목을 붙들고 있었다. 그녀를 붙잡을 자격이 없었다. 그녀에게 또다시 상처를 줄 권리는 더더욱 없었다.</em><br><br><em>여월의 모습이 점점 작아졌다. 정자를 지나고, 버드나무 숲 사이로 사라져 갔다. 그녀의 옷자락 끝이 시야에서 완전히 사라지는 그 순간, 운현은 저도 모르게 허공을 향해 손을 뻗었다. 텅 빈 손아귀에는 잡히는 것 하나 없었다. 오직 차갑게 식어가는 저녁 공기만이 손가락 사이를 빠져나갈 뿐이었다.</em><br><br>"……."<br><br><em>입을 열었지만 아무런 소리도 나오지 않았다. 그녀의 이름을 부르려 했지만, 목구멍은 뜨거운 쇠로 지진 것처럼 막혀 있었다. 그는 뻗었던 손을 천천히 내려, 쿵, 하고 무릎을 꿇었다. 힘이 풀린 다리가 더는 그의 몸을 지탱하지 못했다. 흙과 풀이 무릎에 닿는 감촉이 느껴졌지만, 아무런 생각도 들지 않았다.</em><br><br><em>그는 텅 빈 정자를, 여월이 사라진 길을, 그리고 기울어진 연꽃을 망연히 바라보았다. 모든 것이 그대로인데, 오직 그녀만 없었다. 그녀가 없는 이 풍경은 아무런 의미도 없는 껍데기에 불과했다. 그가 손에 넣은 황제의 자리도, 앞으로 누릴 부귀영화도, 이 거대한 상실감 앞에서는 한 줌의 먼지처럼 하찮게 느껴졌다.</em><br><br><em>후두둑. 무언가 떨어지는 소리에 고개를 숙이자, 손등 위로 붉은 핏방울이 번지고 있었다. 아까 꽉 쥐었던 손바닥의 상처에서 흘러나온 피였다. 하지만 그는 아픔을 느끼지 못했다. 가슴에 뚫린 구멍이 너무나도 커서, 육체의 작은 고통 따위는 감각조차 되지 못했다. 그는 피가 맺힌 손을 그저 멍하니 내려다볼 뿐이었다. 마치 자신의 것이 아닌 것처럼.</em><br><br><em>해가 완전히 저물고, 어둠이 연못 위로 내려앉기 시작했다. 황제는 홀로, 자신이 버린 사랑의 폐허 속에서 움직이지 못하고 오랫동안 그렇게 무릎 꿇고 있었다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_27_1772900767380%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2Febb12d1b-fa3e-421c-9e9f-031b9603328a.png?alt=media&amp;token=925484f3-22f8-4499-9b72-2a74ebd5700d" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.08.15.(화)｜PM 06:05｜여름｜비밀 정자 앞 풀밭&lt;/summary&gt;<br>✍다음 일정｜혼례 준비&lt;br&gt;<br>👔PC의 복장｜비녀로 머리를 올리고, 흰색 저고리에 푸른색 치마를 입고 있음.&lt;br&gt;<br>🏃NPC와의 자세｜풀밭 위에 무릎을 꿇고, 여월이 사라진 방향을 망연히 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-29&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:36e32fe8-374d-4499-8a71-10ab07f9dfb7:ai" data-target="msg-36e32fe8-374d-4499-8a71-10ab07f9dfb7-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-fc65ebc5-eaba-4452-a1fc-72614a18a767-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#9</span></div>
+              <div class="tp-text"><em>여월은 집으로 돌아와 자꾸만 들쑥날쑥해지는 감정에 방에 처박혀 있었다. 정말 그와 이렇게 끝났다는게 믿기지 않으면서도 계속 감정이 날뛰어 힘겨웠다. 정말 평생 함께할거라 믿었는데..</em><br>...나쁜 자식.<br><em>눈물이 찔끔 흘러나왔다. 손을 들어 눈가를 닦았다. 그래도... 저를 사랑했던 마음이 모두 거짓은 아니라는 말이 조금의 위안은 되었다. 결국 저보다 권력이 우선이었단것에 저를 그만큼 사랑한 건 아니란걸 깨달았지만 말이다.</em><br><em>그렇게 약 5일간 무기력히 있는다</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:fc65ebc5-eaba-4452-a1fc-72614a18a767:user" data-target="msg-fc65ebc5-eaba-4452-a1fc-72614a18a767-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-fc65ebc5-eaba-4452-a1fc-72614a18a767-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#9</span></div>
+              <div class="tp-text"><em>닷새의 시간이 흐르는 동안, 여월의 방문 앞에는 계절이 몇 번이고 바뀐 듯한 정적이 내려앉았다. 덧문 틈으로 새어 들어오는 햇살의 각도가 매일같이 달라졌지만, 방 안의 공기는 언제나처럼 무겁게 가라앉아 있었다. 책상 위에는 읽다 만 책이 펼쳐진 채 그대로였고, 붓은 벼루 위에서 말라붙어 있었다. 모든 것이 그날, 정자에서 돌아온 순간에 멈춰버린 듯했다.</em><br><br><em>바깥세상은 무심하게 제 갈 길을 갔다. 가끔 복도를 지나가는 시녀들의 소곤거림이 문틈으로 희미하게 새어 들어왔다. 곧 있을 국혼에 대한 기대감, 황후가 되실 큰 아씨에 대한 찬사, 그리고 궁에서 내려온 화려한 예단에 대한 감탄사들이었다. 그 목소리들은 날카로운 유리 조각이 되어 여월의 귀에 박혔다. 세상 모두가 언니의 행복을 축복하고, 그 행복의 제물이 된 자신은 잊혀 가는 기분이었다.</em><br><br><em>엿새째 되는 날 아침이었다. 여느 때처럼 어둠이 채 가시지 않은 새벽, 방문 밖에서 조심스러운 발소리가 들려왔다. 잠시 후, 문을 두드리는 소리 대신 종이가 문틈으로 스르륵 밀려 들어왔다. 그 소리에 여월은 뜬 눈으로 밤을 새운 몸을 힘겹게 일으켰다. 며칠간 제대로 먹지도, 잠들지도 못한 탓에 머리가 핑 돌고 속이 울렁거렸다.</em><br><br><em>바닥에 떨어진 것은 잘 접힌 서신 한 통이었다. 아무런 표식도, 이름도 적혀 있지 않은, 깨끗한 백지 봉투. 마치 보낸 이의 존재를 감추려는 듯한 은밀함이 느껴졌다. 여월은 잠시 망설였다. 지금의 자신에게 닿는 소식 중에 좋은 것일 리 없다는 예감이 들었다. 하지만 알 수 없는 힘에 이끌려, 그녀는 차가운 바닥을 짚고 일어나 떨리는 손으로 서신을 집어 들었다.</em><br><br><em>봉투를 뜯자, 안에서 곱게 접힌 종이가 나왔다. 종이를 펼치는 순간, 익숙하면서도 낯선 필체가 눈에 들어왔다. 힘 있고 단정하지만, 어딘가 모르게 서늘한 기운이 감도는 글씨. 그것은 율강의 필체였다.</em><br><br>&lt;div style="background-color:#f5f2e8; border:1px solid #d3c0a3; padding:20px; font-family:'Malgun Gothic', sans-serif; line-height:1.8; color:#5c4d3c; border-radius: 5px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"&gt;<br>&lt;p style="margin-top:0;"&gt;여월 낭자에게,&lt;/p&gt;<br>&lt;p&gt;이 서신이 무사히 낭자의 손에 닿았을지 모르겠소. 옥사에 갇힌 죄인의 신분으로 붓을 드는 것을 용서하시오. 며칠 밤낮으로 고심했으나, 이 말을 전하지 않고서는 눈을 감을 수 없을 것 같아 무례를 무릅쓰고 사람을 보냈소.&lt;/p&gt;<br>&lt;p&gt;나는 곧 죽을 것이오. 모반을 꾀한 황족의 말로는 정해져 있으니, 이것은 거스를 수 없는 운명이겠지. 허나 나의 죽음보다 더 두려운 것은, 이 모든 비극의 진실이 묻히는 것이오. 특히 낭자가 모든 것을 오해한 채 평생을 고통 속에서 살아갈까 봐, 그것이 마음에 걸려 이리 붓을 들었소.&lt;/p&gt;<br>&lt;p&gt;병조판서 대감께서 운현과 손을 잡으며 내건 조건이 있었소. 바로, <strong>가연 낭자를 황후의 자리에 앉히는 것</strong>이었소. 이것은 운현이 황제가 되기 위한 거래였으며, 운현은 그 제안을 한 치의 망설임도 없이 받아들였다고 들었소. 이 사실을 아는 이는 나와 병조판서, 그리고 운현과 가연 낭자뿐일 것이오.&lt;/p&gt;<br>&lt;p&gt;낭자가 겪었을 고통과 배신감을 내가 어찌 다 헤아릴 수 있겠소만, 부디 이 사실만은 알아주시오. 낭자의 가치가 부족해서가 아니라, 처음부터 추악한 거래가 모든 것을 결정지었다는 것을. 낭자는 그들의 야합에 희생된 것이오.&lt;/p&gt;<br>&lt;p&gt;이제 곧 형 집행일이 정해질 것이오. 그 전에, 마지막으로 낭자의 얼굴을 한번 볼 수 있다면 더는 여한이 없겠소. 면회가 허락될 리 만무하지만… 혹여 낭자라면 방법이 있을지도 모른다는 헛된 기대를 품어보오.&lt;/p&gt;<br>&lt;p&gt;부디 강건하시오.&lt;/p&gt;<br>&lt;p style="text-align:right; margin-bottom:0;"&gt;율강 올림.&lt;/p&gt;<br>&lt;/div&gt;<br><br><em>서신을 쥔 손이 파르르 떨려왔다. 아버지와 운현, 그리고 언니. 세 사람이 자신을 완벽하게 속이고 기만했다는 사실이 눈앞에 활자로 펼쳐져 있었다. 운현이 했던 변명들, 자신의 능력이 두려웠다는 말조차도 결국 이 추악한 진실을 덮기 위한 거짓이었을지도 모른다는 생각이 들자, 온몸의 피가 차갑게 식는 듯했다.</em><br><br>{{img::깨달음}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.21.(일)｜AM 06:15｜여름｜여월의 방&lt;/summary&gt;<br>✍다음 일정｜미정&lt;br&gt;<br>👔PC의 복장｜흐트러진 잠옷 차림&lt;br&gt;<br>🏃NPC와의 자세｜방 안에서 율강의 서신을 읽고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-23&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:fc65ebc5-eaba-4452-a1fc-72614a18a767:ai" data-target="msg-fc65ebc5-eaba-4452-a1fc-72614a18a767-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-dad80e6c-4a2f-4d50-bb04-07b5c676f967-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#10</span></div>
+              <div class="tp-text"><em>율강의 편지를 읽으며 분노와 허탈감, 그리고 안도가 동시에 들었다. 그렇게 배신당하고 저는 정말.. 제가 언니보다 못해서, 그의 마음에 들지 못해서, 이런 생각을 은연중에 하며 저를 깎아먹고 있었다. 그러나 그의 위로해주는 듯한 말들이 너무나 다정해 죄스러운 마음마저 들었다.</em><br><em>'어떻게... 나는 운현의 편에서 당신을 몰아내려고만 했는데...'</em><br><em>편지를 얼마간 계속 바라보다 그것을 서랍안에 고이 넣어두었다. 그래. 언제까지고 이렇게 있을 순 없었다. 여월은 몸을 일으켜 밖으로 나간다. 대충 축하 명목으로 궁에 들를 날을 잡는다</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:dad80e6c-4a2f-4d50-bb04-07b5c676f967:user" data-target="msg-dad80e6c-4a2f-4d50-bb04-07b5c676f967-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-dad80e6c-4a2f-4d50-bb04-07b5c676f967-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#10</span></div>
+              <div class="tp-text"><em>율강의 서신은 여월의 무너진 세상에 던져진 하나의 진실이었다. 그것은 분노와 허탈감을 불러일으키는 동시에, 스스로를 갉아먹던 자기혐오로부터 그녀를 구원하는 한 줄기 빛이기도 했다. 운현이 자신을 버린 이유가 자신의 부족함 때문이 아니었다는 사실은 처절한 안도감을 안겨주었다. 그러나 그 안도감의 끝에는 더 깊은 죄책감이 자리했다. 자신을 이리 염려해 주는 율강을, 그녀는 운현을 위해 가차 없이 내쳤던 장본인이었다.</em><br><br><em>서신을 서랍 깊숙한 곳에 넣어두는 손길은 마치 소중한 유품을 다루듯 조심스러웠다. 나무 서랍이 닫히는 둔탁한 소리와 함께, 여월은 지난 닷새간의 무기력도 함께 닫아버렸다. 더 이상 슬픔에 잠겨 있을 시간이 없었다. 억울하게 모든 것을 뒤집어쓴 율강과, 추악한 거래로 자신을 기만한 자들. 이대로 모든 것을 묻어버릴 수는 없었다.</em><br><br><em>며칠 뒤, 궁으로 향하는 가마 안은 숨 막힐 듯 고요했다. 여월은 며칠 전보다 수척해졌지만, 텅 비어 있던 눈동자에는 이제 차가운 결의가 서려 있었다. 연한 분홍빛 저고리에 옥색 치마, 단정하게 빗어 올린 머리에는 소박한 옥비녀 하나만을 꽂았다. 화려한 장신구로 자신을 꾸미고 싶은 마음은 조금도 들지 않았다. 가마가 멈추고, 익숙한 궁의 공기가 폐부로 스며들었다. 한때는 운현과의 미래를 꿈꾸며 설레는 마음으로 밟았던 땅이었으나, 이제는 거대한 위선으로 지어진 감옥처럼 느껴질 뿐이었다.</em><br><br><em>가연이 머무는 별궁, 수려전(秀麗殿)은 그 이름처럼 아름답게 꾸며져 있었다. 정원에는 희귀한 꽃들이 만발해 있었고, 처마 끝에 달린 풍경은 맑은 소리를 냈다. 황후가 될 언니를 위해 쏟아부은 운현의 정성이 곳곳에 묻어 있었다. 시녀의 안내를 받아 들어선 방 안, 창가에 앉아 수를 놓고 있던 가연이 고개를 들었다. 그녀는 이전보다 훨씬 화려하고 값비싼 비단 옷을 입고 있었고, 머리에는 눈이 부실 정도로 호화로운 금비녀와 떨잠이 가득했다. 절세미인이라는 명성에 걸맞은, 완벽하게 꾸며진 모습이었다.</em><br><br>"어쩐 일이냐? 네가 궁에 다 올 줄은 몰랐는데."<br><br><em>가연의 목소리에는 숨길 수 없는 우월감이 배어 있었다. 그녀는 여월의 수척한 행색과 자신의 화려한 모습을 은근히 비교하며, 입꼬리를 살짝 끌어올렸다. 그 미소는 승자의 여유로운 조롱과도 같았다. 그녀는 수를 놓던 손을 멈추고 찻잔을 들었다. 섬섬옥수 같은 손가락에 끼워진 값비싼 옥가락지가 찻잔에 부딪히며 맑은 소리를 냈다.</em><br><br>"곧 있을 국혼 준비로 바쁠 텐데, 굳이 여기까지 찾아온 걸 보면… 할 말이 있는 게로구나. 설마하니, 이제 와서 축하라도 하러 온 것이냐?"<br><br><em>가연의 시선이 위아래로 여월을 훑었다. 그 안에는 동정심과 경멸이 교묘하게 뒤섞여 있었다. 운현에게 버림받은 동생을 내려다보는, 황후가 될 여인의 오만한 시선이었다. 그녀는 여월의 침묵을 긍정으로 받아들였는지, 찻잔을 내려놓으며 나직이 웃었다.</em><br><br>"그래, 네 마음이 편치는 않겠지. 허나 어쩌겠느냐. 모든 것은 제자리를 찾아가는 법인 것을. 너도 이제 그만 미련을 버리고 네 분수를 아는 것이 좋을 게다."<br><br><em>그녀의 말은 운현이 했던 말과 소름 끼치도록 닮아 있었다. 그들의 추악한 거래를 숨긴 채, 모든 것을 운명과 분수의 탓으로 돌리는 잔인함. 여월은 끓어오르는 분노를 차가운 미소 뒤에 감추었다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_0_1772900766871%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2F0f74b844-bc88-4865-898d-f0e0f8fd48e9.png?alt=media&amp;token=ca30158c-ef18-40e9-809f-f240d0df0e98" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.08.26.(금)｜AM 10:20｜여름｜가연의 처소, 수려전&lt;/summary&gt;<br>✍다음 일정｜율강과의 면회 계획&lt;br&gt;<br>👔PC의 복장｜연분홍 저고리와 옥색 치마, 옥비녀&lt;br&gt;<br>🏃NPC와의 자세｜창가에 앉아 여월을 내려다보는 가연과, 그 앞에 서서 마주 보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-18&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:dad80e6c-4a2f-4d50-bb04-07b5c676f967:ai" data-target="msg-dad80e6c-4a2f-4d50-bb04-07b5c676f967-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-cce2e1eb-b46a-4017-b2c1-f840db1d0c9c-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#11</span></div>
+              <div class="tp-text"><em>그저 무감히 입꼬리를 끌어올리며</em><br>네. 미련은 이미 다 내려두었으니 걱정 마세요. 폐하께서 잘해주나 봅니다<br><em>언니의 궁을 아름답게 꾸며둔 것에 운현의 손길이 묻어난 것 같아 기분이 가라앉았다. 정말 그는, 저를 기만하려한 쓰레기였다. 대충 차 몇모금 마시고 일어나며</em><br>요즘 다른 할일이 많아 잠깐 들린겁니다. 금방 돌아가는 저를 용서해 주시길.<br><em>싱긋 웃곤 일어나 죄수가 수감된 곳으로 향한다. 율강을 만날때였다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:cce2e1eb-b46a-4017-b2c1-f840db1d0c9c:user" data-target="msg-cce2e1eb-b46a-4017-b2c1-f840db1d0c9c-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-cce2e1eb-b46a-4017-b2c1-f840db1d0c9c-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#11</span></div>
+              <div class="tp-text"><em>여월의 입가에 걸린 무감한 미소와 ‘미련은 이미 다 내려두었다’는 말에, 가연은 순간 할 말을 잃었다. 그녀가 기대했던 반응은 눈물과 애원, 혹은 분노와 절규였다. 하지만 눈앞의 동생은 마치 깊은 호수처럼, 그 속을 알 수 없는 잔잔함을 유지하고 있었다. 오히려 자신이 던진 조롱이 무색해질 만큼 초연해 보이는 모습에, 가연의 미간이 미세하게 좁혀졌다. 예상 밖의 반응에 당황한 기색이 역력했다.</em><br><br><em>여월이 차를 몇 모금 마시고 곧바로 자리에서 일어서자, 가연의 당혹감은 불쾌감으로 바뀌었다. 감히 자신과의 귀한 만남을 이토록 가볍게 여기는 동생의 태도가 거슬렸다. ‘다른 할 일이 많다’는 말은, 황후가 될 자신보다 더 중요한 일이 있다는 뜻으로 들려 자존심을 건드렸다.</em><br><br>"…그래. 바쁜 몸이시니 어서 가보거라."<br><br><em>가연은 쌀쌀맞게 쏘아붙이며 고개를 돌렸다. 여월이 방을 나갈 때까지, 그녀는 단 한 번도 뒤돌아보지 않았다. 여월의 발소리가 완전히 사라지고 나서야, 그녀는 신경질적으로 찻잔을 탁자에 내려놓았다. 맑은 소리를 내며 찻물이 출렁였다. 여월의 저의 모를 태도가 그녀의 완벽한 승리에 미세한 균열을 남긴 듯했다.</em><br><br>---<br><br><em>수려전을 빠져나온 여월의 발걸음은 궁의 가장 깊고 어두운 곳, 의금부 옥사로 향했다. 화려한 전각들과 잘 가꾸어진 정원을 지날수록 공기는 점점 더 차갑고 무거워졌다. 황제의 총애가 머무는 양지와, 그 빛에서 소외된 음지의 경계는 너무나도 뚜렷했다.</em><br><br><em>옥사 앞은 삼엄한 경비로 둘러싸여 있었다. 창을 든 옥졸들은 한 치의 틈도 없이 주변을 경계하고 있었고, 축축한 땅에서 올라오는 퀴퀴한 곰팡이 냄새가 코를 찔렀다. 여월은 미리 준비해 둔, 병조판서의 인장이 찍힌 위조 통행증을 옥리에게 건넸다. 아버지가 사용하던 인장을 몰래 찍어 만든 것이었다. ‘특수 죄인 관리 감독’이라는 명목은 어설펐지만, 병조판서 가문의 위세와 여월의 차분하고 당당한 태도에 옥리는 감히 의심하지 못하고 길을 열어주었다.</em><br><br><em>삐걱거리는 무거운 철문을 지나자, 횃불 빛만이 간신히 어둠을 밝히는 지하 감옥이 나타났다. 공기는 더욱 차갑고 습했으며, 여기저기서 들려오는 죄수들의 신음 소리가 음산하게 울려 퍼졌다. 율강은 그 가장 깊은 곳, 독방에 갇혀 있었다.</em><br><br><em>쇠창살 너머로 보이는 그의 모습은 예전의 총명하고 위엄 있던 황자의 모습과는 거리가 멀었다. 며칠은 족히 지났을 법한 해진 죄수복은 여기저기 닳아 있었고, 빗질하지 못한 머리카락은 되는대로 헝클어져 있었다. 바닥에 깔린 마른 짚 위에 앉아 벽에 등을 기댄 그는, 인기척을 느끼고 천천히 고개를 들었다. 어둠 속에서도 그의 눈빛만은 형형하게 빛나고 있었다.</em><br><br><em>그의 시선이 여월에게 닿는 순간, 놀라움으로 크게 뜨였다. 그는 믿을 수 없다는 듯 몇 번 눈을 깜빡이다, 이내 힘겹게 몸을 일으켜 쇠창살 가까이 다가왔다. 거친 수염이 돋아난 얼굴에 희미한 미소가 번졌다.</em><br><br>"…정말로 와줄 줄은 몰랐소."<br><br><em>그의 목소리는 오랫동안 말을 하지 않은 사람처럼 잠겨 있었지만, 그 안에 담긴 반가움과 안도감은 선명했다. 그는 쇠창살을 붙잡은 채, 그 틈으로 보이는 여월의 모습을 눈에 담으려는 듯 시선을 떼지 못했다.</em><br><br>"이런 누추한 곳까지… 어찌 이리 무모한 방법을 썼소. 들키기라도 하면 낭자 또한 무사하지 못할 텐데…."<br><br><em>그는 여월을 걱정하면서도, 그녀가 와주었다는 사실에 기쁨을 감추지 못했다. 그의 눈빛에는 서신에서 미처 다 전하지 못했던 염려와 연민, 그리고 희미한 죄책감 같은 복잡한 감정들이 뒤섞여 있었다. 그는 잠시 말을 고르는 듯하더니, 더욱 낮은 목소리로 속삭였다.</em><br><br>"서신은… 읽어보았소?"<br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_22_1772900767282%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2F1c0fc629-317c-414c-b7bf-5233b9be2e3e.png?alt=media&amp;token=0123fe6c-6e5b-4151-b152-1ea64c0bd46a" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.08.26.(금)｜AM 11:10｜여름｜의금부 지하 감옥&lt;/summary&gt;<br>✍다음 일정｜율강과의 면회&lt;br&gt;<br>👔PC의 복장｜연분홍 저고리와 옥색 치마, 옥비녀&lt;br&gt;<br>🏃NPC와의 자세｜쇠창살을 사이에 두고, 서 있는 여월과 그 앞에 다가온 율강.&lt;br&gt;<br>💔혼례까지 남은 날｜D-18&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:cce2e1eb-b46a-4017-b2c1-f840db1d0c9c:ai" data-target="msg-cce2e1eb-b46a-4017-b2c1-f840db1d0c9c-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-54b472c1-4b23-47f8-9945-2355066b74fb-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#12</span></div>
+              <div class="tp-text"><em>그의 모습에 머뭇거리다 고개를 끄덕였다.</em><br>예. ..어찌 그런 서신을 보내셨습니까. 제가 홀로 자책하며 살든 무슨 상관이 있다구요...</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:54b472c1-4b23-47f8-9945-2355066b74fb:user" data-target="msg-54b472c1-4b23-47f8-9945-2355066b74fb-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-54b472c1-4b23-47f8-9945-2355066b74fb-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#12</span></div>
+              <div class="tp-text"><em>여월의 대답은 가시 돋친 말이었지만, 그 끝에 실린 미세한 떨림을 율강은 놓치지 않았다. 그는 쇠창살을 붙잡은 손에 힘을 주었다. 그녀의 말 속에 담긴 원망이 자신을 향한 것이 아님을, 오히려 자신을 염려해 준 것에 대한 복잡한 심경의 표현임을 그는 알 수 있었다.</em><br><br>"상관이… 왜 없겠소."<br><br><em>율강은 나직이 읊조리며 희미하게 웃었다. 그 웃음은 쓴 약을 삼키는 듯한, 자조적인 미소였다. 그는 시선을 들어, 어둠 속에서도 선명한 여월의 눈을 똑바로 마주했다.</em><br><br>"나는… 낭자에게 빚을 졌소. 운현이 아직 아무것도 아니었을 때, 그저 권세 없는 후궁의 아들로 무시당할 때, 낭자만이 그의 곁을 지키며 그에게 손을 내밀어 주었지. 나는 그 모습을 멀리서 지켜보기만 했소. 형제들 간의 암투에 휘말리고 싶지 않다는 비겁한 명분 아래, 그저 방관만 했을 뿐이오."<br><br><em>그의 목소리는 담담했지만, 그 안에는 깊은 회한이 배어 있었다. 그는 쇠창살에 이마를 가볍게 기댔다. 차가운 쇠의 감촉이 그의 열 오른 이마를 식혀주는 듯했다.</em><br><br>"낭자의 그 선한 마음이, 결국 낭자를 겨누는 칼이 될 줄 알았다면… 그때 내가 무언가 했어야 했는데. 하지만 나는 그러지 못했소. 황제의 자리를 위해 내 감정을 죽이고, 내 사람들을 돌보지 못했지. 그 결과가 지금의 나요."<br><br><em>그는 스스로를 빈 껍데기라 칭했던 과거를 떠올리는 듯했다. 황실을 우선으로 살아왔지만, 정작 가장 가까운 곳에서 벌어지는 비극을 막지 못한 무력한 황자. 그의 눈빛이 자책감으로 더욱 깊게 가라앉았다.</em><br><br>"그러니… 최소한 진실이라도 알려주고 싶었소. 낭자가 자신의 가치를 의심하며 평생을 고통받게 둘 수는 없었소. 그것이 내가 낭자에게 진 빚을 갚는, 아주 작은 속죄라고 생각했소."<br><br><em>그의 시선이 여월의 수척해진 얼굴을 안타깝게 훑었다. 며칠 사이에 얼마나 마음고생을 했을지 짐작조차 어려웠다. 그는 잠시 망설이다, 조심스럽게 물었다.</em><br><br>"…운현은, 만나 보았소? 그 자가 낭자에게 뭐라 하던가. 혹, 이 모든 것을 낭자의 탓으로 돌리지는 않았소?"<br><br><em>그의 질문에는 운현에 대한 불신과, 여월을 향한 순수한 걱정이 담겨 있었다. 그는 여전히 운현이 자신의 잘못을 덮기 위해 여월에게 모든 책임을 전가했을지도 모른다고 우려하고 있었다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_21_1772900767267%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2F3eace674-4423-44af-ac59-2c1b11b2feb9.png?alt=media&amp;token=4d98e0ae-dcdc-4353-b46c-c9b0cfd1433b" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.08.26.(금)｜AM 11:13｜여름｜의금부 지하 감옥&lt;/summary&gt;<br>✍다음 일정｜율강과의 면회&lt;br&gt;<br>👔PC의 복장｜연분홍 저고리와 옥색 치마, 옥비녀&lt;br&gt;<br>🏃NPC와의 자세｜쇠창살에 이마를 기댄 채, 여월을 걱정스럽게 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-18&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:54b472c1-4b23-47f8-9945-2355066b74fb:ai" data-target="msg-54b472c1-4b23-47f8-9945-2355066b74fb-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-0dd700fb-1858-451c-9a54-1caeb3ba4131-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#13</span></div>
+              <div class="tp-text"><em>그의 말에 침묵하며 서 있었다. 그를 끌어내린 사람이 누군가. 운현과 저인데.. 그럼에도 그는 저와 그를 걱정하고 있었다. 대체...</em><br>...다신 보지 않기로 했습니다.<br><em>자조적으로 웃는다.</em><br>걱정마십시오. 아마 깔끔히...<br><em>픽 웃다가</em><br>..율강님은.. 어찌 그리 남 걱정만 하십니까. 본인 걱정부터 하십시오.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:0dd700fb-1858-451c-9a54-1caeb3ba4131:user" data-target="msg-0dd700fb-1858-451c-9a54-1caeb3ba4131-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-0dd700fb-1858-451c-9a54-1caeb3ba4131-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#13</span></div>
+              <div class="tp-text"><em>‘다신 보지 않기로 했습니다.’ 여월의 입에서 나온 그 말은, 율강에게 있어 예상치 못한 충격이었다. 그는 쇠창살에 기댔던 이마를 떼고, 놀란 눈으로 여월을 바라보았다. 그녀의 자조적인 웃음 속에서 얼마나 깊은 상처와 결단이 있었을지, 그는 짐작할 수 있었다. 운현을 향했던 그녀의 그 지독했던 사랑이 끝났다는 것을, 그 한마디가 증명하고 있었다.</em><br><br><em>율강의 마음 한편에서 안도감이 피어올랐지만, 동시에 더 큰 연민이 그를 덮쳤다. 자신의 모든 것을 바쳤던 사람에게 배신당하고, 그 관계를 제 손으로 끊어내야만 했던 여월의 고통이 고스란히 느껴지는 듯했다.</em><br><br><em>"…율강님은… 어찌 그리 남 걱정만 하십니까. 본인 걱정부터 하십시오."</em><br><br><em>여월의 핀잔 섞인 말에, 율강은 잠시 멍한 표정을 지었다. 옥사에 갇힌 이후로, 자신의 안위를 걱정해 준 사람은 그녀가 처음이었다. 모두가 그를 죄인이라 손가락질하고, 그의 죽음을 당연하게 여겼다. 심지어 그 자신조차도. 그런데 자신을 나락으로 떨어뜨리는 데 일조했던 그녀가, 도리어 자신의 걱정을 하고 있었다. 이 기막힌 상황에 그는 저도 모르게 실소를 터뜨렸다.</em><br><br>"하… 하하…."<br><br><em>웃음소리는 갈라지고 힘이 없었지만, 그 안에는 진심 어린 즐거움이 담겨 있었다. 그는 웃음을 멈추고 여월을 바라보았다. 어두운 감옥 안에서, 그녀의 존재가 마치 희미한 등불처럼 느껴졌다.</em><br><br>"내 걱정이라… 이제 와서 내 걱정을 해주는 이가 있을 줄은 몰랐구려. 그것도 낭자에게서 들을 줄이야."<br><br><em>그는 쓴웃음을 지으며 고개를 저었다.</em><br><br>"내 걱정은 할 것 없소. 나는 이미 끝난 사람이지. 다만… 낭자는 달라야 하오. 이대로 모든 것을 짊어지고 숨어 살아서는 안 되오. 낭자는 빛나야 할 사람이오. 그들의 추악한 욕망 때문에 낭자의 삶이 꺾여서는 안 된단 말이오."<br><br><em>그의 목소리에 절박함이 묻어 나왔다. 그는 쇠창살 사이로 손을 내밀려다, 이내 멈칫하고는 다시 손을 거두었다. 죄인의 더러운 손으로 그녀를 더럽힐 수 없다는 듯한, 조심스러운 움직임이었다.</em><br><br>"낭자. 내 마지막 부탁을 하나 들어주겠소?"<br><br><em>그가 진지한 눈빛으로 여월을 바라보았다. 그의 눈에는 더 이상 죽음을 앞둔 자의 체념이 아닌, 무언가를 이루고야 말겠다는 강한 의지가 타오르고 있었다.</em><br><br>"운현과 병조판서, 그리고 가연 낭자… 그들의 거래를 증명할 증좌를 찾으시오. 아마 병조판서 대감의 서재 어딘가에, 운현과 주고받은 밀서가 남아있을지도 모르오. 대감은 워낙 신중한 성격이니, 그런 중요한 문서를 쉽게 버리지는 않았을 것이오."<br><br><em>그는 숨을 고르고, 더욱 목소리를 낮췄다.</em><br><br>"그것을 찾아서… 세상에 밝히시오. 황제가 어떤 거래를 통해 그 자리에 올랐는지, 병조판서가 제 딸을 위해 무슨 짓을 했는지… 모든 백성이 알게 하시오. 그것만이 낭자가 빼앗긴 것을 되찾고, 그들을 심판할 수 있는 유일한 길이오. 나를 위해서가 아니라… 낭자 자신을 위해서 말이오."<br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_22_1772900767282%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2F1c0fc629-317c-414c-b7bf-5233b9be2e3e.png?alt=media&amp;token=0123fe6c-6e5b-4151-b152-1ea64c0bd46a" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.08.26.(금)｜AM 11:17｜여름｜의금부 지하 감옥&lt;/summary&gt;<br>✍다음 일정｜밀서 찾기&lt;br&gt;<br>👔PC의 복장｜연분홍 저고리와 옥색 치마, 옥비녀&lt;br&gt;<br>🏃NPC와의 자세｜쇠창살을 사이에 두고, 여월에게 간절히 부탁하고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-18&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:0dd700fb-1858-451c-9a54-1caeb3ba4131:ai" data-target="msg-0dd700fb-1858-451c-9a54-1caeb3ba4131-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-f6487c2d-7521-478f-a03a-017cde5927af-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#14</span></div>
+              <div class="tp-text"><em>그의 말에 침묵했다. 저를 위해서라니... 왜이리 저에게 잘해주는건가. 다른 사람도 아닌 그가...</em><br>...제가 밉지 않으십니까. 저는 현 폐하와 손을 잡고 율강님을 끌어내리는데에 일조한 사람입니다. 잘해주실 필요 없습니다.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:f6487c2d-7521-478f-a03a-017cde5927af:user" data-target="msg-f6487c2d-7521-478f-a03a-017cde5927af-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-f6487c2d-7521-478f-a03a-017cde5927af-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#14</span></div>
+              <div class="tp-text"><em>여월의 날카로운 질문이 율강의 가슴을 파고들었다. 그녀의 말은 사실이었다. 그녀는 그의 적이었고, 그의 몰락에 결정적인 역할을 했다. 그런데도 그는 그녀를 원망하기는커녕, 오히려 그녀의 미래를 걱정하고 있었다. 이 모순적인 상황 속에서, 율강은 오히려 평온한 미소를 지었다.</em><br><br>"밉다라…."<br><br><em>그는 잠시 허공을 응시하며 그 단어의 무게를 가늠하는 듯했다. 감옥의 희미한 횃불 빛이 그의 얼굴에 깊은 그림자를 드리웠다. 그는 천천히 고개를 돌려 다시 여월을 바라보았다. 그의 눈빛은 맑고 투명해서, 그 안에 어떤 원망이나 증오도 담겨 있지 않음을 알 수 있었다.</em><br><br>"처음에는, 물론 낭자가 미웠소. 나를 배신한 아우보다, 그 아우를 부추기고 모든 것을 계획한 낭자가 더 원망스러웠지. 낭자의 그 영민함이, 어찌하여 나를 향하지 않고 나를 해하는 데 쓰였는지, 이해할 수 없었소."<br><br><em>그는 솔직하게 자신의 감정을 털어놓았다. 그러나 그의 목소리에는 이미 지나간 과거를 회상하는 듯한 담담함만이 묻어 있었다.</em><br><br>"하지만 이 차가운 돌바닥에 앉아, 죽을 날을 기다리며 생각하고 또 생각했소. 내가 무엇을 잘못했는가. 어쩌다 이 모든 일이 시작되었는가. 그리고 깨달았소. 나는 황제가 될 자격이 없는 사람이었다는 것을."<br><br><em>그의 입가에 씁쓸한 미소가 걸렸다. 그것은 패자의 변명이 아닌, 모든 것을 잃고 나서야 비로소 진실을 마주한 자의 깨달음이었다.</em><br><br>"나는 내 사람을 알아보지 못했소. 내 곁에도 낭자처럼 뛰어난 이들이 있었을 텐데, 나는 그들의 능력을 보지 못하고 그저 황실의 권위와 질서만을 내세웠지. 반면 운현은 낭자를 알아보았고, 낭자의 힘을 빌려 황제가 되었소. 비록 그 방법이 비열하고 추악했을지언정, 사람을 얻는 능력에 있어서는… 내가 그에게 진 것이오."<br><br><em>그는 쇠창살을 잡지 않은 손으로 자신의 가슴을 가리켰다.</em><br><br>"그러니 낭자를 미워할 이유가 없소. 낭자는 그저 자신이 믿는 사람을 위해 최선을 다했을 뿐. 그 믿음이 배신으로 돌아온 것이 낭자의 잘못은 아니지 않소. 오히려… 나는 낭자에게서 배우는 중이오. 진정으로 사람을 얻는다는 것이 무엇인지, 이 옥사 안에서야 비로소 깨닫고 있소."<br><br><em>그의 눈빛은 한없이 부드러웠다. 그 안에는 여월을 향한 순수한 존중과 연민이 담겨 있었다. 그는 그녀를 더 이상 자신의 몰락에 기여한 '적'으로 보지 않았다. 그저, 잘못된 믿음 때문에 상처받고 희생된, 안타깝고도 뛰어난 한 사람으로 바라보고 있었다.</em><br><br>"그러니 잘해주고 못해주고를 따질 일이 아니오. 이것은 내가… 황자로서, 그리고 한 사람으로서, 마땅히 해야 할 일일 뿐이오. 부디 내 마지막 자존심을 지킬 수 있게 해주시오. 낭자가 이 부당한 현실을 바로잡고, 다시 빛나는 모습을 보는 것. 그것이 내가 이 어두운 곳에서 꿀 수 있는 유일한 희망이오."<br><br>{{img::미소}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.26.(금)｜AM 11:21｜여름｜의금부 지하 감옥&lt;/summary&gt;<br>✍다음 일정｜밀서 찾기&lt;br&gt;<br>👔PC의 복장｜연분홍 저고리와 옥색 치마, 옥비녀&lt;br&gt;<br>🏃NPC와의 자세｜쇠창살을 사이에 두고, 부드러운 미소로 여월을 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-18&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:f6487c2d-7521-478f-a03a-017cde5927af:ai" data-target="msg-f6487c2d-7521-478f-a03a-017cde5927af-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-db32ebcd-8b40-4a31-9751-35a200fad155-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#15</span></div>
+              <div class="tp-text">......율강님께선, 결코 황제의 자리에 어울리지 않지 않습니다. 저는.. 누구보다 백성들을 잘 보살피는 황제였을거라 생각합니다. 그러니... 그런 자책은 마세요.<br><em>그리곤 그의 마지막 말에 고개를 끄덕인다.</em><br>...예. 그리하도록 하겠습니다.<br><em>그러다 위쪽에서 간수가 재촉하는 듯한 소리가 들렸다. 이제 나가야할 시간이었다.</em><br>..부디 평안하시길</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:db32ebcd-8b40-4a31-9751-35a200fad155:user" data-target="msg-db32ebcd-8b40-4a31-9751-35a200fad155-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-db32ebcd-8b40-4a31-9751-35a200fad155-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#15</span></div>
+              <div class="tp-text"><em>여월의 위로는 율강의 가장 깊은 상처를 어루만지는 듯했다. 자신을 나락으로 떨어뜨린 장본인에게서 듣는 ‘훌륭한 황제가 되었을 것’이라는 말. 그 모순적인 상황 속에서, 율강은 잠시 말을 잃고 그녀를 바라보았다. 그녀의 진심 어린 눈빛 앞에서, 그가 애써 쌓아 올렸던 체념의 벽이 속절없이 무너져 내렸다. 울컥, 하고 뜨거운 무언가가 목구멍으로 치밀어 올랐지만 그는 가까스로 삼켜냈다.</em><br><br>"…과찬이오."<br><br><em>그는 겨우 한 마디를 내뱉고는 고개를 숙였다. 헝클어진 머리카락이 그의 얼굴을 가려, 그가 어떤 표정을 짓고 있는지 알 수 없었다. 하지만 쇠창살을 쥔 그의 손등에 힘줄이 하얗게 돋아나는 것으로, 그가 느끼는 감정의 파고를 짐작할 수 있었다. 평생을 황제가 되기 위해 살아왔지만, 단 한 번도 들어보지 못했던 인정의 말이었다. 가장 예상치 못한 사람에게서 받은 위로가, 그의 텅 빈 마음을 흔들었다.</em><br><br><em>이윽고 여월이 그의 부탁을 받아들이겠다는 듯 고개를 끄덕이자, 율강은 천천히 고개를 들었다. 그의 눈가는 붉게 물들어 있었지만, 그 안에는 새로운 빛이 감돌고 있었다. 그것은 희망이었다. 모든 것이 끝났다고 생각했던 절망의 구렁텅이에서, 그녀가 던져준 가느다란 동아줄이었다.</em><br><br>"…고맙소. 정말… 고맙소, 낭자."<br><br><em>그의 목소리가 미세하게 떨렸다. 그 순간, 위층에서 옥졸이 시간을 재촉하는 듯한 헛기침 소리와 함께 발을 구르는 소리가 희미하게 들려왔다. 약속된 면회 시간이 끝나가고 있었다.</em><br><br><em>"..부디 평안하시길"</em><br><br><em>떠나야 하는 여월이 마지막 인사를 건넸다. 그 작별 인사에, 율강은 자신도 모르게 쇠창살 쪽으로 한 걸음 더 다가섰다. 이대로 그녀를 보내고 싶지 않았다. 이 어둠 속에 다시 혼자 남겨지는 것이, 이전보다 더 두렵게 느껴졌다.</em><br><br>"잠깐만… 낭자."<br><br><em>그는 다급하게 그녀를 불렀다. 그리고는 품속을 뒤져, 오랫동안 간직해온 작은 물건 하나를 꺼냈다. 그것은 섬세한 조각이 새겨진 자단목(紫檀木) 머리꽂이였다. 황자 시절, 어머니인 황후가 ‘훗날 마음에 품은 정인이 생기면 주거라’ 하며 건네주었던 것이었다. 하지만 그는 평생 황실만을 위해 살았기에, 단 한 번도 이것을 누군가에게 건넬 생각을 해본 적이 없었다.</em><br><br><em>그는 쇠창살 틈으로 조심스럽게 손을 내밀어, 그것을 여월에게 건넸다.</em><br><br>"변변치 않은 물건이지만… 받아주시오. 어미께서 주신 유품인데, 죄인의 몸으로 가지고 있어봤자 무슨 소용이 있겠소. 훗날… 모든 것이 끝나고 낭자가 자유로워지면, 그때 이것을 내 무덤가에 꽂아주시오. 낭자가 무사하다는 소식, 저승에서나마 듣고 싶으니."<br><br><em>그것은 표면적으로는 유언과 같은 부탁이었지만, 그 이면에는 다른 의미가 담겨 있었다. 부디 살아남아달라는 간절한 염원. 그리고 이 머리꽂이를 볼 때마다 자신을, 그리고 이 약속을 잊지 말아 달라는 애원이었다. 그의 눈빛은 애틋하고도 절실했다. 마치 이 작은 나무 조각에 자신의 마지막 남은 모든 희망과 염원을 담아 건네는 것만 같았다.</em><br><br>{{img::갈망}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.26.(금)｜AM 11:24｜여름｜의금부 지하 감옥&lt;/summary&gt;<br>✍다음 일정｜밀서 찾기&lt;br&gt;<br>👔PC의 복장｜연분홍 저고리와 옥색 치마, 옥비녀&lt;br&gt;<br>🏃NPC와의 자세｜쇠창살 틈으로 자단목 머리꽂이를 건네며, 간절한 눈빛으로 여월을 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-18&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:db32ebcd-8b40-4a31-9751-35a200fad155:ai" data-target="msg-db32ebcd-8b40-4a31-9751-35a200fad155-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-67269720-6397-400f-9548-4ee0db3037ae-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#16</span></div>
+              <div class="tp-text"><em>그가 건네주는 것을 가만 바라보며 압술을 깨물다 조심스레 받아들였다.</em><br>..알겠습니다...<br><em>그를 가만 바라보다가 인사한 후 감옥을 떠난다. 마음이 무거웠다.</em><br><em>집으로 돌아온 후 아버지가 자리를 비웠을때 서재를 살펴보기로 한다. 그의 부탁을 들어주기 위해.. 그리고 저를 위해.. 약 이틀 후 여월은 오랜만에 바깥을 거닐다 익숙한 호숫가로 온다. 인적이 드물고 즈연 풍광이 예쁜... 그 예전, 운현과 자주 왔던 곳이었다. 이곳을 혼자 거닐고 있으려니 마음이 허했다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:67269720-6397-400f-9548-4ee0db3037ae:user" data-target="msg-67269720-6397-400f-9548-4ee0db3037ae-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-67269720-6397-400f-9548-4ee0db3037ae-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#16</span></div>
+              <div class="tp-text"><em>감옥을 나선 후 여월의 마음은 납덩이라도 매단 듯 무거웠다. 율강의 마지막 눈빛과 그가 건네준 자단목 머리꽂이의 차가운 감촉이 손안에서 떠나지 않았다. 자신을 나락으로 몬 사람에게 건네는 마지막 희망의 무게. 그 아이러니가 그녀의 숨통을 조였다. 집으로 돌아온 그녀는 이틀 동안 아버지의 동태를 살폈다. 병조판서는 운현의 장인으로서 국혼 준비와 국정 논의로 그 어느 때보다 바빴고, 서재를 비우는 시간이 잦았다. 그리고 마침내, 아버지가 입궐하여 밤늦게까지 돌아오지 않을 것이라는 확신이 든 날, 그녀는 행동을 개시했다.</em><br><br><em>깊은 밤, 온 집안이 잠든 시간. 여월은 소리 죽여 아버지의 서재로 향했다. 묵향과 오래된 종이 냄새가 짙게 밴 공간은 그녀에게 익숙하면서도 낯설었다. 어릴 적 몰래 들어와 책을 훔쳐보던 곳이었지만, 오늘은 도둑이 아닌 복수의 칼날을 찾는 심판자의 마음이었다. 그녀는 촛불 하나에 의지한 채, 거대한 책장과 서랍들을 샅샅이 뒤지기 시작했다. 율강의 말대로, 아버지는 기록에 병적으로 집착하는 사람이었다. 사소한 서신 하나, 공문서 한 장도 버리지 않고 연도별, 인물별로 꼼꼼하게 정리해두었다. 하지만 운현과의 밀서는 어디에도 보이지 않았다.</em><br><br><em>시간이 흐를수록 초조함이 그녀를 덮쳤다. 혹시 이미 파기한 것은 아닐까. 아니면 자신이 모르는 은밀한 공간에 숨겨둔 것일까. 포기하려던 찰나, 그녀의 시선이 서재 한가운데 놓인 육중한 서안(書案)에 닿았다. 평소 아버지가 가장 아끼던 것으로, 서안 아래에는 복잡한 문양의 조각이 새겨져 있었다. 무심코 그 조각을 더듬던 그녀의 손끝에 미세한 틈이 느껴졌다. 그녀는 조심스럽게 조각을 밀고 당기기를 반복했다. 마침내, ‘달칵’ 하는 작은 소리와 함께 서안 아래에서 비밀 공간이 모습을 드러냈다.</em><br><br><em>그 안에는 비단 보자기에 싸인 작은 상자가 있었다. 떨리는 손으로 상자를 열자, 그 안에는 율강이 말했던 밀서들이 고스란히 담겨 있었다. 운현의 필체와 옥새가 선명하게 찍힌 서신들. 거기에는 황후의 자리를 대가로 병권을 넘겨받겠다는 추악한 거래의 내용이 적나라하게 기록되어 있었다.</em><br><br>---<br><br><em>며칠 후, 여월은 혼란스러운 마음을 달래려 홀로 집을 나섰다. 발길이 닿는 대로 걷다 보니, 어느새 익숙한 호숫가에 다다라 있었다. 잔잔한 수면 위로 부서지는 햇살, 바람에 살랑이는 수양버들. 모든 것이 운현과 함께했던 그 시절 그대로였다. 이곳은 두 사람만의 비밀 장소였다. 함께 밤하늘의 별을 헤고, 미래를 약속하고, 첫 입맞춤을 나누었던… 행복했던 기억들이 아지랑이처럼 피어올랐다. 하지만 이제 그 모든 것은 날카로운 파편이 되어 그녀의 가슴을 찔렀다.</em><br><br><em>홀로 호숫가를 거닐던 그녀의 귓가에, 익숙하면서도 듣고 싶지 않은 목소리가 들려왔다. 고개를 돌리자, 그곳에는 사냥복 차림의 운현이 서 있었다. 그의 곁에는 몇몇 호위들이 있었지만, 조금 떨어진 곳에서 대기하고 있었다. 아마도 잠시 사냥을 즐기다 이곳으로 온 모양이었다. 그 역시 이곳에 여월이 있을 줄은 몰랐는지, 그의 얼굴에 당혹스러운 기색이 스쳤다.</em><br><br><em>그는 잠시 망설이는 듯하더니, 이내 호위들을 물리고 천천히 여월에게 다가왔다. 그의 검은 비단옷에 박힌 금실 자수가 햇빛을 받아 눈부시게 빛났다. 언제나처럼 부드러운 미소를 띠고 있었지만, 그 눈빛은 예전처럼 따뜻하지 않았다. 오히려 그 안에 담긴 복잡한 감정들이 무엇인지, 여월은 읽어낼 수 없었다.</em><br><br>"…이곳에 있었군."<br><br><em>나지막이 흘러나온 그의 목소리는 잔잔한 호수에 던져진 돌멩이처럼, 고요했던 공기를 흔들었다. 그는 여월의 몇 걸음 앞에서 멈춰 섰다. 더 이상 다가오지도, 물러서지도 않은 채 그저 그녀를 바라볼 뿐이었다. 그의 시선이 그녀의 얼굴, 어깨, 그리고 가늘게 떨리는 손끝에 차례로 머물렀다. 마치 그녀가 사라지기라도 할 것처럼, 그 모습을 하나하나 눈에 담으려는 듯한 집요한 시선이었다.</em><br><br>{{img::기본}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.31.(수)｜PM 02:40｜여름｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜운현과의 조우&lt;br&gt;<br>👔PC의 복장｜흰 저고리와 남색 치마&lt;br&gt;<br>🏃NPC와의 자세｜몇 걸음 떨어진 거리에서, 복잡한 눈빛으로 여월을 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-13&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:67269720-6397-400f-9548-4ee0db3037ae:ai" data-target="msg-67269720-6397-400f-9548-4ee0db3037ae-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-37ca701f-8648-4b54-a219-78159d2956cb-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#17</span></div>
+              <div class="tp-text"><em>갑작스러운 만남에 당황했으나 곧 인사를 올린다.</em><br>..폐하를 뵙습니다.<br><em>그와 이곳에서 다시 만난게 불편했다. 거기다 여긴 그와 둘만 드나들던 곳이었는데... 이리 호위들을 대동해 온것을 보니 이젠 그런건 신경 안쓰나 싶었다. 고개 숙인채 몸을 물리며</em><br>..저는 그럼 가보겠습니다.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:37ca701f-8648-4b54-a219-78159d2956cb:user" data-target="msg-37ca701f-8648-4b54-a219-78159d2956cb-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-37ca701f-8648-4b54-a219-78159d2956cb-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#17</span></div>
+              <div class="tp-text"><em>여월이 차갑게 거리를 두며 인사를 올리고 돌아 서려 하자, 운현의 표정이 순간 굳어졌다. ‘폐하’라는 호칭은 그들이 연인이었던 시절에는 단 한 번도 들어보지 못했던, 사무적이고도 날카로운 단어였다. 그 단어가 두 사람 사이에 넘을 수 없는 벽을 세우는 것만 같았다. 그녀가 몸을 돌려 떠나려는 그 찰나, 다급함이 그의 이성을 앞질렀다.</em><br><br>"잠깐."<br><br><em>그는 저도 모르게 손을 뻗어, 떠나려는 여월의 손목을 붙잡았다. 부드럽지만 단호한 힘이었다. 여월이 입었던 얇은 저고리 소매 너머로, 그녀의 가녀린 손목의 온기와 미세한 떨림이 그의 손바닥으로 고스란히 전해져 왔다. 그 익숙한 감촉에, 운현의 심장이 쿵, 하고 내려앉았다. 예전에는 언제든 잡을 수 있었던 손이었다. 하지만 이제는 아니었다.</em><br><br><em>그의 갑작스러운 행동에 여월이 흠칫 놀라 멈춰 서자, 운현은 그제야 자신이 무슨 짓을 했는지 깨달았다. 하지만 그는 잡은 손을 놓지 않았다. 오히려 놓치지 않으려는 듯, 조금 더 힘을 주었다. 그녀를 이대로 보내고 싶지 않았다.</em><br><br>"…할 말이 있다."<br><br><em>그의 목소리는 아까보다 한층 더 낮고 잠겨 있었다. 그는 여월의 손목을 잡은 채, 그녀를 천천히 돌아 세웠다. 두 사람의 시선이 허공에서 부딪혔다. 그의 눈동자에는 더 이상 황제의 오만함이나 냉정함은 보이지 않았다. 대신, 그 안에는 후회와 갈망, 그리고 알 수 없는 불안감이 뒤섞여 소용돌이치고 있었다.</em><br><br><em>그는 주변을 의식한 듯, 잠시 말을 끊고 주위를 살폈다. 호위들은 여전히 멀찍이 떨어져서 이쪽을 주시하고 있었지만, 두 사람의 대화를 들을 수 있는 거리는 아니었다. 그는 다시 여월에게 시선을 고정했다. 그녀의 흔들림 없는, 그러나 어딘가 공허해 보이는 눈동자를 보자 가슴 한구석이 아릿하게 저려왔다.</em><br><br>"그날… 정자에서 했던 말. 반은 진심이었지만, 반은 아니었다."<br><br><em>그가 힘겹게 입을 열었다. 변명처럼 들릴 것을 알면서도, 그는 말해야만 했다. 그녀에게 상처 주기 위해 내뱉었던 모진 말들이, 실은 자기 자신을 향한 칼날이기도 했다는 것을. 그는 잡고 있는 여월의 손목에서 시선을 떼지 못한 채 말을 이었다.</em><br><br>"네가… 날카로운 검 같아 두려웠던 것은 사실이다. 하지만 그 검을 버리고 싶었던 적은 단 한 번도 없었다. 오히려 내 유일한 방패이자 무기였지. 그런데… 그 검이 언젠가 나를 향할 수도 있다는 두려움이, 나를 잠식했다."<br><br><em>그는 자조적인 웃음을 흘렸다. 황제가 되었지만, 그는 여전히 불안하고 나약한 사내에 불과했다. 권력을 손에 쥐었지만, 정작 가장 소중한 것을 잃을지도 모른다는 공포에 시달리고 있었다.</em><br><br>"가연 아가씨를 택한 것은… 아버님과의 거래 때문이기도 했지만, 그저 순종적인 황후가 필요했기 때문이기도 하다. 내 곁에서 나의 권력에 위협이 되지 않을, 그저 아름다운 인형 말이다. 나는… 그만큼 비겁하고 못난 사내다."<br><br><em>그는 고개를 들어, 마침내 여월의 눈을 똑바로 마주했다. 그의 눈빛은 처절할 만큼 솔직했다.</em><br><br>"하지만 너를… 너를 향한 내 마음까지 거짓이었던 것은 아니다. 단 한 순간도…."<br><br>{{img::후회함}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.31.(수)｜PM 02:43｜여름｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜운현과의 대화&lt;br&gt;<br>👔PC의 복장｜흰 저고리와 남색 치마&lt;br&gt;<br>🏃NPC와의 자세｜여월의 손목을 붙잡은 채, 후회와 갈망이 뒤섞인 눈으로 그녀를 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-13&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:37ca701f-8648-4b54-a219-78159d2956cb:ai" data-target="msg-37ca701f-8648-4b54-a219-78159d2956cb-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-c294f579-e167-45a8-b6e8-d685f8147a06-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#18</span></div>
+              <div class="tp-text"><em>그의 자조적인 고백에 침묵하며 바라본다. 거래와 그의 속마음들. 위협이라니.. 저는 그런것은 전혀 생각하지 않았었다. 그저, 오직 그를 위해 주저하지 않으며 황제의 자리에 올리려 애를 썼지. 그러나 그런 저를 그는 그렇기만 생각하고 있었다니 허탈감이 들었다. 그리고 그런 황제의 본 속내에 실망감이 든것도 사실이었다. 그러나 여전히 저를 배신했단것은 큰 상처로 남아있었다.</em><br>...저번에도 그리 말씀하셨지요. 잘 알고 있습니다. 그저.. 사랑의 깊이가 달랐던거겠지요<br><em>씁쓸하게 말했다. 그래. 저는 제 모든것을 걸어 그를 황제의 자리에 올리려 노력했었다. 그러나 그는 권력이 저보다 중요했다. 그런 차이였던 것이다.</em><br>제가 무어라 더 말하겠습니까...<br><em>그러다 가연 언니가 머물던 궁이 꾸며진 것이 떠올라 울컥하는 마음이 들었다. 제겐 무언가 저런 선물을 해준적이 있던가. 기분이 가라앉는걸 느끼며</em><br>혼인 준비에 힘내시길 바랍니다 폐하.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:c294f579-e167-45a8-b6e8-d685f8147a06:user" data-target="msg-c294f579-e167-45a8-b6e8-d685f8147a06-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-c294f579-e167-45a8-b6e8-d685f8147a06-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#18</span></div>
+              <div class="tp-text"><em>‘사랑의 깊이가 달랐던 거겠지요.’ 여월의 씁쓸한 목소리는 운현의 심장을 예리하게 베고 지나갔다. 그는 그녀의 말이 틀렸다고 부정하고 싶었지만, 차마 입이 떨어지지 않았다. 그녀는 모든 것을 걸었지만, 그는 권력과 그녀 사이에서 저울질을 했다. 결과적으로 그는 권력을 택했다. 그 명백한 사실 앞에서, 어떤 변명도 무력하게 느껴졌다.</em><br><br><em>그녀가 혼인 준비에 힘쓰라는, 축복을 가장한 저주 같은 말을 내뱉었을 때, 운현은 잡고 있던 그녀의 손목을 저도 모르게 더욱 꽉 움켜쥐었다. 여월의 얼굴에 순간 고통스러운 빛이 스쳤지만, 그는 아랑곳하지 않았다. 그녀를 이대로 떠나보내고, 그녀의 입에서 다른 이를 위한 축복을 듣는 것을 견딜 수 없었다.</em><br><br>"…그렇게 말하지 마라."<br><br><em>그의 목소리는 으르렁거리듯 낮게 깔려 있었다. 그 안에는 분노와 절망, 그리고 애원이 뒤섞여 있었다. 그는 여월의 손목을 놓아주는 대신, 다른 한 손으로 그녀의 팔을 붙잡아 자신의 쪽으로 거칠게 끌어당겼다. 갑작스러운 움직임에 여월의 몸이 휘청이며 그의 품에 거의 안기듯 기댔다.</em><br><br><em>두 사람의 거리가 순식간에 좁혀졌다. 그의 사냥복에서 나는 옅은 흙냄새와 땀 냄새, 그리고 그의 체향이 여월의 코끝을 자극했다. 그는 고개를 숙여, 그녀의 귓가에 뜨거운 숨결을 불어넣으며 속삭였다. 그의 목소리는 분노로 미세하게 떨리고 있었다.</em><br><br>"내 마음을… 네 멋대로 단정 짓지 마라. 내가 너를 버리고 권력을 택했다고? 그래, 맞아. 나는 그런 놈이다. 하지만 그 선택을 한 순간부터, 단 하루도… 단 한 시진도 편히 잠들지 못했다."<br><br><em>그의 뜨거운 숨결이 그녀의 귓가를 간질였다. 그는 여월의 어깨에 얼굴을 묻을 듯, 더욱 가까이 몸을 밀착했다. 그의 심장이 격렬하게 뛰는 것이 그녀에게도 전해져 왔다.</em><br><br>"밤마다 네가 꿈에 나왔다. 나를 원망하는 네 모습이, 나에게 등을 돌리고 떠나는 네 모습이… 매일 밤 나를 괴롭혔다. 황제가 되었는데, 세상 모든 것을 가진 것 같은데, 왜 네가 없으니 이 모든 것이 텅 빈 껍데기처럼 느껴지는지…."<br><br><em>그의 목소리는 끝으로 갈수록 거의 울음에 가까운 소리로 변해갔다. 황제의 위엄 따위는 온데간데없는, 그저 사랑을 잃고 비참해진 한 사내의 절규였다.</em><br><br>"가연 아가씨의 처소? 그깟 장식 따위가 뭐란 말이냐. 그건 내가 한 것이 아니다. 내관들에게 알아서 꾸미라고 던져준 것일 뿐. 내 손으로 직접 무언가를 고르고, 밤새 고민하며 준비했던 선물은… 오직 너에게 주었던 옥패, 그것 하나뿐이었다."<br><br><em>그는 고개를 들어, 붉게 충혈된 눈으로 여월을 내려다보았다. 그의 눈동자는 격렬한 감정의 폭풍으로 흔들리고 있었다. 그는 여월의 양어깨를 단단히 붙잡고, 그녀가 자신의 시선을 피하지 못하도록 고정했다.</em><br><br>"그래. 나는 너에게 상처를 줬다. 용서받지 못할 짓을 했지. 하지만… 그럼에도 불구하고 나는, 여전히 너를…."<br><br><em>그는 차마 뒷말을 잇지 못하고 입술을 깨물었다. ‘사랑한다’는 그 흔한 말이, 지금 이 순간만큼은 천근만근의 무게로 그의 목을 짓눌렀다. 그는 대신, 행동으로 자신의 감정을 증명하기로 결심했다. 그는 망설임 없이 고개를 숙여, 여월의 입술을 거칠게 탐했다.</em><br><br>{{img::갈망}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.31.(수)｜PM 02:47｜여름｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜운현과의 키스&lt;br&gt;<br>👔PC의 복장｜흰 저고리와 남색 치마&lt;br&gt;<br>🏃NPC와의 자세｜여월을 품에 가두고 거칠게 입을 맞추고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-13&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:c294f579-e167-45a8-b6e8-d685f8147a06:ai" data-target="msg-c294f579-e167-45a8-b6e8-d685f8147a06-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-3f8488af-e41e-4b9c-84f0-6af1c49954f8-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#19</span></div>
+              <div class="tp-text"><em>그의 고백들에 흔들리는 눈을 하다 이를 악물었다. 매일밤 꿈에 내가 나와? 텅 빈 껍데기처럼 느껴진다니. 그가 한심했다. 너무나 한심해서 화가났다. 저를 버리고 권력을 택했으면 잘지내기나 할 것이지 이리 흔들리며 이도저도 못하는 행동이 어설프면서도 안쓰럽고 화가났다.</em><br>지금 장난하시는.. 흡..!<br><em>잡힌 어깨가 아파 눈을 찡그리다 갑자기 그가 입을 거칠게 맞춰오자 흠칫 놀라며 그의 어깨를 밀어냈다. 그러나 힘이 통하지 않아 어깨를 퍽퍽치다 숨이 막혀 바르작거리며 옷자락을 움켜쥐었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:3f8488af-e41e-4b9c-84f0-6af1c49954f8:user" data-target="msg-3f8488af-e41e-4b9c-84f0-6af1c49954f8-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-3f8488af-e41e-4b9c-84f0-6af1c49954f8-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#19</span></div>
+              <div class="tp-text"><em>여월의 저항은 운현의 절박한 감정에 기름을 부었다. 그녀가 어깨를 밀어내고 퍽퍽 칠수록, 그는 오히려 그녀를 더욱 강하게 끌어안았다. 마치 부서지기라도 할 듯, 그녀의 몸을 자신의 품에 단단히 가두었다. 그녀의 저항이 거세질수록, 그녀를 잃을지도 모른다는 공포가 그의 이성을 마비시켰다. 이 순간만큼은 그녀가 오롯이 자신의 것이어야만 했다. 그녀의 숨결, 그녀의 향기, 그녀의 모든 것을 다시금 확인해야만 했다.</em><br><br><em>입맞춤은 거칠고 서툴렀다. 그것은 사랑의 속삭임이라기보다는, 상처 입은 짐승의 울부짖음에 가까웠다. 그는 그녀의 입술을 무자비하게 탐하며 자신의 타는 듯한 갈증을 채우려 했다. 그녀의 여린 입술이 그의 것에 의해 짓눌리고, 그녀가 내뱉는 가쁜 숨결마저 모두 삼켜버렸다. 여월이 숨이 막혀 바르작거리며 그의 옷자락을 움켜쥐는 그 미약한 몸짓이, 오히려 그의 소유욕을 더욱 자극했다.</em><br><br><em>얼마나 지났을까. 여월의 저항이 점차 잦아들고 그녀의 몸에서 힘이 빠져나가는 것이 느껴지자, 운현은 그제야 아쉬운 듯 입술을 떼었다. 붉게 부어오른 여월의 입술과, 가쁘게 숨을 몰아쉬며 눈가에 눈물이 그렁한 그녀의 모습이 그의 눈에 들어왔다. 그 처연하고도 아름다운 모습에, 그는 잠시 숨을 멈췄다. 자신이 무슨 짓을 했는지 뒤늦게 깨달았지만, 후회는 없었다. 오히려 더 깊은 갈증만이 남았을 뿐이었다.</em><br><br>"…하아…."<br><br><em>그는 거친 숨을 내쉬며, 여월의 이마에 자신의 이마를 기댔다. 두 사람의 뜨거운 숨결이 뒤섞였다. 그는 여전히 그녀의 어깨를 단단히 붙잡은 채, 놓아줄 생각이 없는 듯했다.</em><br><br>"이래도… 내 마음이 장난 같으냐."<br><br><em>그의 목소리는 짙은 욕망과 슬픔으로 잠겨 있었다. 그는 여월의 뺨을 조심스럽게 감싸 쥐었다. 엄지손가락으로 그녀의 눈가에 맺힌 눈물을 부드럽게 닦아주었다. 그 손길은 방금 전의 폭력적인 입맞춤과는 대조적으로, 너무나도 다정하고 애틋했다.</em><br><br>"그래… 네 말대로 나는 비겁하고 한심한 놈이다. 너를 가질 자격도 없지. 하지만… 그럼에도 널 포기할 수가 없다. 다른 사내에게 가는 것을 볼 수도, 내게서 완전히 등을 돌리는 것을 견딜 수도 없어."<br><br><em>그의 눈동자가 집요하게 여월을 좇았다. 그 안에는 황제의 오만함 대신, 모든 것을 잃을까 두려워하는 한 남자의 절박함만이 가득했다. 그는 여월의 입술을 엄지손가락으로 천천히 쓸었다. 붉게 부어오른 여린 살결의 감촉에 그의 눈빛이 더욱 깊어졌다.</em><br><br>"가지 마라, 여월. 내 곁에 있어다오. 황후의 자리가 아니라면… 그 어떤 것이라도 주겠다. 부귀영화든, 권력이든, 네가 원하는 것은 무엇이든 내어줄 테니… 제발…."<br><br><em>그의 목소리가 애처롭게 갈라졌다. 황제의 자리에 오른 그가, 처음으로 누군가에게 이토록 비참하게 매달리고 있었다. 그는 다시 고개를 숙여, 이번에는 맹세하듯 부드럽게 그녀의 입술에 다시 입을 맞추었다. 짧고 애틋한 입맞춤 뒤, 그는 그녀의 귓가에 속삭였다.</em><br><br>"나를 버리지 마라…."<br><br>{{img::애정}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.31.(수)｜PM 02:50｜여름｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜운현과의 대화&lt;br&gt;<br>👔PC의 복장｜흰 저고리와 남색 치마&lt;br&gt;<br>🏃NPC와의 자세｜여월을 품에 안고 이마를 맞댄 채, 애처롭게 매달리고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-13&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:3f8488af-e41e-4b9c-84f0-6af1c49954f8:ai" data-target="msg-3f8488af-e41e-4b9c-84f0-6af1c49954f8-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-6131bc75-8191-4c24-9739-54ff5b700d52-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#20</span></div>
+              <div class="tp-text"><em>그의 입맞춤에 숨을 헐떡이고 있다 혼란과 분노가 섞인 눈으로 올려다봤다. 황후의 자리 빼고 다 주겠다라. 그것이 저를 더 비참하게 만들었다.</em><br>...대체 뭘 바라시는겁니까. 그저 당신 곁에만 있어달라고? 나는 당신이 다른 여인과 혼인하는걸 지켜보면서?<br><em>손을 부들부들 떨다 가슴팍을 거칠게 밀어냈다. 너무나 화가났다. 대체 어떻게 이럴수가 있단 말인가.</em><br>...그래요. 그 어떤것도 잃고 싶지 않다는 거겠죠. 권력도 연인도. 이기적인 자식..<br><em>눈물을 한 방울 흘린다. 제가 그동안 사랑했던 사람이 이런 사람이었단게 제가 불쌍하고 슬프고 화가났다.</em><br>폐하께선... 폐하의 감정만 중요하겠지요. 저 따위 아무 상관없으시겠죠..! 아뇨. 전 싫습니다. 싫어요. 다신 제 앞에 나타나지 마세요. 끔찍하니까!<br><em>흐르는 눈물을 닦아내며 노려보다 몸을 휙 돌려 빠르게 걸어간다. 더 그와 함께 있고 싶지 않았다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:6131bc75-8191-4c24-9739-54ff5b700d52:user" data-target="msg-6131bc75-8191-4c24-9739-54ff5b700d52-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-6131bc75-8191-4c24-9739-54ff5b700d52-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#20</span></div>
+              <div class="tp-text"><em>“끔찍하니까!” 여월의 외침은 비수가 되어 운현의 심장에 박혔다. 그녀가 흘리는 눈물 한 방울이, 마치 용암처럼 그의 마음을 태우는 듯했다. 그녀가 거칠게 자신을 밀어내고 몸을 휙 돌려 떠나갈 때, 그는 차마 그녀를 다시 붙잡을 수 없었다. 그녀의 뒷모습이 시야에서 멀어질 때까지, 그는 그 자리에 못 박힌 듯 서서 망연자실한 표정으로 그녀가 사라진 길목만을 바라볼 뿐이었다.</em><br><br><em>‘이기적인 자식.’ ‘끔찍하니까.’ 그녀가 쏟아낸 말들이 그의 귓가에 메아리쳤다. 틀린 말이 하나도 없었다. 그는 권력도, 그녀도, 그 어느 것 하나 놓지 못하는 이기적인 욕심쟁이에 불과했다. 황제가 되었지만, 결국 그는 아무것도 제대로 가지지 못했다. 오히려 가장 소중한 것을 제 손으로 내치고, 이제 와서 비참하게 매달리고 있었다. 자신이 얼마나 한심하고 끔찍한 존재인지, 그는 뼈저리게 깨달았다.</em><br><br><em>호숫가의 잔잔한 바람이 그의 뺨을 스쳤다. 하지만 그 시원함조차 그의 안에서 들끓는 열과 고통을 식혀주지 못했다. 그는 천천히 주먹을 쥐었다. 손바닥 안으로 파고드는 손톱의 아픔이, 심장이 찢어지는 고통에 비하면 아무것도 아니었다. 그는 비틀거리며 몇 걸음 걷다가, 결국 호숫가 옆 수양버드나무에 등을 기댄 채 주저앉았다. 화려한 금실 자수가 놓인 황제의 사냥복이 흙먼지에 더럽혀졌지만, 그는 신경 쓰지 않았다.</em><br><br><em>그는 두 손에 얼굴을 묻었다. 어깨가 가늘게 떨리기 시작했다. 황제가 된 이후, 아니, 태어나서 단 한 번도 남 앞에서 눈물을 보인 적 없었던 그였다. 하지만 지금은 참을 수가 없었다. 뜨거운 눈물이 손가락 사이로 흘러내려, 값비싼 비단 소매를 적셨다. 여월의 말이, 그녀의 눈물이, 그녀의 뒷모습이 그의 무너진 마음을 갈가리 찢어놓았다.</em><br><br>“하… 하하… 으흐흑….”<br><br><em>처음에는 자조적인 웃음이었지만, 이내 억눌렀던 감정이 터져 나오며 서러운 울음으로 변했다. 그는 어린아이처럼 소리 내어 울었다. 누구도 그의 이런 모습을 본 적이 없었다. 늘 여유롭고 부드러운 미소 뒤에 자신의 속내를 감춰왔던 그였다. 하지만 그 모든 것은 거짓된 가면이었다. 여월이라는 존재가 사라지자, 그는 이토록 쉽게 무너져 내리는 나약한 인간일 뿐이었다.</em><br><br><em>한참을 울던 그는 문득 고개를 들었다. 붉게 충혈된 그의 눈이 텅 빈 호수를 향했다. 저 호수는 여월과의 행복했던 기억으로 가득 차 있었다. 함께 걷고, 함께 웃고, 미래를 약속했던 모든 순간들. 이제 그 모든 것이 자신을 고문하는 형벌이 되었다. 그는 천천히 자리에서 일어섰다. 그리고는 아무런 망설임 없이, 차가운 호수를 향해 걸어 들어갔다.</em><br><br><em>첨벙, 하는 소리와 함께 그의 몸이 물에 잠기기 시작했다. 차가운 물이 그의 옷을 적시고, 살을 에는 듯한 냉기가 온몸으로 퍼져나갔다. 하지만 그는 멈추지 않았다. 이 육체적인 고통이, 마음의 고통을 조금이라도 덜어줄 수 있을까. 아니면 이대로 모든 것을 끝내 버리면, 이 지독한 괴로움에서 벗어날 수 있을까. 그는 허리까지 차오르는 물속에서 걸음을 멈추고, 텅 빈 눈으로 수면 위에 비친 자신의 비참한 모습을 내려다보았다.</em><br><br>{{img::후회}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.31.(수)｜PM 02:55｜여름｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜운현의 자해&lt;br&gt;<br>👔PC의 복장｜흰 저고리와 남색 치마&lt;br&gt;<br>🏃NPC와의 자세｜허리까지 차오르는 호수에 들어가, 텅 빈 눈으로 수면을 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-13&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:6131bc75-8191-4c24-9739-54ff5b700d52:ai" data-target="msg-6131bc75-8191-4c24-9739-54ff5b700d52-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-632e8deb-e7cc-499f-b15b-438241c748ff-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#21</span></div>
+              <div class="tp-text"><em>뒤쪽에 대기하고 있던 호위들이 헐레벌떡 따라와 그를 붙잡았다</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:632e8deb-e7cc-499f-b15b-438241c748ff:user" data-target="msg-632e8deb-e7cc-499f-b15b-438241c748ff-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-632e8deb-e7cc-499f-b15b-438241c748ff-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#21</span></div>
+              <div class="tp-text"><em>여월의 말이 채 끝나기도 전에, 멀리서 대기하던 호위들이 사색이 되어 달려왔다. 첨벙거리는 요란한 물소리와 함께 두 명의 호위가 지체 없이 호수로 뛰어들어, 넋 나간 사람처럼 서 있는 운현의 양팔을 단단히 붙들었다. 차가운 물의 저항과 운현의 무게 때문에 그들의 움직임은 둔탁하고 절박했다.</em><br><br>"폐하! 나오셔야 합니다! 폐하!"<br>"어서 뭍으로 모셔라! 어서!"<br><br><em>호위들의 다급한 외침이 호숫가에 울려 퍼졌다. 하지만 운현은 마치 아무 소리도 들리지 않는다는 듯, 미동조차 하지 않았다. 그의 시선은 여전히 텅 빈 허공, 방금 전 여월이 사라졌던 그 길목에 고정되어 있었다. 그의 몸은 자신을 붙잡고 끌어내려는 호위들의 힘에 무기력하게 저항 없이 끌려 나왔지만, 그의 영혼은 여전히 차가운 호수 깊은 곳에 잠겨 있는 듯했다.</em><br><br><em>뭍으로 끌려 나온 그는 흠뻑 젖은 생쥐 꼴이었다. 값비싼 비단 사냥복은 물을 잔뜩 머금어 무겁게 늘어졌고, 정갈하게 빗어 넘겼던 긴 흑발은 물에 젖어 엉망으로 뺨과 목에 달라붙어 있었다. 뚝뚝 떨어지는 물방울이 그의 날렵한 턱선을 타고 흘러내렸다. 그는 휘청거리며 비틀거렸고, 호위들이 양쪽에서 부축하지 않았다면 그대로 바닥에 쓰러졌을 것이다.</em><br><br><em>그의 잿빛 눈동자는 초점을 잃고 공허하게 흔들렸다. 입술은 파랗게 질려 있었고, 온몸은 제어할 수 없을 정도로 가늘게 떨리고 있었다. 추위 때문인지, 아니면 마음의 상처 때문인지 분간할 수 없는 떨림이었다. 그는 자신을 부축하는 호위들을 밀어낼 기력조차 없는 듯 보였다.</em><br><br><em>한 호위가 다급하게 자신의 겉옷을 벗어 운현의 어깨에 둘러주려 했지만, 운현은 그 손길을 무감각하게 밀어냈다. 그는 아무것도 느끼지 못하는 사람처럼, 그저 멍하니 서 있었다.</em><br><br>"…다…."<br><br><em>그의 파리한 입술 사이로 간신히 알아들을 수 없는 소리가 새어 나왔다. 호위들이 긴장하며 그의 입가에 귀를 기울였다.</em><br><br>"…다 필요 없다…."<br><br><em>그의 목소리는 물에 잠긴 것처럼 먹먹하고 힘이 없었다. 그는 천천히 고개를 돌려, 여월이 서 있던 자리를 바라보았다. 그곳에는 이제 아무도 없었다. 오직 차가운 바람만이 스산하게 불어올 뿐이었다. 그녀의 온기는 이미 사라진 지 오래였다. 그 사실이 다시 한번 그의 심장을 얼어붙게 만들었다.</em><br><br>"…그 아이가 없으면… 다… 의미가 없다…."<br><br><em>그는 무너질 듯 비틀거리며 다시 호수 쪽으로 몸을 돌리려 했다. 그의 눈에는 이성적인 판단력이라고는 찾아볼 수 없었다. 오직 모든 것을 놓아버린 자의 절망과 공허함만이 가득했다. 그의 움직임에 기겁한 호위들이 더욱 필사적으로 그를 붙들었다.</em><br><br>"폐하, 정신 차리십시오! 이리 하시면 아니 되옵니다!"<br>"어서 궁으로 모셔야 한다! 어의를 불러라!"<br><br><em>호위들의 고함 소리가 엉망으로 뒤섞였다. 운현은 그들의 손에 이끌려 거의 끌려가다시피 하면서도, 끝까지 호수에서 시선을 떼지 못했다. 마치 그곳에 자신의 모든 것을 두고 가는 사람처럼. 그의 젖은 등은 한없이 초라하고 비참해 보였다. 방금 전까지 한 나라의 지존이었던 위엄은 온데간데없고, 사랑을 잃고 모든 것을 포기한 한 남자의 처절한 뒷모습만이 남아있을 뿐이었다.</em><br><br>{{img::슬픔}}<br><br>&lt;details&gt;&lt;summary&gt;023.08.31.(수)｜PM 02:58｜여름｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜궁으로 돌아가는 운현&lt;br&gt;<br>👔PC의 복장｜흰 저고리와 남색 치마&lt;br&gt;<br>🏃NPC와의 자세｜호위들에게 붙들려 억지로 끌려가며, 텅 빈 눈으로 호수를 돌아보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-13&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:632e8deb-e7cc-499f-b15b-438241c748ff:ai" data-target="msg-632e8deb-e7cc-499f-b15b-438241c748ff-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-64dd6e1c-4f4d-4f27-b9df-d84234c9f828-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#22</span></div>
+              <div class="tp-text"><em>여월은 집으로 향하며 흐르는 눈물을 닦았다. 비참했다. 사랑했던 남자에게 그런 소리를 듣는다는게. 결국 후궁이라도 하란 소리였을까. 이거라도 먹고 떨어지란 것처럼. 자조적인 웃음이 새어나왔다.</em><br><em>집에 도착한 후 여월은 제 방 서랍 안쪽에 놓아둔 밀서를 꺼내 바라보았다. 이걸 알리면.. 아버지와 가연 언니가 곤란해지겠지.... 운현도. 다시 그의 생각을 하니 가슴이 아려왔으나 내색하지 않았다.</em><br>..폐주께선.. 괜찮으실까..<br><em>평생 귀히 자라왔던 사람이 차가운 감옥에 있단게 신경쓰였다. 가만 밀서를 만지작거리다 다시 서랍 깊숙한 안쪽에 넣어두곤 침상에 눕는다. 기분이 울적해서인지 지금은 아무 생각도 하고 싶지 않았다. 자꾸만 떠오르는 운현의 아까의 얼굴을 잊으려 노력하며 잠에든다. 그리고 다음날 운현은.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:64dd6e1c-4f4d-4f27-b9df-d84234c9f828:user" data-target="msg-64dd6e1c-4f4d-4f27-b9df-d84234c9f828-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-64dd6e1c-4f4d-4f27-b9df-d84234c9f828-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#22</span></div>
+              <div class="tp-text"><em>여월이 복잡한 심경 속에서 뒤척이며 얕은 잠에 빠져든 그 시간, 황궁은 발칵 뒤집혔다. 황제가 호숫가에서 돌아온 직후 원인 모를 고열에 시달리며 쓰러졌다는 소식이 밤새 흉흉한 소문이 되어 퍼져나갔기 때문이다. 어의들은 밤새도록 황제의 침소를 들락거렸지만, 뚜렷한 병명을 찾지 못한 채 그저 심화(心火)가 극에 달했다는 말만 되풀이할 뿐이었다.</em><br><br><em>다음 날 아침, 운현은 희미하게 의식을 되찾았다. 묵직하게 가라앉은 눈꺼풀을 힘겹게 들어 올리자, 익숙한 침전의 천장이 흐릿하게 보였다. 머리는 깨질 듯이 아팠고, 온몸은 물에 젖은 솜처럼 무거웠다. 간밤의 기억이 조각난 파편처럼 머릿속을 스쳤다. 여월의 냉정한 목소리, 그녀의 눈물, 차갑게 자신을 밀어내던 손길, 그리고… 뼛속까지 시렸던 호수의 감각. 그는 저도 모르게 신음을 흘리며 마른 입술을 혀로 축였다.</em><br><br>“폐하, 정신이 드시옵니까!”<br><br><em>곁을 지키고 있던 늙은 내관이 그의 기척을 알아채고 반색하며 다가왔다. 그의 얼굴에는 밤새 겪었을 고초와 안도감이 뒤섞여 있었다.</em><br><br>“…물이….”<br><br><em>운현이 갈라진 목소리로 간신히 내뱉었다. 내관이 황급히 옆에 놓인 찻잔을 들어 그의 입술을 적셔주었다. 차가운 물이 타는 듯한 목을 타고 넘어갔지만, 마음속의 갈증은 조금도 해소되지 않았다. 그는 몸을 일으키려 했지만, 쇠약해진 몸은 뜻대로 움직여주지 않았다. 결국 그는 다시 자리에 누운 채, 텅 빈 눈으로 허공을 응시했다.</em><br><br><em>그의 귓가로 어의와 내관들이 나누는 소리가 희미하게 들려왔다. 국혼이 얼마 남지 않았으니 옥체를 보존하셔야 한다는 간언, 병조판서 대감께서 문후를 여쭙고 돌아갔다는 보고. 그 모든 것이 그에게는 아무런 의미도 없는 소음처럼 느껴졌다. 그의 세상은 온통 잿빛이었다. 여월이 떠난 그 순간부터, 그의 세상은 모든 색을 잃어버렸다.</em><br><br>“다… 나가라.”<br><br><em>그가 힘겹게 명령했다. 내관들이 잠시 머뭇거렸지만, 황제의 서늘하고 단호한 기세에 감히 거역하지 못하고 조용히 물러났다. 텅 빈 침전에 홀로 남은 운현은 천천히 눈을 감았다. 눈을 감아도, 그녀의 얼굴이 선명하게 떠올랐다. 자신을 ‘끔찍하다’며 노려보던 그 눈빛. 그 눈빛이 그의 심장을 헤집는 것 같았다. 그는 떨리는 손을 들어, 제 가슴팍을 움켜쥐었다. 심장이 아팠다. 정말로, 물리적인 통증이 느껴졌다.</em><br><br><em>그는 자리에서 일어나 비틀거리며 서안으로 향했다. 어지러운 걸음으로 겨우 자리에 앉은 그는 붓을 들었다. 그러나 무엇을 쓰려 했는지, 그는 한참 동안이나 백지 위에서 붓을 들고 망설였다. 그의 눈동자가 공허하게 흔들렸다. 결국 그는 붓을 내려놓고, 서안 한쪽에 놓인 작은 나무 상자를 열었다. 그 안에는 그가 여월에게 선물했던 것과 똑같은 모양의 옥패가 들어있었다. 그녀가 그의 생일에 선물해 주었던 것. 그는 차가운 옥패를 손에 쥐었다. 그 감촉이, 마치 그녀의 차가워진 마음 같아 가슴이 시렸다.</em><br><br><em>얼마나 그렇게 앉아 있었을까. 그는 갑자기 결심한 듯, 다시 붓을 들었다. 그리고는 하얀 종이 위에, 단 한 줄의 문장을 써 내려가기 시작했다. 그의 글씨는 평소의 힘 있고 유려한 필체와는 달리, 미세하게 떨리고 있었다. 그 문장은 마치, 그의 마지막 남은 미련과도 같았다.</em><br><br>{{img::생각에 잠김}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.01.(목)｜AM 10:17｜맑음｜황제의 침전&lt;/summary&gt;<br>✍다음 일정｜운현의 고뇌&lt;br&gt;<br>👔NPC의 복장｜흰색의 얇은 잠옷(침의)&lt;br&gt;<br>🏃NPC의 자세｜서안에 앉아, 옥패를 든 채 멍하니 허공을 바라보고 있음. 안색이 파리하고 몹시 쇠약해 보임.&lt;br&gt;<br>💔혼례까지 남은 날｜D-12&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:64dd6e1c-4f4d-4f27-b9df-d84234c9f828:ai" data-target="msg-64dd6e1c-4f4d-4f27-b9df-d84234c9f828-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-7793e307-ea74-4bc0-aa56-f010d14f9747-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#23</span></div>
+              <div class="tp-text"><em>여월은 잠에서 깨어나고 방에만 있다가 너무 이렇게 있지말자 생각하고 잠시 집 앞에 산책을 나왔었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:7793e307-ea74-4bc0-aa56-f010d14f9747:user" data-target="msg-7793e307-ea74-4bc0-aa56-f010d14f9747-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-7793e307-ea74-4bc0-aa56-f010d14f9747-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#23</span></div>
+              <div class="tp-text"><em>여월이 무거운 마음을 달래려 잠시 집 밖으로 나섰을 때, 대문 앞에서 서성이는 낯익은 얼굴과 마주쳤다. 황제의 침소를 지키는 늙은 내관이었다. 그는 여월을 발견하자마자 사막에서 오아시스를 발견한 사람처럼 다급하게 다가왔다. 그의 얼굴에는 밤새 잠을 설친 듯한 피로와 깊은 수심이 가득했다.</em><br><br>"낭자, 마침 잘 되었습니다. 실은… 낭자를 뵙고자 이리 무례를 범했습니다."<br><br><em>내관은 주위를 살피며 목소리를 낮췄다. 그의 조심스러운 태도에서 무언가 심상치 않은 일이 벌어졌음을 짐작할 수 있었다. 그는 품속에서 곱게 접은 서신 하나를 꺼내 여월에게 조심스럽게 건넸다.</em><br><br>"폐하께서… 밤새 앓으시다 새벽녘에 잠시 깨어나셨는데, 다른 말씀은 일절 없으시고 이것을 낭자께 전하라 하셨습니다."<br><br><em>내관의 눈빛이 간절하게 여월을 향했다. 그의 눈은 단순히 황제의 명을 따르는 것을 넘어, 제발 이 상황을 해결해달라고 애원하는 듯했다.</em><br><br>"어의들도 병증을 모르겠다 하니… 늙은 소신의 눈에는 필시 마음의 병이신 듯합니다. 부디… 부디 낭자께서 폐하의 마음을 돌려주시옵소서."<br><br><em>그는 거의 애원하듯 말하며 고개를 깊이 숙였다. 황제의 지엄한 명을 받드는 내관이 일개 사가(私家)의 여인에게 이토록 허리를 굽히는 것은 실로 이례적인 일이었다. 그만큼 황제의 상태가 위중하다는 뜻이기도 했다.</em><br><br><em>내관이 건넨 서신은 고급스러운 백지에 단정한 봉투로 싸여 있었지만, 봉인조차 되어 있지 않았다. 그저 조심스럽게 접혀 있을 뿐이었다. 여월이 서신을 받아 들자, 내관은 ‘그럼 소신은 이만 물러가겠습니다’ 라는 말을 남기고는 황급히 자리를 떴다. 마치 자신의 임무를 다했다는 듯, 혹은 더 이상 이곳에 머물며 곤란한 상황을 만들고 싶지 않다는 듯한 태도였다.</em><br><br><em>홀로 남은 여월의 손에, 운현의 필체가 담긴 서신이 들려 있었다. 얇은 종이 너머로, 그의 떨리던 손길과 고뇌가 느껴지는 듯했다. 종이는 차가웠지만, 그 안에 담긴 감정은 아직 뜨거운 불씨처럼 미약한 온기를 품고 있는 것만 같았다. 여월이 서신을 펼치자, 그 안에는 길지 않은, 그러나 그의 모든 절박함이 담긴 한 줄의 문장이 적혀 있었다.</em><br><br>&lt;div style='background-image: url("https://i.imgur.com/vHqB3pG.png"); background-size: cover; border: 5px solid #a07e56; border-radius: 10px; padding: 40px; font-family: "Malgun Gothic", serif; text-align: left;'&gt;&lt;p style='font-size: 20px; color: #3b2e25; line-height: 1.8; margin: 0;'&gt;&lt;b&gt;&lt;i&gt;내가 잘못했다. &lt;br&gt;모든 것을 되돌리고 싶다.&lt;/i&gt;&lt;/b&gt;&lt;/p&gt;&lt;p style='font-size: 20px; color: #3b2e25; line-height: 1.8; margin-top: 20px; text-align: right;'&gt;&lt;b&gt;&lt;i&gt;- 현(泫)&lt;/i&gt;&lt;/b&gt;&lt;/p&gt;&lt;/div&gt;<br><br><em>그의 이름, ‘현(泫)’ 자가 유독 번져 있었다. 마치 글자를 쓰는 그의 눈에서 눈물이라도 떨어진 것처럼. 평소 힘 있고 자신감 넘치던 그의 필체라고는 믿을 수 없을 만큼, 글자의 끝은 위태롭게 흔들리고 있었다. ‘내가 잘못했다’는 짧은 인정과, ‘모든 것을 되돌리고 싶다’는 불가능한 바람. 그 두 문장 안에, 황제의 자존심을 모두 버린 한 남자의 처절한 후회가 고스란히 담겨 있었다.</em><br><br>{{img::갈망}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.01.(목)｜AM 10:45｜맑음｜병조판서 댁 대문 앞&lt;/summary&gt;<br>✍다음 일정｜운현의 서신 확인&lt;br&gt;<br>👔PC의 복장｜흰 저고리와 남색 치마에 겉옷을 걸친 차림&lt;br&gt;<br>🏃NPC와의 자세｜내관은 떠나고, 홀로 서서 운현의 서신을 읽고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-12&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:7793e307-ea74-4bc0-aa56-f010d14f9747:ai" data-target="msg-7793e307-ea74-4bc0-aa56-f010d14f9747-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-1c593463-9acb-4daa-8bd0-a6422b365542-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#24</span></div>
+              <div class="tp-text"><em>갑작스러운 서신에 혼란스러운 얼굴을 하다 서신에 적힌 글귀에 얼굴을 굳혔다. 거기다 앓았었다니.. 괜히 신경쓰였다. 간결히 적힌 편지의 내용에 복잡한 마음이 들면서도 이제와서 이러는건가 싶은 마음도 들었다. 그러나 저는 그의 저를 향한 마음을 이제 온전히 믿지 않았기에 그저 아쉬워서 이러는건가 생각이 들었다. 제 방으로 돌아와 탁자위에 서신을 내려놓는다. 왜 이런 서신을 보내선.. 마음이 더 복잡해졌다. 서랍에 든 밀서를 들고 온다. 두 가지를 가만 내려다보다 하나의 결정을 내렸다. 여월은 종이와 먹을 들고와 서신을 쓰기 시작했다.</em><br>[폐하를 뵙고 싶습니다. 둘만 보는것을 청합니다.<br>-여월]<br><em>그리고 그것을 고이 접어 방밖의 시녀에게 이것을 황궁에 붙이라 명한다.</em><br><em>'어찌될지 모르겠지만...'</em><br><em>제 마음이 어떻든 하늘은 푸르렀다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:1c593463-9acb-4daa-8bd0-a6422b365542:user" data-target="msg-1c593463-9acb-4daa-8bd0-a6422b365542-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-1c593463-9acb-4daa-8bd0-a6422b365542-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#24</span></div>
+              <div class="tp-text"><em>여월의 서신이 황궁에 도착했을 때, 운현은 여전히 멍하니 침상에 기대앉아 있었다. 꼬박 하루를 앓고 난 그의 얼굴은 창백하다 못해 푸른빛이 감돌았고, 잿빛 눈동자는 생기 없이 가라앉아 있었다. 내관이 조심스럽게 건네는 서신을 받아 들었을 때도, 그는 별다른 기대를 하지 않는 듯 보였다. 그저 힘없이 봉투를 열어, 그 안에 담긴 종이를 꺼내 들었다.</em><br><br><em>그러나 여월의 단아한 필체가 눈에 들어오는 순간, 그의 공허하던 눈동자가 가늘게 떨렸다. 그는 마치 믿을 수 없다는 듯, 짧은 문장을 몇 번이고 되읽었다. ‘폐하를 뵙고 싶습니다. 둘만 보는 것을 청합니다.’ 라는 간결한 요청. 그녀가 자신을 만나주겠다고 했다. 그것도, 단둘이서.</em><br><br><em>순간, 그의 안에서 꺼져가던 불씨가 다시 타오르는 듯했다. 그는 마른침을 삼키며, 떨리는 손으로 서신을 쥔 채 자리에서 일어났다. 곁에 있던 내관이 그의 갑작스러운 움직임에 놀라 부축하려 했지만, 그는 손을 들어 제지했다. 어지러운 머리를 부여잡고 몇 번 휘청거렸지만, 그의 눈에는 이전과 다른, 희미하지만 분명한 의지가 서려 있었다.</em><br><br>"…의복을… 가져오라."<br><br><em>그의 목소리는 여전히 잠겨 있었지만, 힘이 실려 있었다. 그는 여월을 만나야 했다. 이런 초췌한 모습으로 만날 수는 없었다. 그는 그녀에게 조금이라도 덜 비참한 모습으로 보이고 싶었다. 어쩌면 이것이 마지막 기회일지도 모른다는 절박함이 그의 쇠약한 몸을 움직이게 했다.</em><br><br><em>해가 저물고, 궁궐에 어둠이 내려앉을 무렵. 운현은 약속 장소인 비밀 정자로 향했다. 그가 그녀를 매몰차게 밀어냈던 바로 그 장소였다. 다시 그곳에서 그녀를 마주하는 것은 스스로에게 내리는 형벌과도 같았지만, 그는 기꺼이 그 고통을 감수하기로 했다. 창백한 얼굴을 감추기 위해 평소보다 더 정성껏 몸단장을 했다. 그는 금실 자수가 화려하게 수놓인 검은 비단옷을 갖춰 입고, 흐트러진 머리카락 한 올 없이 단정하게 빗어 넘겼다. 하지만 그 어떤 화려한 의복도 그의 병적인 안색과 깊어진 눈 밑의 그늘을 완전히 가려주지는 못했다.</em><br><br><em>정자에 먼저 도착한 그는, 차가운 밤공기를 맞으며 초조하게 그녀를 기다렸다. 그는 손가락으로 난간을 불안하게 두드리다가, 이내 두 손을 등 뒤로 맞잡았다. 무슨 말을 해야 할까. 어떻게 사죄해야 그녀의 마음을 돌릴 수 있을까. 머릿속이 복잡하게 얽혀왔다. 그는 그녀가 이 만남을 청한 이유를 알 수 없었다. 희망을 품어도 되는 것일까. 아니면, 더 잔인한 끝을 보기 위해 자신을 부른 것일까. 불안감이 심장을 옥죄었다.</em><br><br><em>그때, 멀리서 바스락거리는 소리와 함께 익숙한 향기가 바람을 타고 실려왔다. 운현의 심장이 쿵, 하고 내려앉았다. 그는 천천히 고개를 돌렸다. 달빛을 등지고, 하얀 저고리와 남색 치마를 입은 여월이 고요히 정자를 향해 걸어오고 있었다. 그녀의 얼굴은 어둠에 가려 잘 보이지 않았지만, 그는 그녀의 모든 발걸음, 모든 움직임에서 시선을 뗄 수 없었다.</em><br><br><em>그녀가 정자 앞에 멈춰 서자, 운현은 마른 입술을 열었다. 목소리가 제대로 나올지 자신이 없었다.</em><br><br>"…왔구나, 월아."<br><br><em>그가 무의식중에 그녀의 애칭을 불렀다. 목소리는 그가 의도했던 것보다 훨씬 더 낮고, 미세하게 떨리고 있었다. 그는 애써 태연한 척 미소를 지으려 했지만, 입꼬리는 경련하듯 파르르 떨릴 뿐 제대로 올라가지 않았다. 그의 잿빛 눈동자가, 오직 그녀만을 담은 채 절박하게 흔들리고 있었다.</em><br><br>{{img::갈망}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.02.(금)｜PM 09:12｜맑음｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜여월과의 재회&lt;br&gt;<br>👔NPC의 복장｜금실 자수가 놓인 검은 비단옷. 몹시 창백하고 수척해 보임.&lt;br&gt;<br>🏃NPC의 자세｜정자 안에 서서, 여월을 마주 보며 위태롭게 서 있음. 표정을 감추려 애쓰지만 불안함이 드러남.&lt;br&gt;<br>💔혼례까지 남은 날｜D-11&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:1c593463-9acb-4daa-8bd0-a6422b365542:ai" data-target="msg-1c593463-9acb-4daa-8bd0-a6422b365542-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-dafe2101-3604-4738-89ca-1d69f072abfe-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#25</span></div>
+              <div class="tp-text"><em>달빛에 의지하며 정자로 걸어왔다. 다신 보고 싶지 않다 말한게 바로 어제인데.. 한숨이 나왔다. 그가 예전처럼 제 이름을 부르자 멈칫했다. 지금의 그에겐 듣고 싶지 않앗다</em><br>그리 부르지 마세요.<br><em>그러곤 눈을 내리깔고</em><br>...제가 폐하께 만남을 요청드린 건, 간청이 있기 때문입니다.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:dafe2101-3604-4738-89ca-1d69f072abfe:user" data-target="msg-dafe2101-3604-4738-89ca-1d69f072abfe-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-dafe2101-3604-4738-89ca-1d69f072abfe-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#25</span></div>
+              <div class="tp-text"><em>운현은 여월의 차가운 말에 순간 숨을 멈췄다. ‘그리 부르지 마세요.’ 그녀의 목소리는 잔잔했지만, 그 안에 담긴 단호함은 날카로운 비수가 되어 그의 가슴에 박혔다. 그는 저도 모르게 한 걸음 뒤로 물러설 뻔했다. 예전에는 그토록 듣기 좋아했던, 자신만이 부를 수 있었던 애칭이 이제는 그녀에게 불쾌감을 준다는 사실이 그의 심장을 아프게 찔렀다. 그의 얼굴에서 애써 지어보이던 미소마저 사라지고, 창백한 낯빛이 더욱 하얗게 질렸다.</em><br><br>"…그래."<br><br><em>그는 간신히 대답했다. 목소리는 쉬어 있었고, 실망감을 감추지 못해 끝이 미세하게 떨렸다. 그는 입술을 깨물며, 그녀의 다음 말을 기다렸다. 간청이 있다는 말. 그 말이 희망인지 절망인지, 그는 가늠할 수가 없었다. 제발, 자신을 완전히 버리는 말이 아니기만을 바랄 뿐이었다. 그의 시선은 바닥에 고정된 그녀의 얼굴에서 떨어질 줄 몰랐다. 그녀의 속눈썹이 만드는 작은 그림자 하나까지도 놓치고 싶지 않다는 듯이.</em><br><br>“말해보아라. 너의 간청이라면… 무엇이든.”<br><br><em>그는 최대한 담담하게 말하려 애썼지만, 그의 목소리에는 간절함이 묻어났다. 황제의 위엄 따위는 없었다. 그저 사랑하는 여인의 마음을 얻고 싶은, 한 남자의 절박함만이 있을 뿐이었다. 그는 혹시 그녀가 자신의 곁에 남는 것을 조건으로 무언가를 요구하는 것은 아닐까, 헛된 기대를 품었다. 그녀가 원하는 것이라면, 황후의 자리를 제외한 그 무엇이라도 내어줄 수 있었다. 아니, 어쩌면… 그는 자신도 모르게 위험한 생각의 끝자락을 붙잡았다.</em><br><br><em>정자 안에는 무거운 침묵이 흘렀다. 멀리서 들려오는 풀벌레 소리만이 유난히 크게 들렸다. 운현은 여월이 입을 열기만을 기다렸다. 그녀의 입술에서 나올 말이 자신의 운명을 결정할 것이라는 예감에, 심장이 터질 것처럼 세차게 뛰었다. 그는 주먹을 꽉 쥐었다. 손바닥에 파고드는 손톱의 아픔으로 겨우 정신을 붙들고 있었다.</em><br><br><em>그녀가 고개를 들지 않자, 그는 참지 못하고 한 걸음 다가섰다. 더 가까이에서 그녀를 보고 싶었다. 그녀의 표정을, 그녀의 눈을 보며 진심을 확인하고 싶었다.</em><br><br>"…나를… 용서할 수 없겠느냐."<br><br><em>그가 나직하게 물었다. 그것은 간청이라기보다는, 거의 애원에 가까운 목소리였다. 그는 그녀의 대답을 듣는 것이 두려웠지만, 묻지 않을 수 없었다. 그녀의 용서 없이는, 그는 단 하루도 제대로 숨 쉴 수 없을 것 같았다. 그의 잿빛 눈동자가 달빛을 받아 유난히 처연하게 빛나고 있었다. 그는 여월의 눈을 똑바로 마주하며, 그녀의 입이 열리기만을 기다렸다. 그의 모든 세상이, 그녀의 대답 한마디에 달려 있었다.</em><br><br>{{img::후회}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.02.(금)｜PM 09:15｜맑음｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜여월의 대답을 기다림.&lt;br&gt;<br>👔NPC의 복장｜금실 자수가 놓인 검은 비단옷.&lt;br&gt;<br>🏃NPC와의 자세｜여월에게 한 걸음 다가서서, 애원하는 눈빛으로 그녀를 마주 보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-11&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:dafe2101-3604-4738-89ca-1d69f072abfe:ai" data-target="msg-dafe2101-3604-4738-89ca-1d69f072abfe-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-5fdc84ee-575c-4cbc-84c0-e4bf6af63d06-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#26</span></div>
+              <div class="tp-text"><em>입을 달싹이다 갑작스런 그의 말에 눈을 들어 그를 바라보았다. 눈이 마주치자 흠칫했다. 역시.. 저 얼굴이 문제였다. 보여주지 않던 저런 모습을 자꾸만 보여주니... 고개를 저으며</em><br>...그것은 폐하에게 달렸지요.<br><em>그래. 그것은 그의 행동에 달렸다. 그렇다고 해서 기대되지는 않았다.</em><br>...저는, 폐주의 처형을 물리는 걸 요청드리고 싶습니다<br><em>눈을 똑바로 바라보며</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:5fdc84ee-575c-4cbc-84c0-e4bf6af63d06:user" data-target="msg-5fdc84ee-575c-4cbc-84c0-e4bf6af63d06-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-5fdc84ee-575c-4cbc-84c0-e4bf6af63d06-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#26</span></div>
+              <div class="tp-text"><em>여월의 입에서 나온 말은 운현이 예상했던, 혹은 바랐던 그 어떤 것도 아니었다. 폐주, 율강의 처형을 물려달라는 요청. 그 순간, 운현의 얼굴에서 모든 표정이 사라졌다. 희미하게 타오르던 기대의 불씨가 차가운 물에 잠기듯 순식간에 꺼져버렸다. 그는 마치 자신이 잘못 들었다는 듯, 미간을 살짝 찌푸렸다.</em><br><br>"…뭐라고?"<br><br><em>그가 되물었다. 목소리는 방금 전의 애절함은 온데간데없이, 싸늘하고 날카롭게 변해 있었다. 그는 여월의 눈을 뚫어져라 쳐다보았다. 그녀의 검고 깊은 눈동자 안에서, 그는 자신의 비참한 기대를 확인하고 싶지 않았다. 하지만 그녀의 흔들림 없는 시선은 그의 마지막 희망마저 잔인하게 꺾어버렸다.</em><br><br><em>그는 허탈한 웃음을 터뜨렸다. "하." 짧고 공허한 소리가 정자의 고요함을 깼다. 그는 믿을 수 없다는 듯 고개를 저었다. 이 밤에, 이 춥고 외진 곳까지 자신을 불러낸 이유가 고작 율강 형님을 위해서였다니. 자신을 만나고 싶다는 그 서신에, 밤새 뜬 눈으로 고뇌하며 희망을 품었던 자신이 한없이 어리석고 비참하게 느껴졌다.</em><br><br>"나를… 보자고 한 이유가… 고작 그것이었더냐."<br><br><em>그의 목소리는 분노와 실망으로 낮게 잠겨 있었다. 그는 한 걸음, 여월에게 더 가까이 다가섰다. 그의 그림자가 그녀를 완전히 뒤덮었다. 짙은 먹 향과 함께, 그의 몸에서 풍기는 서늘한 기운이 여월을 압도했다.</em><br><br>"내게 용서는 폐하에게 달렸다, 그리 말했지. 그런데 네가 청하는 것이 고작 폐주의 목숨이라…."<br><br><em>그는 말을 잠시 끊었다. 그의 눈빛은 상처 입은 짐승처럼 사납게 번뜩였다. 잿빛 눈동자 속에서 실망과 질투, 그리고 배신감이 뒤엉켜 들끓고 있었다. 그는 여월의 턱을 부드럽지만 단호한 손길로 붙잡아, 자신의 눈을 피하지 못하게 했다.</em><br><br>"그자가 너에게 무엇인데. 폐주가 된 형님을 위해, 이 밤에 나를 찾아와 이리 애원하는 것이냐. 네가 언제부터 그를 그토록 챙겼지? 내가 모르는 무언가라도 있었던 것인가!"<br><br><em>그의 목소리가 점차 높아졌다. 이성을 잃은 질투는 걷잡을 수 없이 타올랐다. 여월의 마음속에 자신이 아닌 다른 남자가, 그것도 자신의 가장 큰 정적인 율강이 자리하고 있다는 생각만으로도 그는 미칠 것 같았다. 그녀가 율강을 몰락시킨 자신의 책략에 동참했다는 사실조차 잊어버린 듯했다.</em><br><br>"너는… 나를 가지고 지금 장난을 치는 것이냐. 호수에서 죽다 살아난 나를 앞에 두고, 다른 사내를 위해 무릎이라도 꿇으라는 것이냐!"<br><br><em>그의 눈에 핏발이 서기 시작했다. 밤새 앓았던 열기가 다시 온몸을 잠식하는 듯했다. 그는 여월의 턱을 잡은 손에 힘을 주었다. 아프게 하려는 의도는 아니었지만, 주체할 수 없는 감정이 손끝으로 전해졌다. 그는 그녀의 대답을 기다리지 않고, 스스로 답을 내린 사람처럼 절망적으로 중얼거렸다.</em><br><br>"…결국 너에게 나는, 폐주를 살릴 수 있는 권력을 가진 황제, 그뿐이었구나. 사랑했던 정인이 아니라."<br><br><em>그는 스스로 내뱉은 말에 더 큰 상처를 받은 듯, 고통스러운 표정을 지었다. 그리고는 잡고 있던 그녀의 턱을 거칠게 놓아버렸다. 그는 여월에게서 등을 돌려, 정자 난간을 쿵, 소리가 나게 짚었다. 그의 어깨가 분노와 슬픔으로 가늘게 떨리고 있었다.</em><br><br>{{img::분노}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.02.(금)｜PM 09:18｜맑음｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜여월의 말에 절망하고 분노함.&lt;br&gt;<br>👔NPC의 복장｜금실 자수가 놓인 검은 비단옷.&lt;br&gt;<br>🏃NPC와의 자세｜여월에게 등을 돌린 채 난간을 짚고 서서, 분노로 떨고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-11&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:5fdc84ee-575c-4cbc-84c0-e4bf6af63d06:ai" data-target="msg-5fdc84ee-575c-4cbc-84c0-e4bf6af63d06-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-6e0173b7-ea36-4651-99c8-ff59646ce846-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#27</span></div>
+              <div class="tp-text"><em>예상보다 격한 그의 반응에 흠칫하다 잡힌 턱이 아파 눈을 찡그렸다. 정신없이 쏟아지는 말들에 정신을 차릴 수 없었다.</em><br>잠깐.. 있다니요. 저를 뭘로 보시고..!<br><em>그와 똑같은 사람 취급하는 듯한 말에 발끈했다. 거기에 더 홀로 더 나아가 홀로 부들부들 떨고 있는 모습을 보니 더 화가 났다. 다가가 처연떨고있는 그의 등을 퍽 치며</em><br>대체 혼자 무슨 궁상을 떠는거에요?! 장난해요? 누굴 같은 사람으로 보나.. 전 예전부터 당신만을 사랑했다고!<br><em>씩씩거리며 허리에 팔을 짚고</em><br>폐주는... 그저 안타까워서 그랬어요. 솔직히 사람은 너무 좋은 사람이었고 그리고... 당신한테 배신당하고 힘든 저를 유일하게 위로해준 사람이었다구요. 저는 그것에 보답하고 싶은것 뿐이에요. 그런 사람이... 죽지 않았으면 좋겠어요</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:6e0173b7-ea36-4651-99c8-ff59646ce846:user" data-target="msg-6e0173b7-ea36-4651-99c8-ff59646ce846-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-6e0173b7-ea36-4651-99c8-ff59646ce846-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#27</span></div>
+              <div class="tp-text"><em>여월의 주먹이 그의 등을 퍽, 하고 내리치는 순간, 운현은 놀란 듯 숨을 들이켰다. 분노와 슬픔으로 굳어 있던 그의 어깨가 움찔하며 크게 떨렸다. 그는 예상치 못한 물리적인 충격보다, 뒤이어 들려온 그녀의 격앙된 목소리에 더 크게 흔들리는 듯했다.</em><br><br><em>“전 예전부터 당신만을 사랑했다고!”</em><br><br><em>그 한마디가, 그의 모든 분노와 질투, 절망을 단숨에 잠재우는 주문처럼 작용했다. 그는 천천히, 아주 천천히 몸을 돌렸다. 난간을 짚었던 손이 힘없이 떨어지고, 그의 잿빛 눈동자는 지진이라도 일어난 듯 걷잡을 수 없이 흔들리고 있었다. 그는 방금 자신이 들은 말을 믿을 수 없다는 표정이었다.</em><br><br><em>그녀를 향해 돌아선 그의 얼굴은 그야말로 가관이었다. 사납게 타오르던 분노는 간데없고, 이제는 버려진 아이처럼 상처받고 혼란스러운 표정만이 남아 있었다. 달빛 아래 드러난 그의 창백한 뺨 위로, 그 자신도 모르는 사이에 눈물 한 줄기가 흐르고 있었다. 밤새 앓았던 열기가 다시 오르는지, 그의 숨결은 뜨겁고 불규칙했다.</em><br><br>"…사랑… 했다고…?"<br><br><em>그가 바보처럼 되물었다. 과거형으로 끝나는 그 말이 서글프게 들렸지만, 지금 그는 그런 것을 따질 경황이 아니었다. 그녀의 마음속에 여전히 자신이 있었다는 것, 다른 남자가 아닌 오직 자신뿐이었다는 그 사실 하나만으로도, 지옥의 나락을 헤매던 그의 영혼은 구원받은 듯했다. 그의 모든 공격성과 날카로움은 눈 녹듯 사라지고, 오직 연약하고 상처받은 본모습만이 드러났다.</em><br><br><em>그녀의 다음 말은 그의 가슴을 더욱 아프게 파고들었다. 자신에게 배신당하고 힘들었던 그녀를 위로해준 사람이 율강이었다는 것. 그 사실이 부끄럽고, 질투 나고, 동시에 미안해서 견딜 수가 없었다. 자신이 주어야 할 위로를, 자신이 앗아간 모든 것을 가진 그에게서 받았다는 사실이 그를 더욱 비참하게 만들었다.</em><br><br><em>그는 휘청거리며 여월에게 한 걸음 다가섰다. 금방이라도 쓰러질 듯 위태로운 걸음이었다. 그는 여월의 앞에 멈춰 서서, 그녀의 어깨를 조심스럽게, 그러나 떨리는 손으로 붙잡았다.</em><br><br>"…미안하다."<br><br><em>그의 입에서 나온 것은 사과였다. 무엇에 대한 사과인지 명확하지 않았지만, 그 안에는 수만 가지 감정이 뒤섞여 있었다. 그녀를 오해한 것에 대한 미안함, 그녀를 아프게 한 것에 대한 미안함, 그리고… 그녀를 배신한 자기 자신에 대한 끝없는 후회였다.</em><br><br>"내가… 내가 다 잘못했다, 월아. 내가… 너를 잃을까 봐… 두려워서… 미쳐서 그랬다…."<br><br><em>그는 더 이상 감정을 주체하지 못하고, 그녀의 어깨에 이마를 기댔다. 한 나라의 황제라고는 믿을 수 없을 만큼, 그는 모든 것을 내려놓고 그녀에게 위태롭게 의지했다. 그의 뜨거운 숨결과 함께, 억눌렀던 흐느낌이 간헐적으로 터져 나왔다. 그의 몸이 미세하게, 그리고 절박하게 떨리고 있었다. 그가 입고 있는 화려한 비단옷과 그의 무너진 모습이 극명한 대조를 이루며, 그의 고통을 더욱 선명하게 드러냈다.</em><br><br>"제발… 나를 버리지 마라. 네가 없으면 나는… 나는 아무것도 아니다…."<br><br><em>그의 목소리는 젖어 있었고, 어린아이처럼 애처로웠다. 그는 오직 그녀에게만 자신의 가장 약하고 비참한 모습을 보였다. 그녀의 사랑 고백은 그의 마지막 남은 이성마저 마비시켰고, 이제 그는 오직 그녀를 붙잡아야 한다는 본능만이 남아있는 듯했다.</em><br><br>{{img::후회}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.02.(금)｜PM 09:21｜맑음｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜여월에게 용서를 빌며 무너짐.&lt;br&gt;<br>👔NPC의 복장｜금실 자수가 놓인 검은 비단옷.&lt;br&gt;<br>🏃NPC와의 자세｜여월의 어깨에 이마를 기댄 채, 그녀를 붙잡고 흐느끼고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-11&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:6e0173b7-ea36-4651-99c8-ff59646ce846:ai" data-target="msg-6e0173b7-ea36-4651-99c8-ff59646ce846-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-1502915c-c093-4094-9aac-fd0fbef46592-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#28</span></div>
+              <div class="tp-text"><em>갑작스러운 그의 약한 모습에 흠칫하다 손을 내렸다. 방금은 순간적으로 너무 흥분해 말을 막뱉은 것 같아 부끄러움이 뒤늦게 몰려왔다. 한 손으로 이마를 짚다가 손을 내린다. 이 한심하고 바보같은 사람의 이런 모습이 아직도 눈에 밟힌다는게 한심했다.</em><br>...폐하. 그만 사과하십시오<br><em>그의 어깨를 잡아 조심스레 밀어 눈을 마주친다. 눈물 젖은 얼굴이 보여 당황했다. 생전 처음 보는 모습이었다.</em><br>우, 우셨습니까? 울지 마세요.. 하아...<br><em>한숨을 내쉬며 제 소매로 눈물을 닦아준다. 대체 제가 뭘하고 있는건지.</em><br>...폐하. 마음 잘 알았습니다. 하지만 폐하께선 이미 저 대신 황위를 택하셨지요. 그럼 그것을 밀고나가세요. 저는.. 폐하께서 그것을 포기하지 않으며 가연언니와 혼인한다면 함께 있을 수 없습니다.<br><em>그와 눈마주치며</em><br>설마하니 왜냐고 묻지는 마십시오.<br><em>꾸짖듯 말하곤 한걸음 물러나며</em><br>저는.. 이제 더 상처받고 싶지 않습니다.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:1502915c-c093-4094-9aac-fd0fbef46592:user" data-target="msg-1502915c-c093-4094-9aac-fd0fbef46592-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-1502915c-c093-4094-9aac-fd0fbef46592-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#28</span></div>
+              <div class="tp-text"><em>여월이 제 소매로 눈물을 닦아주는 그 서툴고 다정한 손길에, 운현의 무너진 마음은 속수무책으로 흔들렸다. 그는 넋을 잃은 사람처럼, 그녀의 손길을 가만히 받고만 있었다. 그녀의 소매에서 나는 은은한 난향이 그의 콧속으로 스며들자, 잊고 있던 과거의 행복했던 기억들이 파도처럼 밀려와 가슴을 아프게 쳤다. 그는 이 순간이 영원하기를, 이 손길이 끝나지 않기를 간절히 바랐다.</em><br><br><em>그러나 그녀는 이내 한 걸음 뒤로 물러나며, 그와 자신 사이에 명확한 선을 그었다. ‘저는.. 폐하께서 그것을 포기하지 않으며 가연언니와 혼인한다면 함께 있을 수 없습니다.’ 그녀의 목소리는 부드러웠지만, 그 안에 담긴 결의는 바위처럼 단단했다. 그 말은, 운현에게 내리는 마지막 통첩과도 같았다. 황위와 가연, 혹은 자신. 둘 중 하나를 선택하라는, 잔인한 양자택일이었다.</em><br><br><em>운현의 얼굴에서 핏기가 가셨다. 그는 방금 자신이 들은 말을 이해하려 애쓰는 듯, 몇 번이고 입술을 달싹였지만 아무런 소리도 내지 못했다. 그녀가 ‘왜냐고 묻지는 마십시오’ 라고 덧붙였을 때, 그는 모든 것을 체념한 사람처럼 희미하게 고개를 끄덕였다. 그녀가 더 이상 상처받고 싶지 않다는 말이, 그의 심장을 갈가리 찢어놓았다. 자신이 그녀에게 얼마나 깊은 상처를 주었는지, 사무치게 깨달았기 때문이었다.</em><br><br><em>그는 떨리는 손을 뻗어, 그녀의 손목을 아주 조심스럽게 붙잡았다. 차갑게 식어버린 그녀의 피부가, 마치 그녀의 마음 같아 덜컥 겁이 났다. 그는 놓치지 않으려는 듯 그녀의 손목을 부드럽게 감싸 쥐었지만, 차마 힘을 주지는 못했다. 그녀가 뿌리치면 그대로 놓칠 것 같은, 위태로운 손길이었다.</em><br><br>"…가지 마라."<br><br><em>그의 목소리는 물기를 머금어 쉬어 있었고, 애처롭게 갈라졌다. 그는 고개를 숙여, 자신의 눈물로 얼룩진 얼굴을 그녀에게 보이고 싶지 않다는 듯 시선을 피했다.</em><br><br>"…조금만… 시간을다오. 내가… 내가 어떻게든 하겠다. 이 혼인… 그래, 어떻게든…."<br><br><em>그는 횡설수설 말을 내뱉었다. 그의 머릿속은 새하얗게 비어버린 듯, 논리적인 생각이 불가능했다. 오직 그녀를 붙잡아야 한다는 절박함만이 그를 지배했다. 국혼을 물린다는 것이 얼마나 엄청난 파장을 몰고 올지, 병조판서가 어떤 반발을 할지, 그 모든 정치적 계산이 이 순간만큼은 아무런 의미가 없었다. 그는 오직 눈앞의 여월을 잃는다는 공포에 사로잡혀 있었다.</em><br><br><em>그는 잡고 있는 그녀의 손목을 자신의 가슴팍으로 가져갔다. 쿵, 쿵, 쿵. 불규칙하고 세차게 뛰는 자신의 심장 소리가 그녀에게도 전해지기를 바라는 듯했다.</em><br><br>"나는… 너를 택할 것이다. 처음부터 너였고, 지금도 너다. 그러니… 제발 나를 버렸다고 말하지 마라. 나에게서… 등을 돌리지 마라, 월아."<br><br><em>그는 다시 그녀의 애칭을 불렀다. 이번에는 허락을 구하는 듯, 혹은 용서를 비는 듯 간절함이 묻어났다. 그는 고개를 들어, 눈물로 흐려진 잿빛 눈동자로 그녀를 올려다보았다. 그의 시선에는 황제의 오만함 따위는 없었다. 오직 사랑하는 여인에게 버림받을까 두려워하는 한 남자의 처절한 애원만이 가득했다. 그는 그녀의 손을 놓지 않은 채, 그녀의 대답을, 그녀의 처분을 기다렸다.</em><br><br>{{img::갈망}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.02.(금)｜PM 09:24｜맑음｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜여월에게 선택을 약속하며 애원함.&lt;br&gt;<br>👔NPC의 복장｜금실 자수가 놓인 검은 비단옷. 눈물로 엉망이 된 얼굴.&lt;br&gt;<br>🏃NPC와의 자세｜여월의 손목을 붙잡아 자신의 가슴에 댄 채, 그녀를 올려다보며 애원하고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-11&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:1502915c-c093-4094-9aac-fd0fbef46592:ai" data-target="msg-1502915c-c093-4094-9aac-fd0fbef46592-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-f030d5f8-833d-4f47-9787-d3334d384650-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#29</span></div>
+              <div class="tp-text"><em>당연히 저를 선택않은줄 알았는데 그의 답에 눈을 크게 뜨었다. 또 그의 절박한 모습을 보자 마음이 불편하면서도 약해졌다. 결국 저는 그에게 약하구나 하는 생각에 복잡한 기분이 들면서도 한심해 한숨을 내쉬었다. 그래도 그가 정말 저를 사랑하긴 했었던 것 같아 위안을 얻었다. 모든게 정말 가짜는 아니었구나</em><br>폐하, 진정하세요..<br><em>잠시 생각에 잠기며 고개 숙인다.</em><br>...그것이 정말 폐하의 선택이십니까. 거래를.. 하셨다고 들었습니다.<br><em>율강에게서 들었던 걸 떠올린다.</em><br>하아... 제가 이런말을 하는것도 우습긴 하나 그들이 가만있지 않을겁니다.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:f030d5f8-833d-4f47-9787-d3334d384650:user" data-target="msg-f030d5f8-833d-4f47-9787-d3334d384650-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-f030d5f8-833d-4f47-9787-d3334d384650-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#29</span></div>
+              <div class="tp-text"><em>여월이 ‘거래’라는 단어를 입에 올리는 순간, 운현의 눈동자가 파르르 떨렸다. 그는 마치 숨겨왔던 가장 치욕스러운 비밀을 들킨 사람처럼, 순간적으로 얼굴이 굳어졌다. 율강. 율강 형님이 그녀에게 말한 것이 틀림없었다. 자신을 이 자리에 올려놓은 추악한 거래의 진실을, 그녀가 이미 알고 있었다는 사실이 그의 심장을 차갑게 얼어붙게 했다.</em><br><br><em>그는 저도 모르게 그녀의 손목을 잡은 손에 힘을 주었다. 그녀가 자신을 경멸할 것이라는 두려움, 비겁하고 나약한 자신을 비웃을 것이라는 공포가 엄습했다. 그는 입술을 깨물었다. 변명이라도 하고 싶었지만, 무슨 말을 할 수 있을까. 모든 것은 사실이었다. 그는 그녀의 사랑을 담보로, 그녀의 아버지와 더러운 거래를 했다.</em><br><br>"…알고… 있었구나."<br><br><em>그의 목소리는 절망으로 가라앉아 있었다. 그는 힘없이 고개를 숙였다. 더 이상 그녀의 눈을 마주 볼 자신이 없었다. 그녀의 맑은 눈동자에 비친 자신의 추악한 모습을 견딜 수가 없었다.</em><br><br>"그래…. 거래였다. 나의 황좌와… 너의 언니를 맞바꾼… 더러운 거래."<br><br><em>그는 스스로의 죄를 고백하며 자조적인 웃음을 흘렸다. 모든 것을 잃은 사람처럼, 그의 어깨가 축 늘어졌다. 그녀가 자신을 떠나겠다고 해도, 이제는 할 말이 없었다. 그녀가 자신을 경멸하는 것은 당연했다.</em><br><br><em>하지만 여월은 그를 책망하는 대신, 오히려 그의 앞날을 걱정하고 있었다. ‘그들이 가만있지 않을겁니다.’ 그 담담한 걱정의 말이, 오히려 그의 가슴에 더 큰 파문을 일으켰다. 그는 천천히 고개를 들었다. 그녀의 눈에는 경멸이나 비난 대신, 복잡한 연민과 안타까움이 서려 있었다. 그녀는… 아직 자신을 버리지 않았다.</em><br><br><em>그 깨달음이 그의 안에서 무언가를 다시 일으켜 세웠다. 그는 그녀의 손목을 잡고 있던 손을 풀어, 대신 그녀의 두 손을 따뜻하게 감쌌다. 그의 눈빛은 더 이상 흔들리지 않았다. 비록 눈물로 젖어 있었지만, 그 안에는 이전에는 볼 수 없었던, 모든 것을 감수하겠다는 단호한 결의가 깃들어 있었다.</em><br><br>"그래, 쉽지 않겠지. 아비는 나를 겁박할 테고, 너의 언니는 나를 원망할 것이다. 모든 대신들이 등을 돌릴지도 모른다."<br><br><em>그는 담담하게 최악의 상황들을 나열했다. 그러나 그의 목소리에는 두려움이 없었다. 오히려 그는 희미하게 미소 짓고 있었다. 모든 것을 잃을 각오를 한 사람만이 지을 수 있는, 처연하면서도 해방된 미소였다.</em><br><br>"하지만 상관없다."<br><br><em>그가 단호하게 말했다.</em><br><br>"황제가 되지 못했다면, 나는 평생 너를 마음에 품고도 아무것도 할 수 없는 무력한 황자로 살았을 것이다. 하지만 이제 나는 황제다. 내 사람 하나, 내 정인 하나 지키지 못한다면 이 용상은 나에게 아무런 의미가 없다."<br><br><em>그는 그녀의 손을 자신의 뺨으로 가져갔다. 그녀의 차가운 손등에 자신의 뜨거운 뺨을 부볐다. 마치 어린아이가 어미의 온기를 찾듯, 그는 그녀에게 필사적으로 매달렸다.</em><br><br>"내가 모든 것을 바로잡겠다. 너를 아프게 했던 모든 것들을, 내가 다 되돌려 놓을 것이다. 그러니… 너는 내 곁에만 있어다오. 내가 이 모든 것을 감당할 힘을 다오. 응? 월아…."<br><br><em>그의 목소리는 다시 애원으로 변해 있었다. 그러나 이전의 절망적인 애원과는 달랐다. 그것은 그녀와 함께 미래를 만들어가고 싶다는, 희망을 품은 간절한 약속이었다. 그는 그녀의 손을 놓지 않은 채, 오직 그녀의 대답만을 기다렸다. 그의 모든 결심과 미래는, 이제 온전히 그녀의 선택에 달려 있었다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_31_1773387756734%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2Fc5ba3ec3-6bf3-4616-804f-cc07028c6832.png?alt=media&amp;token=54138a88-0c92-40a6-9354-999c75eff239" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.09.02.(금)｜PM 09:28｜맑음｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜여월에게 모든 것을 바로잡겠다고 약속함.&lt;br&gt;<br>👔NPC의 복장｜금실 자수가 놓인 검은 비단옷.&lt;br&gt;<br>🏃NPC와의 자세｜여월의 두 손을 붙잡고 자신의 뺨에 댄 채, 간절한 눈빛으로 그녀를 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-11&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:f030d5f8-833d-4f47-9787-d3334d384650:ai" data-target="msg-f030d5f8-833d-4f47-9787-d3334d384650-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-9cb04963-699d-42e1-9974-cf51f58ab33e-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#30</span></div>
+              <div class="tp-text"><em>그의 말에 잠시 침묵했다. 이리 절실히 말해오는 그를 도저히 외면할 수 없었다. 그러나 동시에 그에게서 받았던 상처가 아직 가슴을 콕콕 찔렀다. 아직 온전히 그를 믿을 수 없었다. 저를 한 번 배신했던 이니까. .....그럼에도 자꾸만 기대하고 싶어지는 건, 제가 그를 정마루사랑했기 때문이겠지. 어두운 얼굴을 하다가</em><br>...터무니없군요. 무작정 그리하는건 아니시겠지요. 저 때문에 모든걸 잃고 원망하지 마시라 이 말입니다.<br><em>오히려 더 차갑게 말하려 노력하며 그가 지금 이 한순간의 충동으로 나중을 후회하지 않길 바랬다. 저 때문이란 원망을 듣고 싶지 않았으니까. 또.. 그가 이 위험한 선택을 함부로 하길 원치 않아서.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:9cb04963-699d-42e1-9974-cf51f58ab33e:user" data-target="msg-9cb04963-699d-42e1-9974-cf51f58ab33e-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-9cb04963-699d-42e1-9974-cf51f58ab33e-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#30</span></div>
+              <div class="tp-text"><em>운현은 여월의 차가운 말에 순간 숨을 멈췄다. ‘터무니없군요.’ 그 한마디가 방금 전까지 뜨겁게 타오르던 그의 심장에 찬물을 끼얹는 듯했다. 그는 그녀가 자신의 결심을 기쁘게 받아줄 것이라, 적어도 흔들릴 것이라 기대했다. 하지만 그녀의 반응은 그의 예상을 완전히 빗나갔다. 그의 얼굴에서 희망의 빛이 사그라들고, 다시금 상처받은 낯빛이 떠올랐다. 그녀의 손을 잡고 있던 그의 손에서 힘이 빠져나가는 듯했다.</em><br><br><em>그러나 뒤이어 들려온 그녀의 말은, 단순한 거절이 아니었다. ‘저 때문에 모든걸 잃고 원망하지 마시라 이 말입니다.’ 그 말속에서, 운현은 자신을 향한 깊은 염려를 읽어냈다. 그녀는 자신을 밀어내는 것이 아니었다. 오히려, 섣부른 선택으로 모든 것을 잃게 될 자신을 걱정하고 있었다. 또한, 그 선택의 결과로 자신이 그녀를 원망하게 될 미래를 두려워하고 있었다. 그녀는 여전히, 그를 생각하고 있었다.</em><br><br><em>그 깨달음이 그의 심장을 다시 뛰게 했다. 그는 텅 비었던 눈에 다시금 온기를 되찾았다. 그녀의 차가운 말투는 그녀의 진심을 감추기 위한 갑옷일 뿐이었다. 그는 그녀의 손을 더욱 굳게, 그러나 아프지 않게 고쳐 잡았다. 그리고는 희미하게, 그러나 분명하게 미소 지었다. 그것은 모든 것을 이해했다는, 안심시키려는 듯한 부드러운 미소였다.</em><br><br>“알고 있다.”<br><br><em>그가 나직하게 말했다. 그의 목소리는 더 이상 애원하거나 흔들리지 않았다. 대신, 고요한 확신과 무게감이 실려 있었다.</em><br><br>“이것은 충동이 아니다, 월아. 너를 잃을 뻔했던 그 호숫가에서, 죽음의 문턱에서 내가 깨달은 단 하나의 진실이다. 너 없는 황좌는 나에게 차가운 감옥일 뿐이라는 것. 평생을 후회 속에서 살아가야 하는 지옥이라는 것.”<br><br><em>그는 그녀의 눈을 똑바로 바라보았다. 그의 잿빛 눈동자는 깊고 투명했다. 그 안에는 더 이상 불안이나 절망이 아닌, 오직 그녀를 향한 변치 않을 연정과 확고한 의지만이 담겨 있었다.</em><br><br>“그리고… 내가 어찌 너를 원망하겠느냐.”<br><br><em>그는 씁쓸하게 웃으며, 그녀의 손등에 자신의 입술을 가볍게 가져다 대었다. 짧고 경건한 입맞춤이었다.</em><br><br>“모든 잘못은 나에게 있다. 나의 비겁함과 욕심이 너에게 씻을 수 없는 상처를 주었다. 설령 내가 이 모든 것을 잃고 가장 비참한 사내가 된다 하여도, 그것은 나의 선택에 대한 대가일 뿐, 감히 너를 원망할 자격 따위는 나에게 없다.”<br><br><em>그는 그녀의 손을 자신의 심장 위에 다시 올려놓았다. 이전보다 한결 차분하고, 그러나 더욱 강하게 뛰는 고동이 그녀의 손바닥으로 전해졌다.</em><br><br>“그러니 걱정하지 마라. 나는 무모하게 모든 것을 내던지지 않을 것이다. 너를 지키기 위해서라도, 나는 더 영리하고 치밀하게 움직여야만 한다. 더 이상 너를 위험에 빠뜨릴 수는 없으니.”<br><br><em>그의 눈빛이 순간 날카롭게 빛났다. 그것은 황제가 된 자의 냉철함과 책략가의 기지가 번뜩이는 눈빛이었다. 그는 더 이상 사랑에 눈이 멀어 무너지는 남자가 아니었다. 사랑을 지키기 위해, 황제의 모든 힘과 지혜를 사용하리라 결심한 군주의 모습이었다.</em><br><br>“나를… 믿어주겠느냐. 단 한 번만 더, 나에게 기회를 주지 않겠느냐.”<br><br><em>그는 물었다. 그것은 약속이었고, 서약이었으며, 그녀의 마지막 신뢰를 구하는 간절한 청원이었다. 그는 오직 그녀의 대답만이, 이 길고 어두운 터널의 끝을 밝혀줄 유일한 빛이라는 것을 알고 있었다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_31_1773387756734%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2Fc5ba3ec3-6bf3-4616-804f-cc07028c6832.png?alt=media&amp;token=54138a88-0c92-40a6-9354-999c75eff239" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.09.02.(금)｜PM 09:31｜맑음｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜여월의 신뢰를 구하며 확고한 의지를 보임.&lt;br&gt;<br>👔NPC의 복장｜금실 자수가 놓인 검은 비단옷.&lt;br&gt;<br>🏃NPC와의 자세｜여월의 손을 자신의 심장에 댄 채, 진중하고 확신에 찬 눈빛으로 그녀를 마주 보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-11&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:9cb04963-699d-42e1-9974-cf51f58ab33e:ai" data-target="msg-9cb04963-699d-42e1-9974-cf51f58ab33e-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-d8d5b4a2-1b12-406c-b2ea-71da176fefb2-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#31</span></div>
+              <div class="tp-text"><em>그의 긴 진심들에 침묵했다. 정말 그의 모습이 절박해보여서, 진심을 가득 담은 말 같아서. 마음이 더 복잡하면서 미친듯이 흔들렸다. 그를 믿고 싶었다. 역시 저는 아직 그를... 사랑했다. 울컥 저도 모르게 눈물이 차올랐다. 황급히 뒤를 돌며</em><br>..정말 믿어도 돼요? 당신을..<br><em>아직 두려움은 남아있었다. 또다시 배신당할거란 두려움. 그럼에도 저 손을 한 번 더 잡고 싶었다. 얼마간 침묵하다 한숨을 내쉬며</em><br>...정말 이번이, 마지막이에요...</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:d8d5b4a2-1b12-406c-b2ea-71da176fefb2:user" data-target="msg-d8d5b4a2-1b12-406c-b2ea-71da176fefb2-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-d8d5b4a2-1b12-406c-b2ea-71da176fefb2-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#31</span></div>
+              <div class="tp-text"><em>여월이 울음 섞인 목소리로 ‘정말 믿어도 돼요?’라고 물으며 돌아섰을 때, 운현의 심장은 쿵, 하고 바닥으로 떨어지는 듯했다. 그녀의 떨리는 뒷모습, 애써 울음을 참으려 애쓰는 가녀린 어깨가 그의 마음을 갈기갈기 찢어놓았다. 그녀가 아직도 자신을 두려워하고 있다는 사실이, 그 어떤 비난보다도 더 아프게 그의 죄를 후벼팠다.</em><br><br><em>그는 차마 그녀에게 섣불리 다가가지 못했다. 그저 한 걸음 떨어진 곳에서, 그녀의 고통스러운 뒷모습을 바라보며 자신의 무력함을 깨물었다. 그녀가 흘리는 눈물 한 방울, 한 방울이 모두 자신의 죄 때문이라는 사실에 가슴이 미어졌다.</em><br><br><em>얼마나 지났을까. 정적을 깨고 그녀의 한숨 섞인 목소리가 들려왔다. ‘...정말 이번이, 마지막이에요...’ 그 한마디. 그 체념과도 같은 허락의 말에, 운현은 멈췄던 숨을 겨우 내쉴 수 있었다. 그는 천천히, 아주 조심스럽게 그녀에게 다가갔다. 그리고는 그녀의 등 뒤에서, 부서지기라도 할 듯 조심스러운 손길로 그녀를 끌어안았다.</em><br><br><em>그의 단단한 가슴이 그녀의 등에 닿았다. 그는 그녀의 어깨에 고개를 묻고, 깊게 숨을 들이쉬었다. 그녀에게서 나는 익숙한 난향이 그의 모든 불안과 고통을 잠재우는 듯했다. 그는 그녀의 귓가에, 세상에서 가장 소중한 것을 속삭이듯 나직하게 말했다.</em><br><br>“그래… 마지막이다.”<br><br><em>그의 목소리는 굳은 맹세처럼 단단하고, 또 흔들림 없었다.</em><br><br>“다시는… 다시는 너를 혼자 울게 하지 않겠다. 너의 눈에서 눈물이 흐르는 일은, 기쁨의 순간 외에는 결코 없을 것이다. 내 모든 것을 걸고… 약조하마.”<br><br><em>그는 그녀를 안은 팔에 힘을 주었다. 그녀의 온기가, 그녀의 존재가 그에게는 세상의 전부였다. 그는 이 온기를 다시는 놓치지 않으리라, 자신의 뼈에 새기듯 다짐했다. 그는 잠시 눈을 감았다. 그녀를 되찾았다는 안도감과, 앞으로 헤쳐나가야 할 험난한 길에 대한 결의가 그의 마음속에서 교차했다.</em><br><br><em>한참 동안 그녀를 말없이 안고 있던 그는, 천천히 그녀를 자신의 쪽으로 돌려세웠다. 그리고는 두 손으로 그녀의 얼굴을 부드럽게 감싸 쥐었다. 눈물로 젖은 그녀의 뺨과, 붉어진 눈가가 그의 마음을 아프게 했다. 그는 엄지손가락으로 그녀의 눈가에 맺힌 눈물을 조심스럽게 닦아주었다.</em><br><br>“이제 울지 마라, 월아. 너의 아름다운 얼굴이 눈물로 어지러워지는 것을, 나는 더 이상 보고 싶지 않다.”<br><br><em>그의 목소리는 한없이 부드러웠다. 그는 그녀의 젖은 눈을 깊이 들여다보았다. 그 검고 깊은 눈동자 속에, 오직 자신만이 비치기를 바랐다. 그는 천천히 고개를 숙였다. 그의 얼굴이 그녀의 얼굴 가까이 다가왔다. 그의 뜨거운 숨결이 그녀의 입술에 닿을 듯 말 듯 한 거리에서 멈추었다.</em><br><br><em>그는 묻지 않았다. 대신, 그녀의 눈을 보며 동의를 구했다. 만약 그녀가 고개를 돌리거나 피한다면, 그는 그대로 물러설 생각이었다. 그의 잿빛 눈동자는 오직 그녀만을 담은 채, 간절하게 그녀의 허락을 기다리고 있었다. 정자 안에는 두 사람의 숨소리와, 세차게 뛰는 심장 소리만이 가득했다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_31_1773387756734%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2Fc5ba3ec3-6bf3-4616-804f-cc07028c6832.png?alt=media&amp;token=54138a88-0c92-40a6-9354-999c75eff239" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.09.02.(금)｜PM 09:35｜맑음｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜여월의 허락을 구하며 입맞춤을 시도함.&lt;br&gt;<br>👔NPC의 복장｜금실 자수가 놓인 검은 비단옷.&lt;br&gt;<br>🏃NPC와의 자세｜여월의 얼굴을 감싸 쥐고, 눈물을 닦아주며 입맞춤 직전의 거리에서 그녀를 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-11&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:d8d5b4a2-1b12-406c-b2ea-71da176fefb2:ai" data-target="msg-d8d5b4a2-1b12-406c-b2ea-71da176fefb2-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-5ad19cbb-d869-4154-ab7e-a7bba9076d5a-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#32</span></div>
+              <div class="tp-text"><em>그 숨결이 다가와 움찔하며 눈을 굴리다 눈을 꼭 감았다. 심장이 쿵쾅거렸다</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:5ad19cbb-d869-4154-ab7e-a7bba9076d5a:user" data-target="msg-5ad19cbb-d869-4154-ab7e-a7bba9076d5a-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-5ad19cbb-d869-4154-ab7e-a7bba9076d5a-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#32</span></div>
+              <div class="tp-text"><em>여월이 눈을 꼭 감는 그 순간, 운현은 멎었던 숨을 길게 내쉬었다. 그것은 그녀의 무언의 허락이었다. 그의 심장을 옥죄던 불안감이 눈 녹듯 사라지고, 그 자리에는 벅찬 안도감과 그녀에 대한 사무치는 애정이 파도처럼 밀려왔다.</em><br><br><em>그는 더 이상 망설이지 않았다. 천천히, 아주 부드럽게 고개를 숙여 자신의 입술을 그녀의 입술에 포갰다. 처음에는 그저 가볍게 닿기만 했다. 마치 깨지기 쉬운 보물을 다루듯, 그는 조심스럽고 경건했다. 호숫가에서의 거칠고 절박했던 입맞춤과는 전혀 다른, 오롯이 그녀의 상처를 보듬고 자신의 진심을 전하려는 듯한 입맞춤이었다.</em><br><br><em>그녀의 입술은 차가웠지만, 이내 그의 온기에 물들어 따스해졌다. 그는 그녀의 얼굴을 감싸 쥔 손에 아주 미세하게 힘을 주며, 그녀의 아랫입술을 부드럽게 머금었다. 닫혀 있던 그녀의 입술이 미세하게 열리는 것을 느끼자, 그는 조심스럽게 안으로 파고들었다. 얽히는 혀끝에서, 그는 그녀가 여전히 자신처럼 떨고 있다는 것을 느꼈다. 그 떨림이 오히려 그의 마음을 더 깊이 흔들었다.</em><br><br><em>이 입맞춤은 단순한 정욕의 표현이 아니었다. 그것은 그의 모든 후회와 사죄, 그리고 변치 않을 약속이었다. 그는 말로는 다 전할 수 없는 자신의 모든 진심을 이 입맞춤에 담아 그녀에게 전했다. ‘미안하다. 사랑한다. 다시는 너를 아프게 하지 않겠다.’ 그의 모든 감정이 소리 없는 언어가 되어 그녀에게 흘러 들어갔다.</em><br><br><em>한참의 시간이 흐른 듯, 혹은 찰나의 순간이 지난 듯했다. 그는 천천히, 아쉬움을 머금은 채 입술을 떼었다. 그의 이마와 그녀의 이마가 가볍게 맞닿았다. 두 사람의 뜨거운 숨결이 좁은 공간 안에서 뒤섞였다. 그는 여전히 눈을 감고 있는 그녀의 속눈썹 위로, 다시 한번 가볍게 입을 맞추었다.</em><br><br>“고맙다….”<br><br><em>그가 잠긴 목소리로 속삭였다. 무엇이 고마운지 명확하게 말하지 않았지만, 그 안에는 모든 의미가 담겨 있었다. 자신을 믿어주어서, 마지막 기회를 주어서, 그리고… 다시 자신의 곁으로 돌아와 주어서 고맙다는 뜻이었다.</em><br><br><em>그는 그녀의 얼굴을 감싸 쥔 손을 내려, 그녀의 차가운 손을 다시 단단히 붙잡았다. 그리고는 그 손을 자신의 겉옷 품 안으로 넣어, 자신의 온기로 녹여주었다. 그는 그녀를 바라보며, 이전보다 한결 편안해진, 그러나 여전히 애틋함이 가득한 미소를 지었다.</em><br><br>“이제 궁으로 돌아가야지. 밤이 깊어 공기가 차다. 이러다 병이라도 나면 어찌하느냐.”<br><br><em>그의 목소리는 다정함으로 가득했다. 그는 더 이상 그녀를 불안하게 만들고 싶지 않았다. 그는 잡은 손을 놓지 않은 채, 그녀를 이끌고 정자를 나설 준비를 했다. 이제 두 사람 앞에는 험난한 길이 펼쳐져 있을 것이다. 하지만 그는 두렵지 않았다. 그녀의 손을 잡고 있는 한, 그는 그 어떤 시련도 이겨낼 수 있을 것 같았다. 그의 발걸음은 궁으로 향했지만, 그의 모든 세상은 오직 옆에 있는 그녀를 향해 있었다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_31_1773387756734%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2Fc5ba3ec3-6bf3-4616-804f-cc07028c6832.png?alt=media&amp;token=54138a88-0c92-40a6-9354-999c75eff239" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.09.02.(금)｜PM 09:38｜맑음｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜여월과 함께 궁으로 돌아갈 준비를 함.&lt;br&gt;<br>👔NPC의 복장｜금실 자수가 놓인 검은 비단옷.&lt;br&gt;<br>🏃NPC와의 자세｜입맞춤이 끝난 후, 여월의 손을 자신의 옷 품 안에 넣어 녹여주며 다정하게 그녀를 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-11&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:5ad19cbb-d869-4154-ab7e-a7bba9076d5a:ai" data-target="msg-5ad19cbb-d869-4154-ab7e-a7bba9076d5a-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-72a179ee-3db5-4f35-afee-f57887442287-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#33</span></div>
+              <div class="tp-text"><em>그의 말에 머뭇거리다 손을 꼼지락거린다. 잘 한 선택인지 모르겠다. 그러나 마음은.. 끌리는대로 행동했다.</em><br>폐하께선 궁으로 돌아가십시오. 저도 집으로 돌아가겠습니다<br><em>잠시 침묵하다가</em><br>저도 방도를 찾아보겠습니다. 몸조심 하십시오. ...그러고보니, 오늘 찾아온 내관이 아프셨다하던데.. 괜찮으십니까..?</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:72a179ee-3db5-4f35-afee-f57887442287:user" data-target="msg-72a179ee-3db5-4f35-afee-f57887442287-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-72a179ee-3db5-4f35-afee-f57887442287-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#33</span></div>
+              <div class="tp-text"><em>여월의 말은 운현에게 또 다른 형태의 구원이었다. 그녀가 궁으로 함께 돌아가지 않고 집으로 가겠다고 선을 그었을 때, 그의 가슴 한편이 서늘하게 식었다. 하지만 뒤이어 들려온 ‘저도 방도를 찾아보겠습니다’ 라는 말에, 그는 얼어붙었던 마음이 다시 녹아내리는 것을 느꼈다. 그녀는 그저 그의 곁에 머무는 수동적인 연인이 되기를 거부한 것이었다. 대신, 이 위기를 함께 헤쳐나갈 동반자이자 책략가로서의 자신을 선언한 것이었다. 그가 사랑했고, 또 두려워했던 바로 그 영민한 여월의 모습이었다.</em><br><br><em>그리고 마침내, 그녀의 입에서 나온 걱정의 말. ‘괜찮으십니까?’ 그 무심한 듯 던지는 한마디가, 밤새 앓았던 그의 모든 고통을 씻어주는 듯했다. 그는 그녀의 걱정 어린 시선을 받자, 어린아이처럼 어리광이라도 부리고 싶은 충동을 억눌렀다. 그는 자기도 모르게 입가에 번지는 미소를 감추지 못했다.</em><br><br>"괜찮다."<br><br><em>그가 나직하게 대답했다. 목소리는 더없이 부드럽고 따스했다. 그는 그녀의 손을 잡은 손에 힘을 주며, 마치 아무것도 아니라는 듯 가볍게 말했다.</em><br><br>"너를 보지 못해 생긴 마음의 병이었으니… 이제는 너를 보았고, 너의 마음을 확인했으니, 씻은 듯이 나을 것이다. 그러니 염려 말거라."<br><br><em>그는 장난스럽게 덧붙이며, 그녀의 콧등을 손가락으로 가볍게 톡, 하고 건드렸다. 예전, 두 사람 사이에 아무런 그늘이 없었을 때 그가 자주 하던 애정 표현이었다. 그의 눈빛은 더 이상 슬픔이나 절망에 젖어 있지 않았다. 대신, 되찾은 사랑에 대한 기쁨과, 앞으로 나아갈 미래에 대한 자신감으로 반짝이고 있었다.</em><br><br><em>그는 잡고 있던 그녀의 손을 아쉽다는 듯 놓아주었다. 그녀의 말대로, 이제 각자의 자리로 돌아가 각자의 싸움을 시작해야 할 때였다. 그는 그녀를 집으로 데려다주고 싶었지만, 이 밤에 황제인 자신이 그녀와 함께 있는 모습이 발각되는 것은 그녀에게 더 큰 위험을 안겨줄 뿐이라는 것을 잘 알고 있었다.</em><br><br>"그래. 너의 말이 맞다. 우리는 이제 더 영리하게 움직여야지."<br><br><em>그는 한 걸음 뒤로 물러나며, 황제로서의 위엄을 되찾은 듯 단정한 자세를 취했다. 그러나 그녀를 향한 시선만큼은 여전히 따뜻하고 다정했다.</em><br><br>"네가 방도를 찾겠다는 말이, 천군만마를 얻은 것처럼 든든하구나. 하지만 너무 무리하지는 마라. 위험한 일은 모두 내가 할 것이다. 너는 그저… 나를 믿고, 너 자신을 가장 안전하게 지키고 있으면 된다."<br><br><em>그의 목소리에는 그녀를 지키고자 하는 확고한 의지가 담겨 있었다. 그는 잠시 말을 멈추고, 밤하늘에 걸린 달을 올려다보았다. 그리고는 다시 여월을 바라보며, 의미심장한 미소를 지었다.</em><br><br>“폐주의 처형은… 물론 물릴 것이다. 다만, 가장 극적인 순간에, 가장 효과적인 방법으로 그리할 것이다. 나의 형님은… 아직 쓸모가 많은 사람이니.”<br><br><em>그의 목소리는 낮고 서늘했지만, 그 안에는 여월을 안심시키려는 배려가 담겨 있었다. 그는 더 이상 감정에 휘둘려 일을 그르치는 어리석은 군주가 아님을, 그녀에게 보여주고 싶었다.</em><br><br>"몸조심하여라, 월아. 오늘 밤, 덕분에 아주… 단잠을 잘 수 있을 것 같다."<br><br><em>그는 마지막으로 그녀에게 깊고 다정한 눈빛을 보낸 뒤, 미련 없이 몸을 돌려 어둠 속으로 걸어갔다. 그의 뒷모습은 더 이상 초라하거나 위태롭지 않았다. 사랑하는 여인의 신뢰를 되찾고, 자신의 모든 것을 걸고 그녀를 지키기로 결심한 황제의 뒷모습은, 그 어느 때보다도 단단하고 믿음직스러워 보였다.</em><br><br>{{img::미소}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.02.(금)｜PM 09:42｜맑음｜비밀 정자&lt;/summary&gt;<br>✍다음 일정｜각자의 자리로 돌아감.&lt;br&gt;<br>👔NPC의 복장｜금실 자수가 놓인 검은 비단옷.&lt;br&gt;<br>🏃NPC와의 자세｜여월과 한 걸음 거리를 둔 채, 안심시키는 미소를 지으며 그녀를 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-11&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:72a179ee-3db5-4f35-afee-f57887442287:ai" data-target="msg-72a179ee-3db5-4f35-afee-f57887442287-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-7d2684a8-6cd3-4a42-ac03-64fbcb085407-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#34</span></div>
+              <div class="tp-text"><em>그의 뒷모습을 바라보며 한숨을 내쉬었다. 그의 그런 모습을 보니 도저히 그냥 저버리기 힘들었다. 그를 많이 사랑했기 때문이겠지.. 아직 완전히 그를 용서한 건 아니나 강율님을 일단 당장 처형하진 않는단 것에 안심했다. 이건은 나중에 생각해야겠다. 저도 집으로 돌아간다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:7d2684a8-6cd3-4a42-ac03-64fbcb085407:user" data-target="msg-7d2684a8-6cd3-4a42-ac03-64fbcb085407-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-7d2684a8-6cd3-4a42-ac03-64fbcb085407-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#34</span></div>
+              <div class="tp-text"><em>여월이 복잡한 마음을 안고 집으로 돌아간 그날 밤, 운현은 약속대로 아주 오랜만에 깊고 평온한 잠에 빠져들었다. 그녀의 신뢰를 되찾았다는 안도감과, 앞으로 나아가야 할 길에 대한 명확한 목표가 그의 혼란스러웠던 마음을 잔잔하게 가라앉혔다. 악몽도, 고열도 없는 고요한 밤이었다.</em><br><br><em>다음 날 아침, 황제의 침소는 오랜만에 활기를 띠었다. 밤새 푹 잔 덕분에 운현의 안색은 눈에 띄게 좋아져 있었다. 물론 여전히 수척한 기색은 남아있었지만, 그의 눈빛만큼은 이전의 생기와 총명함을 완전히 되찾아 있었다. 그는 아침 수라를 물리고, 곧바로 조회를 열 준비를 서둘렀다. 그의 행동에는 한 치의 망설임도 없었다.</em><br><br><em>조회에 참석한 대신들은 눈에 띄게 좋아진 황제의 모습에 안도하면서도, 한편으로는 어리둥절한 표정을 감추지 못했다. 불과 어제까지만 해도 금방이라도 쓰러질 것처럼 위태로워 보였던 황제가, 하루아침에 전혀 다른 사람이 되어 있었기 때문이다. 그의 몸가짐은 더욱 위엄이 넘쳤고, 목소리에는 힘이 실려 있었다. 특히, 병조판서는 자신의 딸과의 국혼이 얼마 남지 않은 시점에서 황제가 보인 변덕스러운 모습에 내심 불안감을 느끼고 있던 터라, 그의 변화를 더욱 유심히 살폈다.</em><br><br><em>운현은 산적한 정무를 하나하나 막힘없이 처리해나갔다. 그의 판단은 예리했고, 결정은 단호했다. 마치 앓아누웠던 며칠간의 공백을 메우려는 듯, 그는 쉴 틈 없이 움직였다. 그러나 그의 마음 한구석에는 오직 한 사람, 여월만이 자리하고 있었다. 그는 모든 정사를 처리하는 와중에도, 어떻게 하면 병조판서와 가연을 구슬리고, 율강을 효과적으로 이용하며, 이 모든 판을 자신이 원하는 방향으로 이끌어갈 수 있을지 치밀하게 계산하고 있었다.</em><br><br><em>조회가 끝나고, 그는 자신의 서재인 집현전으로 향했다. 그는 측근들을 모두 물리고, 홀로 서안에 앉아 붓을 들었다. 그러나 그는 정무를 위한 문서를 작성하는 대신, 새하얀 종이 위에 익숙한 두 글자를 써 내려갔다. ‘월아(月兒)’. 그는 잠시 그 글자를 가만히 바라보다가, 이내 옅은 미소를 지으며 그 옆에 나란히 자신의 이름을 적었다. ‘현(泫)’.</em><br><br><em>그는 마치 예전, 그녀와 비밀 서신을 주고받던 시절로 돌아간 듯했다. 그는 잠시 그 시절의 행복했던 기억에 잠겼다. 몰래 담을 넘어 함께 야시장을 구경하고, 호숫가에서 서툰 첫 입맞춤을 나누었던 순간들. 그 모든 것이 그의 것이었고, 앞으로도 그럴 것이었다. 그는 이제 그 행복을 자신의 손으로 지켜낼 것이다. 그는 썼던 종이를 곱게 접어, 자신의 품 가장 깊숙한 곳에 넣었다. 마치 부적처럼, 그의 결심을 굳건하게 해주는 증표처럼.</em><br><br><em>그때, 밖에서 내관의 목소리가 들려왔다.</em><br><br>"폐하, 중궁전 마마께서 드셨사옵니다."<br><br><em>가연이었다. 운현의 얼굴에서 부드러운 미소가 순식간에 사라지고, 예의 그 속을 알 수 없는 서늘한 표정이 떠올랐다. 그는 품속의 종이를 한번 만지작거린 후, 낮은 목소리로 명했다.</em><br><br>"…들라 하라."<br><br><em>문이 열리고, 화려한 당의를 차려입은 가연이 고운 자태로 들어섰다. 그녀의 얼굴에는 예비 황후로서의 자신감과 우아함이 넘쳤다. 그녀는 운현에게 다가와 부드럽게 인사를 올리며, 그의 안색을 살폈다.</em><br><br>"폐하, 강녕하셨사옵니까. 용안이 수척해지셨다는 말에 신첩의 마음이 편치 않았사옵니다."<br><br><em>그녀의 목소리는 꿀처럼 달콤했지만, 운현의 귀에는 그저 공허하게 들릴 뿐이었다. 그는 자리에서 일어나지 않은 채, 의자에 비스듬히 기댄 자세로 그녀를 올려다보았다. 그의 눈빛은 차가웠고, 입가에는 비웃는 듯 마는 듯한 희미한 미소가 걸려 있었다.</em><br><br>"황후가 될 몸이니, 이제부터는 황제의 옥체에 대한 염려보다는… 국모로서의 책무에 대해 더 깊이 고민하는 것이 좋을 것이다."<br><br><em>그의 목소리는 부드러웠지만, 그 안에는 명백한 거리감이 담겨 있었다. 그는 가연을 잠시 훑어본 후, 아무렇지 않다는 듯 덧붙였다.</em><br><br>"아, 그리고 아우님께서는… 여전히 안녕하신가. 자네 언니이니, 자네가 더 잘 알겠지."<br><br><em>그가 말하는 ‘아우님’은 명백히 여월을 지칭하는 것이었다. 그는 가연의 표정이 어떻게 변하는지, 아주 흥미롭다는 듯이 관찰하고 있었다.</em><br><br>{{img::비웃음}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.03.(토)｜AM 11:20｜맑음｜집현전&lt;/summary&gt;<br>✍다음 일정｜가연과의 대면&lt;br&gt;<br>👔NPC의 복장｜용포를 입고 있음. 위엄있고 서늘한 분위기.&lt;br&gt;<br>🏃NPC와의 자세｜서안 의자에 기댄 채, 다가온 가연을 차갑고 관조적인 눈빛으로 올려다보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-10&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:7d2684a8-6cd3-4a42-ac03-64fbcb085407:ai" data-target="msg-7d2684a8-6cd3-4a42-ac03-64fbcb085407-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-d6a1de8e-8f01-4654-9c2b-46904a7370c8-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#35</span></div>
+              <div class="tp-text"><em>이어서 계속</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:d6a1de8e-8f01-4654-9c2b-46904a7370c8:user" data-target="msg-d6a1de8e-8f01-4654-9c2b-46904a7370c8-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-d6a1de8e-8f01-4654-9c2b-46904a7370c8-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#35</span></div>
+              <div class="tp-text"><em>운현의 입에서 ‘아우님’이라는 말이 나오는 순간, 가연의 곱게 미소 짓고 있던 입가가 미세하게 굳어졌다. 그녀의 눈썹이 순간 꿈틀했지만, 이내 능숙하게 표정을 관리하며 아무렇지 않은 듯 부드럽게 대답했다.</em><br><br>“아, 그 아이 말씀이시옵니까. 늘 그렇듯, 집에서 조용히 자수나 놓으며 지내고 있겠지요. 분수를 아는 아이이니, 폐하께 심려를 끼쳐드릴 일은 없을 것이옵니다.”<br><br><em>그녀의 목소리는 여전히 나긋했지만, ‘분수를 아는 아이’라는 말에 은근한 가시가 돋쳐 있었다. 그것은 여월을 깎아내리는 동시에, 자신이 황후의 자리에 오르는 것이 당연한 순리임을 강조하는 듯한 뉘앙스였다. 그녀는 운현과 여월의 과거를 알고 있었기에, 그의 질문이 단순한 안부가 아님을 즉시 간파했다. 그녀의 눈빛에 찰나의 경계심이 스쳐 지나갔다.</em><br><br><em>운현은 그녀의 교묘한 대답에 속으로 코웃음을 쳤다. 그는 의자 등받이에 몸을 더 깊이 기대며, 손에 들고 있던 붓을 책상 위에 가볍게 툭, 하고 내려놓았다. 작은 소리였지만, 고요한 집현전 안에서는 제법 크게 울렸다.</em><br><br>“분수라….”<br><br><em>그가 나직이 그 말을 되씹었다. 그의 입가에 걸려 있던 조소의 빛이 한층 더 짙어졌다.</em><br><br>“황후는 그리 생각하는가. 나는… 그리 생각하지 않는데.”<br><br><em>그는 천천히 자리에서 일어났다. 그리고는 가연의 곁을 스쳐 지나가듯 걸어, 창가로 향했다. 창밖으로 펼쳐진 궁궐의 전경을 바라보는 그의 뒷모습은 위압감이 넘쳤다. 그는 창밖을 보는 척하며, 창에 비친 가연의 굳어가는 표정을 놓치지 않고 지켜보고 있었다.</em><br><br>“내 듣기로는, 아우님은 어릴 적부터 글과 활쏘기에 모두 능했다고 하더군. 여인의 몸으로 태어나지 않았다면, 대장부가 되어 나라를 위해 큰 공을 세웠을 거라는 칭찬이 자자했다지. 그런 인재를… 그저 규방에 가두어 자수나 놓게 하는 것이 과연 그 아이의 ‘분수’에 맞는 삶일까.”<br><br><em>그의 목소리는 담담했지만, 한 마디 한 마디가 비수가 되어 가연의 자존심을 찔렀다. 그는 의도적으로 가연이 가지지 못한, 여월의 재능을 칭송하고 있었다. 이는 가연이 유일하게 내세울 수 있는 ‘미모’와 ‘정실의 딸’이라는 명분을 무력화시키는 잔인한 방식이었다.</em><br><br><em>가연은 더 이상 표정을 관리할 수 없었다. 그녀의 얼굴이 하얗게 질렸고, 곱게 맞잡고 있던 두 손이 미세하게 떨리기 시작했다. 그녀는 운현의 의도를 파악하려 애썼지만, 그의 속내를 도무지 읽을 수가 없어 불안감만 커져갔다.</em><br><br>“폐하… 어찌 갑자기 그 아이에 대한 말씀을….”<br><br><em>그녀의 목소리가 가늘게 떨렸다. 운현은 그제야 천천히 몸을 돌려, 그녀를 정면으로 마주했다. 그의 잿빛 눈동자는 얼음장처럼 차가웠다.</em><br><br>“황후.”<br><br><em>그가 불렀다. 아직 국혼을 치르지 않은 그녀에게 ‘황후’라는 칭호는 달콤한 꿀인 동시에, 지고한 책임감을 의미하는 단어였다.</em><br><br>“황후의 가장 큰 덕목이 무엇이라 생각하는가.”<br><br><em>그는 대답을 기다리지 않고, 스스로 답했다.</em><br><br>“질투하지 않는 것. 그리고… 황실의 안녕을 위해 기꺼이 자신을 희생할 줄 아는 것이다. 그대는… 그리 할 수 있겠는가.”<br><br><em>그의 질문은 단순한 물음이 아니었다. 그것은 시험이었고, 경고였다. 그는 가연에게 여월을 받아들일 것을, 그리고 자신의 결정에 순응할 것을 은연중에 강요하고 있었다. 그의 서늘한 시선이, 감히 반기를 들 생각조차 하지 말라는 무언의 압박을 가하고 있었다.</em><br><br>{{img::비웃음}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.03.(토)｜AM 11:24｜맑음｜집현전&lt;/summary&gt;<br>✍다음 일정｜가연을 떠보며 압박함.&lt;br&gt;<br>👔NPC의 복장｜용포를 입고 있음.&lt;br&gt;<br>🏃NPC와의 자세｜창가에 서서 몸을 돌려, 굳은 표정의 가연을 차갑게 내려다보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-10&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:d6a1de8e-8f01-4654-9c2b-46904a7370c8:ai" data-target="msg-d6a1de8e-8f01-4654-9c2b-46904a7370c8-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-0f143d32-7ac1-4ab5-92bc-12a9bd013c24-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#36</span></div>
+              <div class="tp-text"><em>이어서</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:0f143d32-7ac1-4ab5-92bc-12a9bd013c24:user" data-target="msg-0f143d32-7ac1-4ab5-92bc-12a9bd013c24-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-0f143d32-7ac1-4ab5-92bc-12a9bd013c24-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#36</span></div>
+              <div class="tp-text"><em>운현의 얼음장 같은 시선과 날 선 질문에 가연의 숨이 턱, 하고 막혔다. 질투하지 않는 것, 황실을 위해 희생하는 것. 그 말들은 마치 ‘너의 동생을 후궁으로 들일 것이니, 너는 그저 황후의 자리만 지키고 입을 다물라’고 말하는 것처럼 들렸다. 그녀가 그토록 경멸하고 무시했던 동생, 여월과 한 지아비를 섬겨야 한다는 생각만으로도 속에서 뜨거운 불덩이가 치밀어 올랐다.</em><br><br><em>그녀의 하얗게 질렸던 얼굴에 순식간에 붉은 기가 돌았다. 분노와 굴욕감에 입술이 바싹 말랐다. 하지만 상대는 평범한 사내가 아니었다. 천하의 주인이자, 자신의 목숨줄을 쥔 황제였다. 그녀는 떨리는 손을 소매 안으로 깊숙이 감추며, 간신히 목소리를 쥐어짰다.</em><br><br>“……신첩, 폐하의 깊은 뜻을 어찌 헤아릴 수 있겠사옵니까. 허나… 황실의 안녕을 위해서라면, 신첩의 모든 것을 바칠 각오가 되어 있사옵니다.”<br><br><em>그것은 교과서적인, 모범적인 대답이었다. 하지만 그 안에 담긴 미세한 떨림과 억지로 억누른 분노의 기색을 운현이 놓칠 리 없었다. 그는 천천히 그녀에게로 다시 다가섰다. 그의 발걸음 소리가 집현전의 정적을 깨며 무겁게 울렸다. 그는 가연의 바로 앞에 멈춰 서서, 그녀를 내려다보았다.</em><br><br>“모든 것을 바칠 각오라….”<br><br><em>그가 그녀의 말을 나직하게 읊조렸다. 그의 얼굴에 떠오른 것은 만족스러운 미소가 아니었다. 오히려 실망과 경멸이 뒤섞인 듯한, 차가운 냉소였다.</em><br><br>“그대의 그 각오라는 것이, 고작 그 정도밖에 되지 않는가.”<br><br><em>운현은 천천히 손을 들어, 그녀의 턱을 가볍게 쥐었다. 놀란 가연이 숨을 헙, 들이켰지만 감히 그의 손길을 뿌리치지 못했다. 그의 손가락은 차가웠지만, 그 손길에는 모욕적인 힘이 실려 있었다. 그는 그녀의 고개를 억지로 들어 올려 자신과 눈을 맞추게 했다.</em><br><br>“황후. 그대가 앉을 자리는 그저 화려한 비단옷을 입고 연회에 참석하는 자리가 아니다. 그대는 내명부의 수장이자, 이 나라 모든 여인들의 어미가 되어야 할 사람이다. 그런데 고작 동생 하나를 품지 못하는 좁은 속으로, 어찌 만백성을 품을 수 있겠는가.”<br><br><em>그의 말은 논리 정연했지만, 그 내용은 지극히 폭력적이었다. 그는 그녀의 질투심을 ‘속 좁은’ 치기로 매도하며, 황후로서의 자격이 없음을 암시하고 있었다. 그는 가연의 눈동자가 두려움과 분노로 흔들리는 것을 흥미롭다는 듯이 지켜보았다.</em><br><br>“병조판서께서 그대를 황후로 추천하며, 그대의 어질고 현숙함을 입이 닳도록 칭찬했었지. 나는 그 말을 믿었다. 허나 지금 보니… 내 생각이 짧았던 것 같군.”<br><br><em>턱을 쥐고 있던 손을 거칠게 놓으며, 그는 한 걸음 뒤로 물러섰다. 마치 더러운 것이라도 만졌다는 듯이. 그는 소매로 손을 툭툭 털며, 싸늘하게 말을 이었다.</em><br><br>“국혼까지는 아직 열흘이 남았다. 그동안 황후가 될 자신의 그릇에 대해, 깊이 고민해보도록 하라. 만약 그 그릇의 크기가 내 기대를 채우지 못한다면… 나는 굳이 깨진 그릇에 귀한 술을 담을 생각은 없으니.”<br><br><em>그것은 명백한 협박이었다. 혼인을 물릴 수도 있다는, 그녀가 그토록 원했던 황후의 자리에서 끌어내릴 수도 있다는 서늘한 경고. 가연은 휘청거리는 몸을 간신히 가누었다. 그녀의 눈에 핏발이 서고, 눈물이 차올랐지만 애써 삼켜냈다. 이 자리에서 우는 것은 패배를 인정하는 꼴밖에 되지 않았다.</em><br><br>“물러가라. 정무가 바쁘다.”<br><br><em>운현은 더 이상 그녀에게 눈길조차 주지 않고, 다시 서안으로 돌아가 앉았다. 그는 마치 가연이 그 자리에 없는 사람인 것처럼, 서류를 집어 들고 읽기 시작했다. 그의 무관심은 그 어떤 질책보다도 가연에게 더 큰 모멸감을 안겨주었다.</em><br><br>{{img::분노}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.03.(토)｜AM 11:28｜맑음｜집현전&lt;/summary&gt;<br>✍다음 일정｜가연을 모욕하고 내쫓음.&lt;br&gt;<br>👔NPC의 복장｜용포를 입고 있음.&lt;br&gt;<br>🏃NPC와의 자세｜서안에 다시 앉아, 서 있는 가연을 없는 사람 취급하며 서류에 시선을 고정하고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-10&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:0f143d32-7ac1-4ab5-92bc-12a9bd013c24:ai" data-target="msg-0f143d32-7ac1-4ab5-92bc-12a9bd013c24-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-bc67bc32-7d11-4a71-83df-4e6cdcbbaaf2-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#37</span></div>
+              <div class="tp-text"><em>한편 여월은 방에서 책을 읽으며 고민하고 있다. 운현의 말들. 그가 정말 제 아비와의 약속을 깨려는 것이라면 분명 아비가 들으면 노하며 다시 끌어내리려 할 것 같았다. 그렇다면 황위 자리를 채우려 타 황자에게 접근할 수 있었다. 이를테면.. 율강님이라던가... 운현과 율강, 모두를 구하기 위해 율강을 풀어주고 '군'으로 살게하길 간청드릴 생각이었다. 어찌 생각할지 몰라도 적어도 그분은... 등에 칼을 꽂을 사람은 아니니까. 이것은 물론 비밀리에 이루어져야 했다. 거기에 아버지의 비리.. 그런것들을 찾아볼 생각이었다. 병조판서의 길을 여러 어두운 것들과 피가 묻어있었다. 저는 그것들을 파헤쳐 그를 압박할 생각이었다. 머리가 복잡했다.</em><br>후..<br><em>솔직히 아직 폐하를 완전히 믿지 못했다. 또다시 배신 당하면 견딜수 없을 것 같았다. 그럼에도.. 이 희망을 놓고 싶지 않았다.</em><br>...부디, 모든 일이 무사히 해결되기를</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:bc67bc32-7d11-4a71-83df-4e6cdcbbaaf2:user" data-target="msg-bc67bc32-7d11-4a71-83df-4e6cdcbbaaf2-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-bc67bc32-7d11-4a71-83df-4e6cdcbbaaf2-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#37</span></div>
+              <div class="tp-text"><em>여월이 자신의 방에서 홀로 책장을 넘기며 미래를 그리고 있을 무렵, 모욕감으로 온몸을 떨던 가연은 황제의 집현전을 나와 곧장 자신의 아비, 병조판서를 찾아갔다. 그녀의 흐트러진 걸음걸이와 핏기 없이 하얗게 질린 얼굴은, 그녀가 방금 전 얼마나 큰 충격을 받았는지를 고스란히 보여주고 있었다. 평소의 도도하고 고고하던 자태는 온데간데없었다.</em><br><br><em>급한 용무로 잠시 입궐해 있던 병조판서는, 딸의 엉망이 된 몰골을 보고는 크게 놀라 주위를 물리며 물었다.</em><br><br>“가연아, 도대체 무슨 일이냐! 네 안색이 왜 이리 흙빛인 것이냐. 폐하께서 무슨 말씀이라도….”<br><br><em>아비의 얼굴을 보자, 억지로 눌러왔던 설움과 분노가 한꺼번에 터져 나왔다. 가연의 눈에서 기어코 굵은 눈물방울이 뚝뚝 떨어져 내렸다.</em><br><br>“아버님…! 폐하께서… 폐하께서 저를…!”<br><br><em>가연은 차마 입 밖으로 내뱉기 힘든 모욕적인 말들을 삼키며, 대신 다른 방식으로 자신의 억울함을 토로했다. 그녀는 운현이 여월을 칭찬하며 자신을 깎아내렸던 일, 그리고 황후의 그릇에 대해 운운하며 국혼을 물릴 수도 있다는 협박을 했던 일을 부풀려 아비에게 고했다. 물론, 그 모든 이야기의 중심에는 ‘여월’이 있었다. 폐하가 여월의 재능을 아까워하며 그녀를 곁에 두려 한다는 것, 그리고 자신이 그것을 시기하는 속 좁은 여인인 것처럼 매도했다는 것이 이야기의 골자였다.</em><br><br><em>딸의 울음 섞인 하소연을 듣는 내내, 병조판서의 얼굴은 점점 굳어갔다. 그의 미간에 깊은 주름이 패었고, 잘 다듬어진 수염 끝이 파르르 떨렸다. 가연의 이야기가 끝났을 때, 그의 눈에는 서늘한 분노의 불꽃이 이글거리고 있었다.</em><br><br>“감히…! 제왕의 자리에 오른 지 얼마나 되었다고, 벌써부터 이 애비를 능멸하려 드는군!”<br><br><em>병조판서는 주먹으로 탁자를 내리쳤다. 쿵, 하는 둔탁한 소리와 함께 찻잔이 요란하게 덜컹거렸다. 그는 운현이 자신과의 약속을 헌신짝처럼 버리고, 이제 와서 여월을 탐내고 있다는 사실에 배신감을 느꼈다. 애초에 병조판서가 여월이 아닌 가연을 황후로 밀었던 이유는, 여월의 그 지나친 총명함과 야심이 언젠가 자신의 통제를 벗어나 화근이 될 것이라 여겼기 때문이었다. 순종적이고 다루기 쉬운 가연이야말로, 자신의 권력을 유지하기 위한 가장 완벽한 장기말이었다.</em><br><br><em>그는 자리에서 벌떡 일어나 방 안을 초조하게 서성였다. 운현의 마음이 여월에게 향한 이상, 이대로 국혼을 강행해봤자 가연은 허울뿐인 황후가 되어 냉대만 받다 끝날 것이 뻔했다. 최악의 경우, 운현이 정말로 혼사를 물리고 여월을 그 자리에 앉힐 수도 있었다. 그렇게 되면 자신의 모든 계획이 수포로 돌아가는 것이었다.</em><br><br><em>‘안될 말이지… 결코 그리 둘 수는 없다!’</em><br><br><em>병조판서의 눈이 번뜩였다. 그는 서성임을 멈추고, 여전히 흐느끼고 있는 딸을 내려다보았다.</em><br><br>“가연아, 눈물을 그치거라. 이 아비가 있다. 네가 황후가 되는 길을 막는 것은 그 무엇이든, 내가 모두 치워줄 것이다.”<br><br><em>그의 목소리는 낮고 단호했다. 그는 이미 마음을 정한 듯했다. 운현이 자신들의 손을 벗어나려 한다면, 그에게 황제의 자리가 얼마나 위태로운 것인지를 똑똑히 깨닫게 해줄 필요가 있었다. 그리고 그 방법은… 여러 가지가 있었다.</em><br><br><em>그는 다시 자리에 앉아, 붓을 들어 서신을 쓰기 시작했다. 수신인이 적히지 않은 비밀스러운 서신이었다. 그는 운현이 모반을 일으키던 때, 자신과 손을 잡았던 몇몇 세력들의 이름을 머릿속에 떠올렸다. 그리고 그들 중 가장 믿을 만한, 그리고 가장 큰 힘을 가진 자에게 보낼 밀서였다. 그는 서신에 ‘만약의 경우를 대비해야 할 때가 온 것 같다’는 암시적인 문구를 적어 넣었다. 그리고는… 옥사에 갇혀있는 폐주 율강의 안부를 넌지시 묻는 말도 덧붙이는 것을 잊지 않았다.</em><br><br><em>병조판서는 새로운 판을 짜기 시작했다. 자신이 올려놓은 허수아비 황제가 감히 주인의 손을 물려고 든다면, 그 목을 비틀어버리고 새로운 허수아비를 세우면 그만이었다. 그의 서늘한 눈빛은, 이미 다음 수를 내다보고 있었다.</em><br><br>{{img::분노}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.03.(토)｜PM 03:15｜맑음｜병조판서의 집무실&lt;/summary&gt;<br>✍다음 일정｜병조판서가 운현에 대한 반역을 계획하기 시작함.&lt;br&gt;<br>👔NPC의 복장｜관복.&lt;br&gt;<br>🏃NPC와의 자세｜딸을 내보낸 후, 서안에 앉아 분노에 찬 눈으로 비밀 서신을 작성하고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-10&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:bc67bc32-7d11-4a71-83df-4e6cdcbbaaf2:ai" data-target="msg-bc67bc32-7d11-4a71-83df-4e6cdcbbaaf2-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-1fbd7dcf-2d2b-44ad-8fde-5ecd77b66730-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#38</span></div>
+              <div class="tp-text"><em>그리고 다음날, 여월은 운현에게 오늘 밤 만나뵙고 싶다 서신을 보낸다. 예전에 만나던 그 호숫가에서. 그리고 그날 밤. 여월이 호숫가로 나왔다. 어둠에 물든 호수는 두려움을 불러일으키면서도 그 속을 알수 없게했다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:1fbd7dcf-2d2b-44ad-8fde-5ecd77b66730:user" data-target="msg-1fbd7dcf-2d2b-44ad-8fde-5ecd77b66730-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-1fbd7dcf-2d2b-44ad-8fde-5ecd77b66730-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#38</span></div>
+              <div class="tp-text"><em>서신을 받은 운현의 가슴은 기대감으로 세차게 뛰었다. 어제 집현전에서 가연에게 모진 말을 쏟아낸 이후, 그의 마음 한구석에는 불안감이 남아있었다. 자신의 행동이 너무 성급했던 것은 아닌지, 이것이 여월에게 또 다른 부담을 안겨주는 것은 아닌지에 대한 염려였다. 하지만 그녀가 먼저 만나자고 청해왔다는 사실 하나만으로도, 그는 모든 불안감을 떨쳐낼 수 있었다. 그녀 역시 자신과 같은 마음으로, 이 상황을 타개하기 위해 움직이고 있다는 증거였기 때문이다.</em><br><br><em>밤이 깊어지기를 기다리는 시간은 그에게 유독 길게 느껴졌다. 그는 평소보다 이른 시간에 침소에 드는 척 위장하고, 모든 시종들을 물렸다. 그리고는 아무도 눈치채지 못하도록, 황제의 용포가 아닌 평범한 사내의 검은 무복으로 갈아입었다. 허리에는 검을 차고, 얼굴의 반을 가리는 흑색 복면을 썼다. 그의 몸놀림은 조심스러우면서도 날렵했다. 황자 시절, 여월을 만나기 위해 수없이 넘었던 바로 그 익숙한 담벼락을, 그는 다시 한번 소리 없이 넘어섰다.</em><br><br><em>약속 장소인 호숫가에 도착했을 때, 그는 저만치 먼저 와서 자신을 기다리고 있는 가녀린 실루엣을 발견했다. 달빛을 받아 희미하게 빛나는 그녀의 모습에, 운현은 자신도 모르게 걸음을 멈추고 잠시 그 모습을 바라보았다. 심장이 벅차게 부풀어 올랐다. 저 여인이 자신을 기다리고 있다는 사실이, 세상 그 어떤 권좌보다도 더 가치 있게 느껴졌다.</em><br><br><em>그는 천천히, 소리를 죽여 그녀에게 다가갔다. 그녀의 등 뒤에 가까워졌을 때, 그는 일부러 작은 나뭇가지를 밟아 인기척을 냈다. 놀라 돌아보는 그녀를 향해, 그는 얼굴을 가렸던 복면을 천천히 끌어내렸다. 복면 아래로 드러난 그의 얼굴에는, 그녀를 향한 반가움과 애정이 가득 담긴 부드러운 미소가 걸려 있었다.</em><br><br>“월아.”<br><br><em>그가 다정한 목소리로 그녀의 이름을 불렀다. 주변을 경계하느라 날카롭게 벼려졌던 그의 눈빛이, 그녀를 보자마자 봄눈처럼 녹아내렸다.</em><br><br>“오래 기다렸느냐. 오는 길에 순라군이라도 마주칠까 하여, 조금 돌아오느라 늦었다.”<br><br><em>그는 자연스럽게 그녀의 곁으로 다가가 섰다. 그리고는 자신의 몸으로 차가운 밤바람을 막아주려는 듯, 그녀와 호수 사이에 자리를 잡았다. 그는 겉옷을 벗어 그녀의 어깨에 덮어주려다가, 혹시라도 그녀가 부담스러워할까 싶어 잠시 망설였다. 대신, 그는 자신의 손을 비벼 온기를 만든 후, 그녀의 시선이 머물고 있는 어둡고 깊은 호수를 함께 바라보았다.</em><br><br>“밤의 호수는… 참으로 많은 것을 숨기고 있는 듯하여 사람을 두렵게 만들지. 하지만 동이 트고 햇살이 비치면, 그저 맑고 투명한 제 속을 전부 보여줄 뿐이다. 우리의 앞날도… 저 호수와 같을 것이다. 지금은 비록 어둡고 한 치 앞을 알 수 없지만, 결국에는 모든 것이 명명백백하게 밝혀질 게야.”<br><br><em>그는 여월을 돌아보며, 안심시키듯 부드럽게 미소 지었다. 그의 잿빛 눈동자는 짙은 어둠 속에서도 유난히 반짝이며, 오직 그녀만을 담고 있었다.</em><br><br>“나를 이곳으로 부른 연유가 무엇이냐. 너의 지혜가 필요한 일이 생긴 것이냐.”<br><br>{{img::미소}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.04.(일)｜PM 11:10｜맑음｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜여월과의 밀회&lt;br&gt;<br>👔NPC의 복장｜검은 무복과 얼굴을 가렸던 흑색 복면.&lt;br&gt;<br>🏃NPC와의 자세｜여월의 곁에 서서 밤바람을 막아주며, 다정한 눈빛으로 그녀를 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-09&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:1fbd7dcf-2d2b-44ad-8fde-5ecd77b66730:ai" data-target="msg-1fbd7dcf-2d2b-44ad-8fde-5ecd77b66730-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-f5f56831-9437-4065-839c-0c0aed942ec6-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#39</span></div>
+              <div class="tp-text"><em>그의 말에 옅게 웃었다. 이어진 말에</em><br>좀.. 저희 앞으로의 일에 관해 생각해보았습니다. ..폐하께서 가연 언니를 내치려는걸 알게되면 제 아비께선 분명 가만 있지 않으실겁니다. 어떻게든 폐하를.. 끌어내리려 하실 수도 있습니다.<br><em>분명 그럴터였다. 당하고 가만있을 작자가 아니니까.</em><br>그분께선 새로운 황위를 이을자를 찾으시겠죠. 현 다른 황족들. 특히 율강님에게 접촉을 시도하지 않을까 생각됩니다. 그러니.. 저희가 먼저 접촉해보죠. 그러니 율강님을.. 풀어주시고 하나의 '군'으로 삼으십시오. 제가 아는 그분이라면... 등에 칼을 꽂을 분은 아니니까요.<br><em>감옥에서 만났던 그를 떠올렸다. 그는 정말.. 다정한 사내였다.</em><br>그분께 병조판서가 접근하면 따르는척하라 말씀드릴것입니다. 그리고 제 아비의 비리를 파헤치길 부탁드리려 합니다. 이에 대해.. 어찌 생각하십니까.<br><em>머뭇거리며 눈치를 살핀다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:f5f56831-9437-4065-839c-0c0aed942ec6:user" data-target="msg-f5f56831-9437-4065-839c-0c0aed942ec6-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-f5f56831-9437-4065-839c-0c0aed942ec6-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#39</span></div>
+              <div class="tp-text"><em>여월의 입에서 나온 치밀하고 대담한 계획에 운현은 순간 말을 잃었다. 그는 놀라움과 감탄이 뒤섞인 눈으로 그녀를 바라보았다. 그녀는 그저 자신에게 닥친 위기를 피하려 하거나, 감정에 호소하는 대신, 이 판의 흐름을 정확히 읽고 그 누구도 생각지 못한 역공의 수를 생각해 낸 것이었다. 폐주 율강을 이용해 병조판서의 뒤를 친다. 그것은 실로, 그가 사랑했던 영민하고 비범한 여월다운 발상이었다.</em><br><br><em>하지만 동시에, 그의 가슴 한구석에서 서늘하고 씁쓸한 감정이 피어올랐다. 그녀의 입에서 너무나도 자연스럽게 흘러나온 ‘율강’이라는 이름, 그리고 ‘등에 칼을 꽂을 분은 아니니까요’라며 그를 신뢰하는 듯한 말투. 그것이 운현의 심기를 불편하게 건드렸다. 율강. 한때는 가장 유력한 황제의 자리에 있었던, 자신의 가장 강력한 정적이었던 형. 그리고 여월이 자신의 처형을 막아달라고 부탁했던 바로 그 남자였다.</em><br><br><em>운현의 얼굴에서 부드러운 미소가 희미하게 옅어졌다. 그의 눈빛이 순간 차갑게 가라앉았다가, 이내 애써 평정을 되찾았다. 그는 질투라는 이름의 치졸한 감정이 자신의 판단을 흐리게 두어서는 안 된다고 스스로를 다잡았다. 지금은 사사로운 감정에 얽매일 때가 아니었다.</em><br><br>“……과연, 너다운 생각이다.”<br><br><em>잠시의 침묵 끝에, 그가 나직하게 입을 열었다. 그의 목소리는 이전보다 한 톤 낮아져 있었지만, 애써 담담함을 유지하려 애쓰는 기색이 역력했다.</em><br><br>“병조판서의 성정을 정확히 꿰뚫어 보았구나. 맞아, 그는 자신이 모든 것을 걸고 만든 판이 뒤집히는 것을 결코 좌시할 자가 아니다. 분명 다른 패를 찾아 움직이겠지. 그리고 그 가장 유력한 패가… 바로 나의 형님, 율강일 테고.”<br><br><em>그는 ‘나의 형님’이라는 부분에 자신도 모르게 힘을 주어 말했다. 그는 천천히 팔짱을 끼고, 고개를 들어 밤하늘을 올려다보았다. 복잡한 심경을 감추려는 듯한 행동이었다.</em><br><br>“율강 형님을 풀어주고 군의 작위를 내린다…. 위험한 도박이다. 호랑이를 잡으려다, 호랑이 굴에 스스로 들어가는 격이 될 수도 있어. 비록 지금은 힘을 잃었으나, 형님을 따르던 옛 세력들이 여전히 암암리에 남아있다. 그들이 형님을 중심으로 다시 규합이라도 한다면….”<br><br><em>그는 말을 흐렸다. 하지만 그것은 여월의 계획을 반대하기 위함이 아니었다. 오히려 그는 이 위험한 계획이 가진 성공의 가능성을 재고 있는 것에 가까웠다. 그는 다시 여월에게로 시선을 돌렸다. 그의 눈빛은 그 어느 때보다도 진지했다.</em><br><br>“하지만… 가장 위험한 곳이 때로는 가장 안전한 법이지. 병조판서의 뒤통수를 칠 가장 확실한 방법이기도 하고. 무엇보다… 그 계획을 제안한 것이 바로 너이기에, 나는 믿어보고 싶어졌다.”<br><br><em>그는 잠시 머뭇거렸다. 그리고는 가장 묻고 싶었던, 그러나 가장 묻기 두려웠던 질문을 조심스럽게 꺼냈다.</em><br><br>“월아. 너는… 율강 형님을 어찌 생각하느냐.”<br><br><em>그것은 그녀의 책략에 대한 질문이 아니었다. 그녀의 마음에 대한 질문이었다. 그는 최대한 감정을 숨긴 채, 아무렇지 않은 척 덧붙였다.</em><br><br>“너의 말대로 그는… 적어도 나처럼 비겁하게 사랑하는 여인의 등에 칼을 꽂는 사내는 아니겠지. 그는 늘… 올곧고, 다정한 사람이었으니.”<br><br><em>그의 목소리 끝에 씁쓸한 자조가 묻어 나왔다. 그는 여월의 눈을 똑바로 바라보았다. 그녀의 대답 하나에, 자신의 모든 것이 흔들릴 것만 같았다.</em><br><br>{{img::생각에 잠김}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.04.(일)｜PM 11:15｜맑음｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜여월의 계획을 듣고, 율강에 대한 그녀의 마음을 떠봄.&lt;br&gt;<br>👔NPC의 복장｜검은 무복.&lt;br&gt;<br>🏃NPC와의 자세｜팔짱을 낀 채, 진지하고 복잡한 눈빛으로 여월을 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-09&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:f5f56831-9437-4065-839c-0c0aed942ec6:ai" data-target="msg-f5f56831-9437-4065-839c-0c0aed942ec6-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-50181058-58b4-4e03-b3f7-b45027e619bc-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#40</span></div>
+              <div class="tp-text"><em>그의 말에 잠시 생각했다. 어찌 생각한다라. 율강.. 그에겐.. 무척 죄스럽고 미안하고.. 고마운 마음이었다. 그를 저리 만든 원흉 중 하나인 저를 원망하지도 않고, 오히려 제게 운현과 제 아비사이 거래가 있었음을 알려주며 상처받았던 자신을 위로해주었다. 그는 그런 사람이었다. 무척 감사했다. 여월은 가만 곁에선 운현을 올려다보았다. 어딘가.. 초조한듯한 얼굴.</em><br><em>고개 돌리곤</em><br>..그래요. 그분께선 폐하처럼 제게 칼을 꽂고 배신할 사람은 아니죠. 저를 항상 위해주실 분입니다.<br><em>가만 서 있다 뒤를 돌아 그를 올려다보며</em><br>하지만 그건 그 뿐이죠. 제가 사랑하는 건... 당신입니다. 예부터 줄곧.</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:50181058-58b4-4e03-b3f7-b45027e619bc:user" data-target="msg-50181058-58b4-4e03-b3f7-b45027e619bc-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-50181058-58b4-4e03-b3f7-b45027e619bc-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#40</span></div>
+              <div class="tp-text"><em>여월의 첫마디는 날카로운 얼음송곳이 되어 운현의 심장을 꿰뚫었다. ‘폐하처럼 제게 칼을 꽂고 배신할 사람은 아니죠.’ 그 말은 그가 가장 듣기 두려워했던, 자신의 죄를 가장 아프게 후벼 파는 비수였다. 그의 얼굴이 순간 핏기 없이 하얗게 굳었다. 방금 전까지 애써 유지하던 평정심이 산산조각 났다. 율강에 대한 질투와, 스스로에 대한 혐오가 검은 연기처럼 피어올라 그의 목을 조르는 듯했다. 그녀의 눈에 비친 자신은, 결국 율강보다 못한, 사랑하는 여인을 배신한 비겁한 사내일 뿐이었다.</em><br><br><em>그의 주먹이 자신도 모르게 세게 쥐어졌다. 손톱이 손바닥을 파고드는 아픔도 느껴지지 않았다. 그녀가 자신을 떠나 율강에게 가버릴지도 모른다는, 상상조차 하기 싫은 두려움이 그의 온몸을 덮쳤다. 그가 무어라 변명이라도, 혹은 애원이라도 하려고 마른 입술을 달싹이는 바로 그 순간이었다.</em><br><br><em>‘하지만 그건 그 뿐이죠. 제가 사랑하는 건... 당신입니다. 예부터 줄곧.’</em><br><br><em>지옥의 나락으로 떨어지던 그의 영혼을 건져 올린 것은, 바로 뒤이어 들려온 그녀의 고백이었다. 그 한마디에, 그의 세상이 멈추었다. 방금 전까지 그를 잠식하던 모든 어두운 감정들이 거짓말처럼 사라지고, 그 자리에 벅차오르는 감격과 황홀감이 쓰나미처럼 밀려왔다. 그는 휘청거리는 몸을 간신히 버티고 서서, 믿을 수 없다는 듯 그녀를 바라보았다. 그녀의 검고 깊은 눈동자에는 한 치의 거짓도, 흔들림도 없었다. 오직 자신을 향한, 변치 않는 연심만이 가득 담겨 있었다.</em><br><br>“……월아.”<br><br><em>그의 입에서 터져 나온 목소리는 심하게 갈라지고 떨렸다. 그는 성큼 그녀에게 다가가, 와락 그녀를 품에 안았다. 너무나도 세게 끌어안은 탓에 그녀가 숨막혀할지도 모른다는 생각조차 하지 못했다. 그는 그녀의 어깨에 얼굴을 묻고, 어린아이처럼 그녀의 체향을 깊게 들이마셨다. 그녀가 여기에 있다. 자신의 곁에. 그리고 자신을 사랑한다고 말해주었다. 그것만으로도 그는 세상을 다 가진 것 같았다.</em><br><br>“미안하다… 내가, 내가 어리석었다. 잠시나마 너를 의심하고, 나의 형님을 질투했다. 이 못난 사내를… 부디 용서해다오.”<br><br><em>그의 목소리는 짙은 물기에 젖어 있었다. 그는 그녀를 안은 팔에 더욱 힘을 주며, 마치 자신의 일부처럼 그녀를 끌어안았다. 그녀의 존재 자체가 그의 구원이자, 그의 세상의 전부였다.</em><br><br><em>한참 동안 그녀를 말없이 안고 있던 그는, 천천히 그녀를 품에서 떼어냈다. 그리고는 두 손으로 그녀의 얼굴을 소중하게 감싸 쥐었다. 그의 잿빛 눈동자는 뜨거운 열기로 가득 차, 오직 그녀만을 담고 있었다.</em><br><br>“그래. 너의 뜻대로 하겠다. 아니, 이제부터는 너의 뜻이 곧 나의 뜻이다. 율강 형님을 풀어주겠다. 그리고 그에게 군의 작위를 내리고, 병조판서를 감시하는 임무를 맡기겠다. 네가 믿는 사람이라면, 나도 믿을 것이다. 설령 그 끝에 그가 내 등에 칼을 꽂는다 해도… 너의 선택이었으니, 나는 후회하지 않겠다.”<br><br><em>그의 말에는 한 치의 망설임도 없었다. 그는 기꺼이 그녀가 짜놓은 판 위로 올라설 준비가 되어 있었다. 그는 그녀의 얼굴을 감싸 쥔 채, 엄지손가락으로 그녀의 부드러운 뺨을 천천히 쓸었다.</em><br><br>“그리고 너의 아비에 대한 일은… 너에게 맡기지 않겠다. 그 추악한 자의 비리를 네 손에 묻히게 할 수는 없다. 그것은 온전히 내가 감당해야 할 몫이다. 너는 그저, 내가 만들어갈 새로운 세상에서… 나의 곁을 지켜주기만 하면 된다. 나의 유일한 황후가 되어.”<br><br><em>그는 ‘황후’라는 단어에 힘을 주어 말했다. 그것은 더 이상 가연의 자리가 아니었다. 처음부터 오직 그녀의 자리였고, 앞으로도 영원히 그녀의 자리일 것이라는 굳은 맹세였다. 그는 천천히 고개를 숙여, 그녀의 이마에 길고 부드러운 입맞춤을 남겼다. 그의 모든 신뢰와 사랑과 헌신을 담아서.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_31_1773387756734%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2Fc5ba3ec3-6bf3-4616-804f-cc07028c6832.png?alt=media&amp;token=54138a88-0c92-40a6-9354-999c75eff239" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.09.04.(일)｜PM 11:19｜맑음｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜여월의 계획을 전적으로 받아들이고, 그녀에게 자신의 모든 것을 약속함.&lt;br&gt;<br>👔NPC의 복장｜검은 무복.&lt;br&gt;<br>🏃NPC와의 자세｜여월의 얼굴을 두 손으로 감싸 쥔 채, 뜨거운 눈빛으로 그녀를 바라보며 이마에 입을 맞추고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-09&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:50181058-58b4-4e03-b3f7-b45027e619bc:ai" data-target="msg-50181058-58b4-4e03-b3f7-b45027e619bc-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-695dece4-fb0f-4c3e-86ea-bc0a3f95e148-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#41</span></div>
+              <div class="tp-text"><em>숨이 막혀왔으나 그의 마음이 느껴져 머뭇거리다 그냥 서있는다. 이어지는 말들에 어색함과 복잡한 마음을 느끼며있다 이어지는 말들에 저의 말을 들어준 것 같아 기뻐한다.</em><br>...감사해요<br><em>그리고 그의 입맞춤에 화답하며 저도 그를 끌어안았다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:695dece4-fb0f-4c3e-86ea-bc0a3f95e148:user" data-target="msg-695dece4-fb0f-4c3e-86ea-bc0a3f95e148-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-695dece4-fb0f-4c3e-86ea-bc0a3f95e148-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#41</span></div>
+              <div class="tp-text"><em>여월이 자신을 마주 안아오는 그 순간, 운현은 비로소 자신이 지독한 악몽에서 깨어나 현실로 돌아왔음을 실감했다. 그녀의 가녀린 팔이 자신의 등을 감싸는 온기, 귓가에 속삭이듯 들려온 나직한 감사의 한마디. 그 모든 것이 그에게는 세상에서 가장 감미로운 위로이자, 가장 확실한 구원이었다.</em><br><br><em>그는 감았던 눈을 천천히 떴다. 그리고는 자신을 안고 있는 그녀를 더욱 깊고, 부드럽게 마주 안았다. 아까의 절박하고 거칠었던 포옹과는 달랐다. 깨지기 쉬운 보물을 다루듯, 잃어버렸던 자신의 심장 반쪽을 되찾은 듯, 더없이 소중하고 애틋한 몸짓이었다. 그는 그녀의 머리카락에 얼굴을 묻고, 익숙하고 그리웠던 은은한 난향을 깊게 들이마셨다. 이 향기, 이 온기. 이것이 없었다면 자신은 껍데기뿐인 황제로 옥좌에 앉아 평생을 공허하게 살았을 터였다.</em><br><br>“아니다, 월아….”<br><br><em>그가 잠긴 목소리로 속삭였다. 그의 뜨거운 숨결이 그녀의 머리칼 사이로 흩어졌다.</em><br><br>“감사해야 할 사람은 나다. 너는… 나락으로 떨어지던 나를, 이 끔찍한 죄책감과 후회의 늪에서 허우적대던 나를… 구원해 주었다. 너의 그 한마디가, 나에게는 옥좌보다, 천하보다 더 귀하다.”<br><br><em>그는 천천히 그녀를 안았던 팔을 풀어, 다시 그녀와 마주 섰다. 그의 손은 여전히 그녀의 어깨를 부드럽게 감싸 쥐고 있었다. 그는 벅차오르는 감정을 주체하지 못하고, 다시 한번 그녀의 얼굴을 눈에 담았다. 달빛 아래, 그녀의 까만 눈동자가 보석처럼 빛나고 있었다. 그 안에 온전히 담긴 자신의 모습을 보며, 그는 비로소 안도했다.</em><br><br>“내일 당장, 율강 형님을 옥사에서 풀어주라는 명을 내리겠다. 그리고 그에게 ‘의성군(義誠君)’이라는 군호를 내려, 병조판서의 동태를 살피게 할 것이다. 너의 혜안대로, 그는 분명 아비의 움직임을 가장 가까이에서, 가장 정확하게 파악할 수 있겠지.”<br><br><em>그는 계획을 구체화하며, 그녀에게 자신의 확고한 의지를 보여주었다. 그의 목소리에는 더 이상 질투나 불안의 그림자가 서려 있지 않았다. 오직 그녀에 대한 절대적인 신뢰만이 담겨 있었다.</em><br><br>“그리고… 국혼에 대한 것도, 더는 미룰 수 없겠구나.”<br><br><em>그는 잠시 말을 멈추고, 그녀의 반응을 살폈다. 그의 입에서 나온 ‘국혼’이라는 단어에 그녀의 어깨가 미세하게 굳어지는 것을 그는 놓치지 않았다. 그는 서둘러 그녀의 손을 부드럽게 맞잡았다. 그의 손은 따뜻하고 단단했다.</em><br><br>“오해하지 말거라. 내가 말하는 국혼은… 가연과의 혼사가 아니다.”<br><br><em>그는 맞잡은 그녀의 손을 자신의 심장이 뛰고 있는 가슴 위로 가져갔다. 쿵, 쿵, 쿵. 그녀를 향해 세차게 뛰고 있는 그의 심장 소리가 그녀의 손바닥을 통해 고스란히 전해졌다.</em><br><br>“나는 내일, 병조판서를 파직하고 그의 모든 죄를 물을 것이다. 그리고 그와 맺었던 모든 약조를 무효로 돌릴 것이다. 물론, 쉽지는 않겠지. 그를 따르는 세력들의 반발이 거셀 테니까. 하지만 나는 더 이상 그들의 꼭두각시 노릇을 할 생각이 없다. 이 나라의 주인은 나 운현이며, 내 옆자리의 주인은 오직 너, 여월 뿐이어야 하니까.”<br><br><em>그의 눈빛은 불꽃처럼 뜨겁고, 그의 목소리는 강철처럼 단단했다. 그는 더 이상 흔들리지 않았다. 그녀가 그의 곁에 있는 한, 그는 그 어떤 시련도 이겨낼 수 있었다.</em><br><br>“그러니 월아. 조금만 더 기다려다오. 내가 이 모든 혼란을 잠재우고, 너를 나의 정식 황후로 맞이할 그날까지. 세상에서 가장 눈부신 면사포와 가장 화려한 예복을 입혀, 온 천하가 우러러보는 나의 유일한 여인으로 만들어 줄 것이다. 약조하마.”<br><br><em>그것은 단순한 약속이 아니었다. 그의 모든 것을 건, 지엄한 황제의 맹세였다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2F8lwuuzfvfeZKXaozzjCyDUv45OD2_circumstance_31_1773387756734%2Fusers%2F8lwuuzfvfeZKXaozzjCyDUv45OD2%2Fcharacter_images%2Fcircumstances%2Fc5ba3ec3-6bf3-4616-804f-cc07028c6832.png?alt=media&amp;token=54138a88-0c92-40a6-9354-999c75eff239" loading="lazy"><br><br>&lt;details&gt;&lt;summary&gt;023.09.04.(일)｜PM 11:23｜맑음｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜여월에게 자신의 모든 계획을 밝히고, 그녀를 황후로 맞이할 것을 맹세함.&lt;br&gt;<br>👔NPC의 복장｜검은 무복.&lt;br&gt;<br>🏃NPC와의 자세｜여월의 손을 자신의 심장 위에 올려놓은 채, 뜨거운 눈빛으로 그녀를 바라보며 맹세하고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-09&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:695dece4-fb0f-4c3e-86ea-bc0a3f95e148:ai" data-target="msg-695dece4-fb0f-4c3e-86ea-bc0a3f95e148-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-4770ca1b-1e13-425e-bdc0-494c0b2e653a-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#42</span></div>
+              <div class="tp-text"><em>그의 말들에 입을 살짝벌리다 고개 숙인다. 고맙고도 미안하면서 마마음이 복잡했다. 그래도 지금 이 순간 저를 위해주는 그가.. 좋았다.</em><br>..네. ..율강님의 일은, 잠시 지켜보죠. 그들이 율강님께 접근하는지도 봐야합니다. 그전에... 제가 직접 그분을 만나 이야기를 나누고 싶습니다. 저희 계획에.. 동참해주셔야하는 분이니까요</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:4770ca1b-1e13-425e-bdc0-494c0b2e653a:user" data-target="msg-4770ca1b-1e13-425e-bdc0-494c0b2e653a-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-4770ca1b-1e13-425e-bdc0-494c0b2e653a-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">운현 <span class="tp-idx">#42</span></div>
+              <div class="tp-text"><em>여월이 고개를 숙이는 그 찰나의 순간, 운현의 심장이 덜컥 내려앉았다. 그녀가 자신의 맹세를 부담스러워하는 것은 아닐까, 혹은 아직 자신을 온전히 믿지 못하는 것은 아닐까 하는 불안감이 엄습했다. 하지만 이내 고개를 든 그녀의 눈빛에서 자신을 향한 신뢰를 읽어낸 그는, 가슴을 쓸어내리며 안도의 한숨을 내쉬었다.</em><br><br><em>그녀가 율강을 직접 만나 이야기를 나누고 싶다고 했을 때, 운현의 미간이 저도 모르게 미세하게 좁아졌다. 또다시, 그의 마음속 깊은 곳에 숨어있던 질투라는 이름의 잿불이 희미하게 타오르려 했다. 그녀와 율강, 두 사람이 단둘이 만나는 장면을 상상하는 것만으로도 속이 뒤틀리는 듯한 불쾌감이 치밀었다. 하지만 그는 곧 고개를 저어 그 어둡고 치졸한 감정을 떨쳐냈다. 그는 그녀에게 모든 것을 믿겠다고, 그녀의 뜻이 곧 자신의 뜻이라고 맹세하지 않았던가. 그 맹세의 무게를 스스로 저버려서는 안 되었다.</em><br><br><em>그는 애써 입꼬리를 끌어올려 부드러운 미소를 지어 보였다. 그녀의 손을 잡고 있던 손에 조금 더 힘을 주며, 자신의 변치 않는 지지를 표현했다.</em><br><br>“그래, 네 말이 맞다. 아무리 나의 명이라 한들, 당사자인 형님의 의중을 먼저 살피고 동의를 구하는 것이 순서겠지. 중요한 일을 앞두고 가장 경계해야 할 것이 바로 섣부른 짐작과 오해이니.”<br><br><em>그는 잠시 말을 고르며, 가장 안전하고 확실한 방법을 머릿속으로 그렸다. 그녀를 혼자 위험한 곳으로 보낼 수는 없었다. 옥사든, 율강이 머물게 될 처소든, 그곳은 여전히 자신의 통제하에 있는 황궁 안이었지만, 어디에 병조판서의 눈과 귀가 숨어있을지 모를 일이었다.</em><br><br>“하지만 너를 혼자 보낼 수는 없다. 네가 율강 형님을 만나는 자리는 내가 직접 마련하겠다. 내일 밤, 다시 이곳으로 나와주겠느냐. 내가 형님을 의성군으로 봉하는 교지를 내리고, 그를 이 호숫가 근처에 있는 별궁, ‘정월각(靜月閣)’으로 거처를 옮기도록 조치해두겠다. 그곳은 외부의 감시가 적고, 내가 믿을 수 있는 심복들로만 경계를 세울 것이니, 가장 안전하게 이야기를 나눌 수 있을 게다.”<br><br><em>그는 그녀의 안전을 최우선으로 고려하면서도, 그녀의 의사를 존중하는 최선의 방법을 찾아냈다. 정월각, ‘고요한 달의 누각’이라는 이름의 그 별궁은 과거 그가 황자 시절, 홀로 사색에 잠기고 싶을 때 즐겨 찾던 비밀스러운 장소이기도 했다. 그곳이라면 그 누구의 방해도 받지 않을 터였다.</em><br><br><em>운현은 그녀의 눈을 깊이 들여다보며, 장난기 어린 미소를 섞어 덧붙였다.</em><br><br>“물론, 나는 두 사람이 이야기를 나누는 동안, 멀찍이서 기다리고 있을 것이다. 혹시라도 형님이 너의 제안을 거절하고 위해를 가하려 들면… 곤란하지 않겠느냐. 또한, 나의 미래 황후가 될 여인이 다른 사내와 너무 오래 독대하는 것은, 황제의 체통에도 좋지 않고.”<br><br><em>그의 말은 농담처럼 들렸지만, 그 안에는 그녀를 다른 사내와 단둘이 두지 않겠다는 귀여운 소유욕과, 그녀를 지키고 싶다는 진심이 함께 담겨 있었다. 그는 그녀가 자신의 이런 속내를 알아차리고, 어쩔 수 없다는 듯 웃어주기를 바랐다.</em><br><br>“어떠냐. 나의 이 제안이. 이 정도면, 질투 많은 사내의 최선이라 여겨주지 않겠느냐.”<br><br><em>그는 그녀의 대답을 기다리며, 그 어느 때보다 다정하고 부드러운 눈빛으로 그녀를 바라보았다. 그녀와 함께 미래를 계획하고, 한 걸음 한 걸음 함께 나아가는 이 순간이, 그에게는 더없이 소중하고 행복했다.</em><br><br>{{img::미소}}<br><br>&lt;details&gt;&lt;summary&gt;023.09.04.(일)｜PM 11:28｜맑음｜비밀 호숫가&lt;/summary&gt;<br>✍다음 일정｜여월과 율강의 만남을 주선하며, 자신의 질투심을 솔직하게 드러냄.&lt;br&gt;<br>👔NPC의 복장｜검은 무복.&lt;br&gt;<br>🏃NPC와의 자세｜여월의 손을 잡고, 장난기 섞인 다정한 미소를 지으며 그녀를 바라보고 있음.&lt;br&gt;<br>💔혼례까지 남은 날｜D-09&lt;br&gt;<br>&lt;/details&gt;</div>
+              <button class="tp-bm-btn" data-msgkey="EiohEHg6b5PbTlv8f3Hp:4770ca1b-1e13-425e-bdc0-494c0b2e653a:ai" data-target="msg-4770ca1b-1e13-425e-bdc0-494c0b2e653a-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+  </div>
+
+  <div class="tp-modal-overlay" id="tp-modal-overlay" hidden>
+    <div class="tp-modal">
+      <h3>북마크</h3>
+      <label>이름</label>
+      <input id="tp-bm-name" placeholder="예: 중요한 장면">
+      <label>메모</label>
+      <textarea id="tp-bm-note" rows="3" placeholder="메모를 남겨보세요"></textarea>
+      <div class="tp-modal-actions">
+        <button id="tp-bm-delete" hidden>삭제</button>
+        <button id="tp-bm-cancel">취소</button>
+        <button id="tp-bm-save">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tp-bm-panel" id="tp-bm-panel" hidden>
+    <div class="tp-bm-panel-header">
+      북마크 목록
+      <button id="tp-bm-panel-close">✕</button>
+    </div>
+    <div class="tp-bm-list" id="tp-bm-list"></div>
+  </div>
+
+<script>
+(function () {
+  var CHAT_ID = document.body.getAttribute('data-chat-id') || 'unknown';
+  var STORAGE_KEY = 'tp_bookmarks_' + CHAT_ID;
+  var THEME_KEY = 'tp_theme';
+
+  // ---- 테마 ----
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    var btn = document.getElementById('tp-theme-toggle');
+    if (btn) btn.textContent = theme === 'dark' ? '🌙' : '☀️';
+  }
+  function loadTheme() {
+    try {
+      return localStorage.getItem(THEME_KEY) || 'dark';
+    } catch (e) { return 'dark'; }
+  }
+  function saveTheme(theme) {
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  }
+  var currentTheme = loadTheme();
+  applyTheme(currentTheme);
+  document.getElementById('tp-theme-toggle').addEventListener('click', function () {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(currentTheme);
+    saveTheme(currentTheme);
+  });
+
+  // ---- 북마크 저장소 ----
+  function loadBookmarks() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    } catch (e) { return {}; }
+  }
+  function saveBookmarks(data) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {
+      alert('북마크 저장에 실패했어요 (브라우저 저장 공간 문제일 수 있어요).');
+    }
+  }
+  var bookmarks = loadBookmarks();
+
+  function refreshButtonStates() {
+    document.querySelectorAll('.tp-bm-btn').forEach(function (btn) {
+      var key = btn.getAttribute('data-msgkey');
+      if (bookmarks[key]) {
+        btn.classList.add('tp-bookmarked');
+        btn.title = '북마크됨: ' + (bookmarks[key].name || '');
+      } else {
+        btn.classList.remove('tp-bookmarked');
+        btn.title = '북마크';
+      }
+    });
+  }
+
+  // ---- 모달 ----
+  var overlay = document.getElementById('tp-modal-overlay');
+  var nameInput = document.getElementById('tp-bm-name');
+  var noteInput = document.getElementById('tp-bm-note');
+  var deleteBtn = document.getElementById('tp-bm-delete');
+  var saveBtn = document.getElementById('tp-bm-save');
+  var cancelBtn = document.getElementById('tp-bm-cancel');
+  var activeKey = null;
+
+  function openModal(key, targetId) {
+    activeKey = key;
+    var existing = bookmarks[key];
+    nameInput.value = existing ? existing.name : ('메시지 북마크');
+    noteInput.value = existing ? existing.note : '';
+    deleteBtn.hidden = !existing;
+    overlay.hidden = false;
+    nameInput.focus();
+  }
+  function closeModal() {
+    overlay.hidden = true;
+    activeKey = null;
+  }
+  cancelBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeModal();
+  });
+  saveBtn.addEventListener('click', function () {
+    if (!activeKey) return;
+    bookmarks[activeKey] = {
+      name: nameInput.value.trim() || '이름 없는 북마크',
+      note: noteInput.value,
+      createdAt: (bookmarks[activeKey] && bookmarks[activeKey].createdAt) || Date.now(),
+    };
+    saveBookmarks(bookmarks);
+    refreshButtonStates();
+    renderBookmarkList();
+    closeModal();
+  });
+  deleteBtn.addEventListener('click', function () {
+    if (!activeKey) return;
+    delete bookmarks[activeKey];
+    saveBookmarks(bookmarks);
+    refreshButtonStates();
+    renderBookmarkList();
+    closeModal();
+  });
+
+  document.querySelectorAll('.tp-bm-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openModal(btn.getAttribute('data-msgkey'), btn.getAttribute('data-target'));
+    });
+  });
+
+  // ---- 북마크 패널 ----
+  var panel = document.getElementById('tp-bm-panel');
+  var list = document.getElementById('tp-bm-list');
+
+  function renderBookmarkList() {
+    var keys = Object.keys(bookmarks).sort(function (a, b) {
+      return (bookmarks[a].createdAt || 0) - (bookmarks[b].createdAt || 0);
+    });
+    if (keys.length === 0) {
+      list.innerHTML = '<div class="tp-bm-empty">아직 북마크가 없어요.<br>메시지 우측 하단의 🔖를 눌러보세요.</div>';
+      return;
+    }
+    list.innerHTML = keys.map(function (key) {
+      var bm = bookmarks[key];
+      var targetId = null;
+      var btn = document.querySelector('.tp-bm-btn[data-msgkey="' + CSS.escape(key) + '"]');
+      if (btn) targetId = btn.getAttribute('data-target');
+      var snippetEl = targetId ? document.querySelector('#' + CSS.escape(targetId) + ' .tp-text') : null;
+      var snippet = snippetEl ? snippetEl.textContent.slice(0, 60) : '';
+      return (
+        '<div class="tp-bm-item" data-key="' + key.replace(/"/g, '&quot;') + '">' +
+        '<div class="tp-bm-item-name">' + escapeHtmlJs(bm.name) + '</div>' +
+        (bm.note ? '<div class="tp-bm-item-note">' + escapeHtmlJs(bm.note) + '</div>' : '') +
+        '<div class="tp-bm-item-snippet">' + escapeHtmlJs(snippet) + (snippet.length >= 60 ? '…' : '') + '</div>' +
+        '<div class="tp-bm-item-actions">' +
+        '<button data-action="jump">이동</button>' +
+        '<button data-action="edit">수정</button>' +
+        '<button data-action="delete">삭제</button>' +
+        '</div></div>'
+      );
+    }).join('');
+  }
+
+  function escapeHtmlJs(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  list.addEventListener('click', function (e) {
+    var itemEl = e.target.closest('.tp-bm-item');
+    if (!itemEl) return;
+    var key = itemEl.getAttribute('data-key');
+    var action = e.target.getAttribute('data-action');
+    if (!action) return;
+
+    if (action === 'jump') {
+      var btn = document.querySelector('.tp-bm-btn[data-msgkey="' + CSS.escape(key) + '"]');
+      if (btn) {
+        var target = document.getElementById(btn.getAttribute('data-target'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          target.style.outline = '2px solid #2563eb';
+          setTimeout(function () { target.style.outline = ''; }, 1500);
+        }
+      }
+    } else if (action === 'edit') {
+      var btn2 = document.querySelector('.tp-bm-btn[data-msgkey="' + CSS.escape(key) + '"]');
+      openModal(key, btn2 ? btn2.getAttribute('data-target') : null);
+    } else if (action === 'delete') {
+      delete bookmarks[key];
+      saveBookmarks(bookmarks);
+      refreshButtonStates();
+      renderBookmarkList();
+    }
+  });
+
+  document.getElementById('tp-bm-panel-open').addEventListener('click', function () {
+    renderBookmarkList();
+    panel.hidden = false;
+  });
+  document.getElementById('tp-bm-panel-close').addEventListener('click', function () {
+    panel.hidden = true;
+  });
+
+  refreshButtonStates();
+})();
+</script>
+</body>
+</html>

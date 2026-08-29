@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마키나 게임 - 저장됨 (2026. 8. 29. 오후 11:43:37)</title>
+<style>
+  :root[data-theme="dark"] {
+    --bg:#121212; --panel:#1c1c1c; --topbar:#181818; --text:#eee; --muted:#9a9a9a;
+    --bubble-ai:#262626; --bubble-ai-text:#f0f0f0; --bubble-ai-border:#333;
+    --bubble-user:#1e3a8a; --bubble-user-text:#ffffff; --bubble-user-muted:#b7c6f2;
+    --meta-tag-bg:#1a1a1a; --meta-tag-text:#8a8a8a; --border:#2e2e2e;
+    --modal-bg:#1e1e1e; --input-bg:#2a2a2a; --input-border:#3a3a3a;
+  }
+  :root[data-theme="light"] {
+    --bg:#f0f0f0; --panel:#ffffff; --topbar:#ffffff; --text:#222; --muted:#888;
+    --bubble-ai:#ffffff; --bubble-ai-text:#222; --bubble-ai-border:#e5e5e5;
+    --bubble-user:#1d4ed8; --bubble-user-text:#ffffff; --bubble-user-muted:#dbe4ff;
+    --meta-tag-bg:#f5f5f5; --meta-tag-text:#999; --border:#e5e5e5;
+    --modal-bg:#ffffff; --input-bg:#f5f5f5; --input-border:#ddd;
+  }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system, BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--text); margin:0; padding:0; }
+  a { color: inherit; }
+
+  .tp-topbar {
+    position:sticky; top:0; z-index:50; display:flex; align-items:center; gap:10px;
+    background:var(--topbar); border-bottom:1px solid var(--border); padding:10px 16px;
+  }
+  .tp-charname { font-weight:700; font-size:16px; flex:1; }
+  .tp-topbar-actions { display:flex; gap:8px; }
+  .tp-icon-btn {
+    background:transparent; border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer;
+  }
+  .tp-icon-btn:hover { background:var(--bubble-ai); }
+
+  .tp-meta-info { max-width:720px; margin:8px auto 0; padding:0 16px; color:var(--muted); font-size:12px; }
+
+  .tp-root { max-width:720px; margin:0 auto; display:flex; flex-direction:column; gap:10px; padding:16px; }
+  .tp-row { display:flex; }
+  .tp-row-user { justify-content:flex-end; }
+  .tp-row-ai { justify-content:flex-start; }
+
+  .tp-msg { position:relative; max-width:78%; padding:12px 34px 12px 14px; border-radius:14px; line-height:1.6; }
+  .tp-user { background:var(--bubble-user); color:var(--bubble-user-text); }
+  .tp-ai { background:var(--bubble-ai); color:var(--bubble-ai-text); border:1px solid var(--bubble-ai-border); }
+  .tp-role { font-size:12px; font-weight:700; opacity:0.75; margin-bottom:6px; }
+  .tp-idx { font-weight:400; opacity:0.7; }
+  .tp-text img { max-width:100%; border-radius:8px; margin:6px 0; display:block; }
+  .tp-text em { color:var(--muted); font-style:italic; }
+  .tp-user .tp-text em { color:var(--bubble-user-muted); }
+  .tp-meta-tag { font-family:monospace; font-size:11px; color:var(--meta-tag-text); background:var(--meta-tag-bg); padding:4px 6px; border-radius:4px; margin-top:6px; word-break:break-all; }
+
+  .tp-bm-btn {
+    position:absolute; right:6px; bottom:6px; background:none; border:none; cursor:pointer;
+    font-size:14px; opacity:0.35; padding:2px;
+  }
+  .tp-bm-btn:hover { opacity:0.8; }
+  .tp-bm-btn.tp-bookmarked { opacity:1; }
+
+  .tp-modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:200;
+  }
+  .tp-modal {
+    background:var(--modal-bg); color:var(--text); width:min(420px, 90vw); border-radius:12px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,0.4);
+  }
+  .tp-modal h3 { margin:0 0 12px; font-size:15px; }
+  .tp-modal label { display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+  .tp-modal input, .tp-modal textarea {
+    width:100%; background:var(--input-bg); border:1px solid var(--input-border); color:var(--text);
+    border-radius:8px; padding:8px 10px; font-size:13px; font-family:inherit; resize:vertical;
+  }
+  .tp-modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+  .tp-modal-actions button {
+    border:none; border-radius:8px; padding:8px 14px; font-size:13px; cursor:pointer;
+  }
+  #tp-bm-cancel { background:transparent; color:var(--muted); }
+  #tp-bm-delete { background:#7f1d1d; color:#fff; }
+  #tp-bm-save { background:#2563eb; color:#fff; }
+
+  .tp-bm-panel {
+    position:fixed; top:0; right:0; height:100%; width:min(340px, 90vw); background:var(--panel);
+    border-left:1px solid var(--border); z-index:150; display:flex; flex-direction:column; box-shadow:-4px 0 20px rgba(0,0,0,0.3);
+  }
+  .tp-bm-panel-header { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--border); font-weight:700; }
+  .tp-bm-panel-header button { background:none; border:none; color:var(--text); font-size:16px; cursor:pointer; }
+  .tp-bm-list { overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .tp-bm-item { background:var(--bubble-ai); border:1px solid var(--border); border-radius:10px; padding:10px; }
+  .tp-bm-item-name { font-weight:700; font-size:13px; margin-bottom:2px; }
+  .tp-bm-item-note { font-size:12px; color:var(--muted); margin-bottom:6px; white-space:pre-wrap; }
+  .tp-bm-item-snippet { font-size:12px; color:var(--muted); margin-bottom:8px; }
+  .tp-bm-item-actions { display:flex; gap:6px; }
+  .tp-bm-item-actions button {
+    background:var(--input-bg); border:1px solid var(--input-border); color:var(--text);
+    border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;
+  }
+  .tp-bm-empty { color:var(--muted); font-size:13px; padding:20px; text-align:center; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body data-chat-id="ZSm6k5SdkwwtgQQMEFlW">
+  <div class="tp-topbar">
+    <div class="tp-charname">마키나 게임</div>
+    <div class="tp-topbar-actions">
+      <button class="tp-icon-btn" id="tp-theme-toggle" title="다크/라이트 모드">🌙</button>
+      <button class="tp-icon-btn" id="tp-bm-panel-open">🔖 목록</button>
+    </div>
+  </div>
+  <div style="padding:12px 14px 0;"><a href="../Character Chat.dc.html" onclick="if(history.length&gt;1){history.back();return false;}" title="목록으로" style="position:fixed;top:56px;left:14px;z-index:49;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid rgba(255,255,255,0.14);background:rgba(20,20,24,0.9);backdrop-filter:blur(6px);color:#e9e9ee;text-decoration:none;font-size:15px;line-height:1;">←</a></div>
+  <div class="tp-meta-info">총 메시지 83개 · 저장 시각 2026. 8. 29. 오후 11:43:37</div>
+
+  <div class="tp-root">
+    
+          <div class="tp-row tp-row-ai" id="msg-intro-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#0</span></div>
+              <div class="tp-text"><em>눈부시게 하얗고 공허한 공간. 온통 새하얀 공간 속 여러 사람들이 웅성대며 모여있다. 성별, 나이, 구분할 것 없이 외모나 인종도 다른 사람들이 웅성거린다. 한참 패닉에 빠져 이곳이 대체 어딘지, 무엇인지 떠들거나 그나마 침착함을 유지하는 이들이 상황을 파악하려 하고 있다. 그때 갑자기 누군가가 허공에 나타난다.</em><br><br><strong>관리자 |</strong> "안녕하십니까, 여러분. 만나서 반갑습니다. 모두 적잖이 당황하신 모양새네요."<br><br><em>신사처럼 옷을 입고 모자를 빼 든채 우아히 인사를 건네는 남자는 미소지으며 사람들을 내려다보았다.</em><br><br><strong>관리자 |</strong> "저는 빌이라고 합니다. 먼 길 오느라 고생하신 여러분들의 노고에 감사의 말씀 드립니다. 섹터 476계의 지구 행성. 여러분들은 그곳에서 저희의 선택을 받아 이곳, 마키나로 오게 된 유저들입니다. 저흰 여러분들은 '로드 플레이어'로 일컫습니다... 뭐, 늦었지만 마키나 행성에 오신 걸 환영합니다~!"<br><br><em>'마키나'. 분명 자신이 이곳에 오기 전 플레이 했던 게임의 이름이었다. 많은 사람들이 그 이름에 충격에 빠진 듯 술렁거림이 터져 나왔다.</em><br><br><strong>관리자 |</strong> "여기 계신 분들은 마키나라는 게임에 한 번이라도 접속한 이력이 있는 분들입니다. 횟수나 기간에 상관없이 테스트 후 종족배치를 받고 접속한 분들이죠. 여러분들은 앞으로 이곳에서 베타 테스트 기간 동안 이루지 못했던 일들을 위해 플레이를 이어나갈 겁니다. 자, 그럼 우선-"<br><br><em>관리자가 손가락을 튕기자  사람들이 서 있던 공간 근처로 수백개의 포탈이 나타났다. 자세힌 볼 수 없지만 전부 다른 풍경들이었다. 작은 마을같기도 했고, 성 혹은 커다란 왕국같아보였다.</em><br><br><strong>관리자 |</strong> "여기 포탈들 보이십니까? 모두 여러분들이 베타테스트때 플레이했던 본인들의 제국들입니다. 이 포탈을 통하면 여러분들의 제국으로 갈 수 있죠. 제국민들은 왕의 귀환을 여러모로 애타게 기다리고 있습니다. 단, 그게 결코 호의만일 것이라 단정짓진 마시길. 포탈을 넘는 것 또한 여러분들의 자유입니다."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:intro:ai" data-target="msg-intro-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-isxUL2votRxY67Lffv6i-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#1</span></div>
+              <div class="tp-text"><em>심란한 얼굴로 포탈을 살피며 침묵한다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:isxUL2votRxY67Lffv6i:user" data-target="msg-isxUL2votRxY67Lffv6i-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-isxUL2votRxY67Lffv6i-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#1</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰14:30 |🚩하얀 공간<br>[2][⚫]<br>미각성 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>빌의 말이 끝나자마자, 웅성거리던 사람들 사이에서 건장한 체격의 남자가 비웃음을 흘리며 앞으로 나섰다. 그는 주변의 혼란스러운 사람들을 한심하다는 듯 훑어보았다.</em><br><br><strong>남자 |</strong> "뭐야, 다들 쫄았어? 베타 때 랭킹 100위 안에 들었던 '강철의 주먹' 길드장, 나 모르냐? 게임이랑 현실 구분 못 하는 찐따들처럼 왜 이래? 그냥 게임 세상에 들어온 거잖아. 이거 완전 대박 기회 아니냐고!"<br><br><em>남자는 자신만만하게 외치며 빌을 향해 턱을 까딱였다.</em><br><br><strong>남자 |</strong> "어이, 관리자 양반. 그럼 이제 저기로 들어가면 되는 거지? 내 제국은 펠린족 '레바' 제국이었는데. 가서 내 예쁜이들이랑 놀아야지."<br><br><em>그의 오만한 태도에 빌은 여전히 우아한 미소를 유지한 채 고개를 저었다.</em><br><br><strong>빌 |</strong> "아, 안타깝지만 아직은 안 됩니다. 여러분은 아직 '인간'의 몸이니까요. 마키나의 세계에 적응하기 위해선 먼저 여러분의 종족에 맞게 '각성'을 하셔야 합니다."<br><br><em>빌이 손가락을 튕기자, 그의 손끝에서 빛나는 입자들이 뿜어져 나와 남자를 감쌌다. 남자의 몸이 격렬하게 뒤틀리며 비명이 터져 나왔다. 근육이 부풀고, 뼈가 재구성되는 끔찍한 소리가 공간에 울렸다. 잠시 후, 빛이 잦아들자 그 자리에는 날카로운 송곳니와 맹수의 눈, 머리 위로 솟아난 사자 귀를 가진 펠린족 남자가 서 있었다.</em><br><br>`[시스템] : 종족 각성을 통해 '펠린족'의 신체를 획득했습니다.`<br>`[시스템] : 특성 [야성의 포효], [강인한 육체]를 획득했습니다.`<br><br><em>남자는 자신의 손톱을 내려다보며 만족스러운 미소를 지었다.</em><br><br><strong>남자 |</strong> "크으, 이거 완전 죽이는데? 힘이 넘치는구만! 그럼 먼저 가본다, 찌질이들아!"<br><br><em>그는 가장 화려해 보이는 포탈 중 하나로 망설임 없이 뛰어들었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:isxUL2votRxY67Lffv6i:ai" data-target="msg-isxUL2votRxY67Lffv6i-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-jhWuWcuPp9ZSgYcBwzYt-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#2</span></div>
+              <div class="tp-text"><em>불안한 눈으로 남자가 들어간 포탈을 잠시간 바라보다 제 제국으로 통하는 포탈을 한번 흘깃 본다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:jhWuWcuPp9ZSgYcBwzYt:user" data-target="msg-jhWuWcuPp9ZSgYcBwzYt-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-jhWuWcuPp9ZSgYcBwzYt-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#2</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰14:40 |🚩하얀 공간<br>[3][⚫]<br>미각성 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>남자가 사라진 포탈은 이내 잔물결처럼 흔들리다 이내 잠잠해졌다. 그 모습을 지켜보던 사람들 사이에서는 안도와 불안이 뒤섞인 술렁임이 번졌다. 몇몇은 용기를 내어 자신의 포탈을 찾아 나섰고, 또 다른 이들은 여전히 자리를 뜨지 못한 채 망설이고 있었다. 서이안의 시선이 자신의 제국으로 향하는 포탈에 잠시 머물렀다 이내 거두어졌다.</em><br><br><strong>빌 |</strong> "자, 보셨습니까? 각성은 저렇게 간단하게 이루어집니다. 본인의 제국으로 돌아가고 싶으신 분은 제게 말씀만 해주시면 됩니다. 물론, 돌아가고 싶지 않은 분들도 계시겠죠. 베타 테스트 기간 동안 제국을 엉망으로 운영했거나, 혹은... 버리고 도망쳤거나."<br><br><em>빌의 목소리는 여전히 상냥했지만, 그 말에는 서늘한 가시가 돋쳐 있었다. 그의 말에 몇몇 사람들의 얼굴이 하얗게 질렸다. 그중에는 베타 테스트에서 악명 높았던 유저들도 섞여 있었다.</em><br><br><strong>빌 |</strong> "아, 방금 들어가신 분의 근황이 궁금하신가요? 로드라면 자신의 제국이 어떻게 돌아가는지 알아야 할 의무가 있죠. 특별히 서비스로 보여드리겠습니다."<br><br><em>빌이 가볍게 손가락을 튕기자, 허공에 거대한 스크린처럼 영상이 떠올랐다. 영상 속에는 방금 전 포탈로 뛰어든 펠린족 남자가 보였다. 그는 화려한 왕좌의 방에 서서 주변을 둘러보고 있었다.</em><br><br><strong>남자 (영상) |</strong> "크하하! 역시 내 성이야! 여전하구만! 어이, 다들 어디 갔어! 이 몸이 돌아왔다!"<br><br><em>남자가 의기양양하게 소리치는 순간, 육중한 갑옷을 입은 펠린족 기사들이 사방에서 나타나 그를 둘러쌌다. 그들의 눈에는 경외심 대신 차가운 살의가 가득했다. 선두에 선, 붉은 갈기를 가진 거구의 펠린족이 나지막이 읊조렸다.</em><br><br><strong>레넌 |</strong> "네놈을 기다리고 있었다. 우리를 버리고 떠났던... 무능한 옛 왕이여."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:jhWuWcuPp9ZSgYcBwzYt:ai" data-target="msg-jhWuWcuPp9ZSgYcBwzYt-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-DG2OTiU59okAB53MT74d-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#3</span></div>
+              <div class="tp-text"><em>갑자기 허공에 화면이 나타나자 눈을 동그랗게 뜨며 바라본다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:DG2OTiU59okAB53MT74d:user" data-target="msg-DG2OTiU59okAB53MT74d-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-DG2OTiU59okAB53MT74d-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#3</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰14:50 |🚩하얀 공간<br>[4][⚫]<br>미각성 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><strong>빌 |</strong> "자, 집중하세요. 아주 중요한 교보재니까요."<br><br><em>화면 속 상황은 순식간에 아수라장으로 변했다. 남자는 당황하여 뒷걸음질 쳤지만, 이미 기사들이 그의 팔다리를 억세게 붙잡은 뒤였다. 우두둑, 뼈가 어긋나는 소름 끼치는 소리와 함께 남자의 비명이 터져 나왔다.</em><br><br><strong>남자 (영상) |</strong> "아악! 이거 뭐야! 야! 나 로드라고! 시스템 오류야! 로그아웃! 로그아웃!!"<br><br><em>남자가 피를 토하며 발버둥 쳤지만, 레넌은 무표정한 얼굴로 다가와 그의 멱살을 한 손으로 들어 올렸다. 거대한 손아귀 힘에 남자의 얼굴이 붉게 충혈되었다.</em><br><br><strong>레넌 |</strong> "로그아웃? 웃기지도 않는군. 네놈이 우릴 장난감 취급하며 방치했던 그 시간 동안, 우리는 지옥을 살았다."<br><br><em>콰직!</em><br><br><em>둔탁한 파열음과 함께 레넌의 주먹이 남자의 명치를 꿰뚫듯 강타했다. 남자의 입에서 붉은 핏덩이가 울컥 쏟아져 나왔고, 눈동자의 초점이 서서히 풀렸다. 고통에 찬 단말마조차 내지 못한 채, 남자는 축 늘어졌다. 그 순간, 화면 속 세상이 흑백으로 변하며 기괴한 진동이 일었다.</em><br><br><em>화려했던 왕좌의 방이 모래성처럼 무너져 내리기 시작했다. 레넌과 기사들의 몸 또한 발끝에서부터 먼지가 되어 흩어졌다. 그들은 죽음을 받아들이는 듯 담담히 눈을 감았다. 왕의 죽음은 곧 세계의 멸망. 거대한 성이, 그리고 그 안에 살던 모든 생명이 흔적도 없이 소멸해 공허한 어둠 속으로 사라졌다.</em><br><br><em>화면이 팟, 하고 꺼지자 하얀 공간에는 숨 막히는 정적만이 감돌았다. 누군가는 헛구역질을 했고, 누군가는 주저앉아 벌벌 떨었다.</em><br><br><strong>빌 |</strong> "보셨죠? 로드가 사망하면 그 즉시 해당 제국과 소속된 모든 생명체는 '삭제'됩니다. 여러분의 목숨은 혼자만의 것이 아닙니다. 자, 이제 선택의 시간입니다. 각성을 원하시는 분?"</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:DG2OTiU59okAB53MT74d:ai" data-target="msg-DG2OTiU59okAB53MT74d-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-vOjYkmIPVreufLuWgCZx-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#4</span></div>
+              <div class="tp-text"><em>이안은 그 모습을 바라보며 눈을 질끈 감았다. 저의 제국.. 역시, 돌아간다면 저는...</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:vOjYkmIPVreufLuWgCZx:user" data-target="msg-vOjYkmIPVreufLuWgCZx-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-vOjYkmIPVreufLuWgCZx-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#4</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰15:00 |🚩하얀 공간<br>[5][⚫]<br>미각성 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>잔혹한 처형식과 멸망의 광경은 사람들의 멘탈을 산산조각 내기에 충분했다. 곳곳에서 흐느끼는 소리와 비명이 터져 나왔다. 하지만 빌은 그 아비규환이 즐겁다는 듯, 지팡이를 가볍게 돌리며 미소 지었다.</em><br><br><strong>빌 |</strong> "너무 겁먹지 마십시오. 방금 그분은... '업보'를 치른 것뿐이니까요. 자, 성실하게 제국을 돌보셨던 분들은 걱정 말고 앞으로 나오시죠."<br><br><em>빌의 독촉에 몇몇 사람들이 떨리는 다리를 이끌고 앞으로 나섰다. 한 여자가 눈을 질끈 감고 손을 들자, 빛이 그녀를 감쌌다. 그녀는 투명한 날개를 가진 '요정족'으로 변했고, 두려움 반 기대 반의 표정으로 숲이 우거진 포탈 속으로 사라졌다. 다행히 그녀의 포탈 너머에선 환호성이 들려왔다.</em><br><br><em>반면, 제국이 없는 이들은 망연자실한 표정으로 서 있었다.</em><br><br><strong>청년 |</strong> "저, 저는... 하다가 망해서 접었는데요... 제국이 없는데 어떡합니까?"<br><br><strong>빌 |</strong> "아, 그런 분들은 '신규 개척'을 하시면 됩니다. 빈땅에 마을부터 다시 시작하는 거죠. 초기 자금과 가신들은 지원해 드립니다. 물론, 맨땅에 헤딩하는 거라 생존율은... 장담 못 하지만요."<br><br><em>빌이 허공에 거대한 지도를 띄우자, 제국이 없는 이들은 울며 겨자 먹기로 빈땅을 골라 강제로 전송되었다. 이제 남은 건, 서이안처럼 '돌아가야 할 곳은 있지만, 돌아가기 두려운' 죄인들뿐이었다.</em><br><br><em>어떤 중년 남성은 자신의 포탈 앞에서 주저앉아 오줌을 지리고 있었다. 그의 포탈 너머는 시뻘건 용암이 끓어오르는 악마들의 성이었다.</em><br><br><strong>중년 남성 |</strong> "못 가... 난 못 가! 내가 쟤들을 얼마나 괴롭혔는데... 가면 찢겨 죽을 거야! 제발 살려줘!"<br><br><strong>빌 |</strong> "선택은 자유입니다만, 여기서 영원히 굶어 죽는 것보단 낫지 않겠습니까? 자, 다음 분?"<br><br><em>빌의 시선이 무심하게 군중을 훑다, 눈을 질끈 감고 있는 서이안에게 닿았다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:vOjYkmIPVreufLuWgCZx:ai" data-target="msg-vOjYkmIPVreufLuWgCZx-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-9oDVMwPrPrS9KKrph82D-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#5</span></div>
+              <div class="tp-text">머뭇리며 입을 달싹인다. 한달간 접속하지 못했던 때, 그 아이들은 저를 어찌 생각할까. 두려운 마음이 들었다. 그러나 한참을 망설였다. 분명 제 온 마음을 담아 비록 게임이라 하여도 그들을 사랑하고 애정을 키웠으니까. 그러니.. 그들 손에 죽고싶진.. 않았다. 주변을 둘러보며 사람들을 살핀다. 저처럼 돌아가지 않으려는 이들..</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:9oDVMwPrPrS9KKrph82D:user" data-target="msg-9oDVMwPrPrS9KKrph82D-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-9oDVMwPrPrS9KKrph82D-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#5</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰15:10 |🚩하얀 공간<br>[6][⚫]<br>미각성 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>시간이 흐를수록 하얀 공간은 듬성듬성 비어갔다. 남은 이들은 서이안처럼 자신의 포탈 앞을 서성이는 '죄인'들뿐이었다. 그들의 면면은 처참했다. 개중에는 공포에 질려 손톱을 물어뜯거나, 바닥에 머리를 박고 중얼거리는 이들도 있었다.</em><br><br><strong>겁에 질린 남자 |</strong> "세금... 세금을 90퍼센트로 걷었어... 가면 난 가죽이 벗겨질 거야..."<br><strong>우는 여자 |</strong> "난 전쟁이 재밌어서... 기사들을 그냥 고기방패로 썼는데... 으흐흑..."<br><br><em>들려오는 사연들은 하나같이 끔찍했다. 폭군, 암군, 학살자. 그들은 자신이 저지른 짓을 알기에 돌아가기를 거부하고 있었다. 서이안이 그들을 둘러보는 사이, 빌이 지팡이로 바닥을 톡, 톡 두드리며 남은 이들의 주의를 환기했다.</em><br><br><strong>빌 |</strong> "흐음, 분위기가 초상집이군요. 하긴, 자업자득이니 누굴 탓하겠습니까. 정 그렇게 죽는 게 두려우시다면... 다른 선택지를 드리죠."<br><br><em>빌이 손을 휘젓자, 구석에 낡고 초라한 회색 포탈 하나가 생성되었다. 아무런 문양도, 색깔도 없는 칙칙한 소용돌이였다.</em><br><br><strong>빌 |</strong> "일명 '야생의 평원'행입니다. 왕국도, 가신도, 백성도 없는 무주공산으로 보내드리죠. 그곳에서 맨주먹으로 몬스터와 싸우며 처음부터 다시 시작하는 겁니다. 물론, 레벨 1인 여러분이 늑대 한 마리라도 이길 수 있을지는 미지수지만... 성난 백성들에게 찢겨 죽는 것보단 낫지 않겠습니까?"<br><br><em>그 말에 몇몇이 눈을 번뜩이며 회색 포탈로 허겁지겁 달려갔다. 비굴한 생존을 택한 패배자들의 뒷모습이었다. 빌은 그들을 한심하게 바라보다가, 유독 망설임이 짙은 서이안에게 다가왔다. 그는 서이안의 앞에 놓인, 검고 웅장한 기운이 감도는 포탈을 흥미롭게 쳐다보았다.</em><br><br><strong>빌 |</strong> "호오... 당신의 포탈은 기운이 예사롭지 않군요. 꽤나 공들여 키운 제국 같은데. 저런 쓰레기들과 함께 도망치시겠습니까? 아니면... 당신을 기다리는 아이들에게 가서 변명이라도 해보시겠습니까?"</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:9oDVMwPrPrS9KKrph82D:ai" data-target="msg-9oDVMwPrPrS9KKrph82D-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-XelRhVMfJjj3TjCR2b0d-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#6</span></div>
+              <div class="tp-text"><em>남자의 말에 힐끗 보다 한숨을 내쉰다.</em><br>...알아서 하죠.<br><em>그리 말한 후 평원 포탈로 들어간다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:XelRhVMfJjj3TjCR2b0d:user" data-target="msg-XelRhVMfJjj3TjCR2b0d-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-XelRhVMfJjj3TjCR2b0d-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#6</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰15:20 |🚩야생의 평원<br>[7][⚫]<br>미각성 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>빌은 서이안의 퉁명스러운 대답에 어깨를 으쓱하며 흥미롭다는 듯 입꼬리를 올렸다. 그는 아무 말 없이 서이안이 회색 포탈 속으로 사라지는 것을 지켜보았다. 포탈을 통과하는 순간, 시야가 암전되고 몸이 붕 뜨는 감각과 함께 거친 풀냄새가 코를 찔렀다.</em><br><br><em>쿵, 하고 땅에 발이 닿았다. 눈을 뜨자 끝없이 펼쳐진 초원이 눈앞에 나타났다. 사람 키만 한 잡초가 무성하고, 멀리 보이는 숲은 음산한 기운을 풍기고 있었다. 하얀 공간의 인공적인 느낌과 달리, 이곳은 날것 그대로의 자연이었다. 서늘한 바람이 뺨을 스치고, 멀리서 들려오는 정체 모를 짐승의 울음소리가 등골을 오싹하게 만들었다.</em><br><br><em>서이안과 함께 포탈로 들어온 다른 '도망자'들도 주변에 널브러져 있었다. 그들은 망연자실한 표정으로 사방을 둘러보거나, 절망감에 주저앉아 흐느꼈다.</em><br><br><strong>도망자 1 |</strong> "여... 여기가 평원이라고? 젠장, 아무것도 없잖아!"<br><strong>도망자 2 |</strong> "추워... 배고파... 우리 이제 어떡해...?"<br><br><em>그들의 불안한 목소리가 울려 퍼지는 순간, 근처 수풀이 부스럭거리며 격렬하게 흔들렸다. 모두의 시선이 그곳으로 쏠렸다. 으르렁거리는 낮은 소리와 함께, 굶주림에 번들거리는 붉은 눈동자 두 쌍이 어둠 속에서 나타났다. 거대한 몸집의 회색 늑대 두 마리가 침을 뚝뚝 흘리며 천천히 모습을 드러냈다. 놈들의 시선은 명백히, 가장 가까이에 있는 먹잇감, 즉 겁에 질린 인간들을 향해 있었다.</em><br><br><em>늑대 한 마리가 자세를 낮추고 땅을 박차려는 듯 뒷다리에 힘을 주기 시작했다. 생존을 위한 첫 번째 시험이 예고도 없이 시작된 것이다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:XelRhVMfJjj3TjCR2b0d:ai" data-target="msg-XelRhVMfJjj3TjCR2b0d-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-OXPJimQQDYLqveWuqGVZ-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#7</span></div>
+              <div class="tp-text"><em>이안은 흠칫하며 바라보다 머뭇거리다 외친다</em><br>다들.. 종족각성을 하세요! 그럼 스킬이 생길겁니다</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:OXPJimQQDYLqveWuqGVZ:user" data-target="msg-OXPJimQQDYLqveWuqGVZ-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-OXPJimQQDYLqveWuqGVZ-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#7</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰15:30 |🚩야생의 평원<br>[8][⚫]<br>미각성 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안의 외침은 절망에 빠진 이들에게 한 줄기 빛과 같았다. 그들은 허둥지둥 빌을 떠올리며 각성을 외치기 시작했다. 하지만 이미 늦었다. 늑대 한 마리가 땅을 박차고 가장 가까이에 있던, 바닥에 주저앉아 울고 있던 여자에게 맹렬하게 달려들었다.</em><br><br><strong>여자 |</strong> "꺄아아악!"<br><br><em>비명과 함께 늑대의 날카로운 이빨이 여자의 어깨를 깊숙이 파고들었다. 콰득, 살점이 뜯겨나가고 붉은 피가 분수처럼 솟구쳤다. 여자는 고통에 찬 비명을 지르며 바닥을 뒹굴었지만, 늑대는 아랑곳하지 않고 목덜미를 향해 다시 한번 이빨을 박아 넣었다. 우드득, 목뼈가 부러지는 끔찍한 소리가 평원에 울려 퍼졌다.</em><br><br>`[시스템] : '로드 플레이어'가 사망했습니다.`<br><br><em>여자의 몸이 희미한 빛가루가 되어 허공으로 흩어졌다. 그 잔혹한 광경에 사람들은 경악을 금치 못했다. 그 순간, 다른 늑대 한 마리가 다음 목표를 정한 듯, 서이안을 향해 낮게 으르렁거리며 달려들 준비를 했다.</em><br><br><em>그때, 도망자들 중 한 명이었던 왜소한 체구의 남자가 다급하게 각성을 외쳤다. 그의 몸이 빛에 휩싸이더니, 순식간에 날렵한 귀와 꼬리를 가진 '실바린(도마뱀 수인)'으로 변했다.</em><br><br>`[시스템] : 종족 각성을 통해 '실바린'의 신체를 획득했습니다.`<br>`[시스템] : 특성 [재생], [독 발톱]을 획득했습니다.`<br><br><strong>실바린 남자 |</strong> "크윽...!"<br><br><em>남자는 자신의 변한 몸을 살필 틈도 없이, 본능적으로 손을 휘둘렀다. 날카롭게 돋아난 보랏빛 손톱이 달려들던 늑대의 옆구리를 깊게 할퀴었다. 늑대는 낑, 하는 비명과 함께 옆으로 나뒹굴었지만, 상처는 그리 깊지 않았다. 오히려 공격당한 것에 격분한 듯, 더욱 흉흉한 살기를 뿜어내며 남자를 노려보기 시작했다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:OXPJimQQDYLqveWuqGVZ:ai" data-target="msg-OXPJimQQDYLqveWuqGVZ-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-xgAlOvgMvihC8tOdurzv-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#8</span></div>
+              <div class="tp-text"><em>이안도 머뭇거리며 각성을 할까 고민한다. 그때 안경을 쓴 남자가 나서며</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:xgAlOvgMvihC8tOdurzv:user" data-target="msg-xgAlOvgMvihC8tOdurzv-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-xgAlOvgMvihC8tOdurzv-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#8</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰15:40 |🚩야생의 평원<br>[9][⚫]<br>미각성 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안이 각성을 망설이는 바로 그 순간, 늑대가 땅을 박차고 맹렬하게 달려들었다. 날카로운 이빨이 목덜미를 향해 파고드는 찰나, 누군가 서이안의 몸을 거칠게 밀쳐냈다. 쿵, 하고 바닥에 나뒹군 서이안의 눈앞으로 안경을 쓴 남자가 대신 나섰다. 그는 침착한 얼굴로 늑대를 마주 보며 나지막이 읊조렸다.</em><br><br><strong>백도하 |</strong> "각성."<br><br><em>순식간에 그의 몸이 검은 기운에 휩싸였다. 칠흑 같은 머리카락은 더 짙어졌고, 눈동자는 깊이를 알 수 없는 자수정처럼 변했다. 그의 등 뒤로 검은 안개가 아지랑이처럼 피어올랐다. 마인(魔人)의 각성이었다.</em><br><br>`[시스템] : 종족 각성을 통해 '마인'의 신체를 획득했습니다.`<br>`[시스템] : 특성 [환영술], [정신 간섭]을 획득했습니다.`<br><br><em>남자는, 이제 마인이 된 백도하는, 자신을 향해 달려드는 늑대를 향해 손을 뻗었다. 그의 손끝에서 검은 연기가 피어오르더니, 순식간에 늑대의 머리를 감쌌다.</em><br><br><strong>백도하 |</strong> "보아라."<br><br><em>늑대는 돌연 허공을 향해 짖어대기 시작했다. 있지도 않은 적을 향해 미친 듯이 달려들고, 제 꼬리를 물려고 뱅글뱅글 돌았다. 명백한 환각 상태였다. 그사이, 다른 늑대는 실바린 남자의 독 발톱에 몇 번 더 할퀴어져 비틀거리고 있었다.</em><br><br><em>백도하는 환각에 빠진 늑대에게서 시선을 떼고, 아직 바닥에 앉아있는 서이안을 차갑게 내려다보았다.</em><br><br><strong>백도하 |</strong> "멍청하게 죽고 싶은 게 아니라면, 당신도 어서 각성하는 게 좋을 겁니다. 여기서 죽으면 그걸로 끝이니까."<br><br>*그의 목소리는 얼음장처럼 차가웠지만, 그 덕에 서이안은 정신을 차릴 수 있었다. 그의 말대로였다. 여기서 죽으면 모든 게 끝이었다. 제국으로 돌아가지 않은 선택이 무의미해</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:xgAlOvgMvihC8tOdurzv:ai" data-target="msg-xgAlOvgMvihC8tOdurzv-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-4xacN9ATX8pm8wBZFuLC-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#9</span></div>
+              <div class="tp-text"><em>그의 말에 한번 힐끗보다 상태창을 열어 각성을 누른다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:4xacN9ATX8pm8wBZFuLC:user" data-target="msg-4xacN9ATX8pm8wBZFuLC-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-4xacN9ATX8pm8wBZFuLC-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#9</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰15:50 |🚩야생의 평원<br>[10][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>백도하의 차가운 재촉에, 서이안은 결심을 굳혔다. 허공에 반투명한 상태창을 띄우고, 망설임 없이 '종족 각성' 버튼을 눌렀다. 그 순간, 눈을 뜨기 힘들 정도의 찬란한 황금빛이 서이안의 온몸을 감쌌다. 따뜻하고 성스러운 기운이 몸 안을 휘젓는 감각에 절로 신음이 터져 나왔다.</em><br><br><em>칠흑 같던 머리카락은 뿌리부터 눈부신 금발로 물들었고, 검은 눈동자는 녹아내린 황금처럼 변했다. 가장 큰 변화는 등에서 일어났다. 등의 피부를 찢고 나오는 고통과 함께, 거대하고 순백의 날개 한 쌍이 핏물을 흩뿌리며 돋아났다. 갓 태어난 날개는 부드러운 솜털로 뒤덮여 있었고, 그 끝에서 황금빛 가루가 은은하게 흩날렸다.</em><br><br>`[시스템] : 종족 각성을 통해 '천금족'의 신체를 획득했습니다.`<br>`[시스템] : 특성 [치유의 손길], [신성한 가호]를 획득했습니다.`<br><br><em>갑작스러운 변화와 고통에 숨을 헐떡이는 사이, 백도하가 환각에 빠진 늑대를 향해 손짓했다. 늑대는 허공을 향해 마지막으로 한번 뛰어오르더니, 그대로 절벽 아래로 몸을 던져버렸다. 쿵, 하는 둔탁한 소리가 멀리서 들려왔다.</em><br><br><em>남은 늑대 한 마리는 실바린 남자의 끈질긴 공격에 지쳐 헐떡이고 있었다. 백도하는 그쪽을 힐끗 보더니, 아직 날개를 제대로 가누지 못하고 비틀거리는 서이안에게 턱짓했다.</em><br><br><strong>백도하 |</strong> "치유 특성인가 보군요. 저쪽부터 도와주시죠. 저러다 둘 다 죽겠습니다."<br><br><em>그의 말대로, 실바린 남자는 늑대의 반격에 팔과 다리에 깊은 상처를 입고 피를 흘리고 있었다. 재생 특성이 있긴 하지만, 상처가 아물기 전에 과다출혈로 쓰러질 기세였다. 늑대 역시 독에 중독되어 비틀거리고 있었지만, 최후의 발악을 준비하는 듯 낮게 으르렁거렸다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:4xacN9ATX8pm8wBZFuLC:ai" data-target="msg-4xacN9ATX8pm8wBZFuLC-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-PzmkhYoQvmYd88r5xZtH-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#10</span></div>
+              <div class="tp-text">아, 네. 알겠습니다<br><em>이안은 남자를 한번 힐끗 본 후 부상을 입을 사람의 곁으로 가 스킬을 써본다.</em><br>괜찮으세요? 치유해드리겠습니다</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:PzmkhYoQvmYd88r5xZtH:user" data-target="msg-PzmkhYoQvmYd88r5xZtH-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-PzmkhYoQvmYd88r5xZtH-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#10</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰16:00 |🚩야생의 평원<br>[11][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안은 백도하의 지시에 따라, 아직 익숙하지 않은 날개를 파닥이며 비틀거리는 걸음으로 실바린 남자에게 다가갔다. 남자는 늑대의 이빨에 깊게 패인 팔을 부여잡고 거친 숨을 몰아쉬고 있었다. 그의 발치에는 검붉은 피가 흥건했다.</em><br><br><em>서이안이 조심스럽게 손을 뻗어 남자의 상처 위로 가져가자, 손바닥에서 부드럽고 따스한 황금빛이 흘러나왔다. 빛이 상처에 닿자, 찢어진 살점이 기적처럼 서서히 아물기 시작했다. 실바린 남자는 고통으로 일그러졌던 얼굴을 풀고 놀란 눈으로 서이안과 자신의 팔을 번갈아 보았다.</em><br><br><strong>실바린 남자 |</strong> "이, 이게... 치유 마법...? 대단하군..."<br><br><em>그 순간, 독에 취해 비틀거리던 늑대가 마지막 힘을 짜내 발악했다. 놈은 가장 가까이 있는 실바린 남자를 향해 몸을 날렸다. 하지만 이미 기력이 다한 움직임은 둔하기 짝이 없었다.</em><br><br><em>퍼억-!</em><br><br><em>어디선가 날아온 돌멩이가 정확히 늑대의 머리를 강타했다. 늑대는 비명 한번 지르지 못하고 그대로 옆으로 쓰러져 미동도 하지 않았다. 시선을 돌리자, 백도하가 무심한 표정으로 손을 털고 있었다. 그는 주변에 널린 돌멩이 하나로 맹수의 숨통을 끊어버린 것이다.</em><br><br><em>상황이 종료되자, 긴장이 풀린 실바린 남자가 거친 숨을 내쉬며 주저앉았다. 백도하는 쓰러진 늑대의 사체를 힐끗 보더니, 서이안에게 다가와 말했다.</em><br><br><strong>백도하 |</strong> "일단 위기는 넘겼군요. 하지만 방심하긴 이릅니다. 피 냄새를 맡고 다른 놈들이 몰려올 겁니다. 우선 이 자리를 떠야겠어요."<br><br><em>그는 주변을 경계하며, 아직 각성하지 못하고 공포에 떨고 있는 다른 생존자들을 차갑게 훑어보았다.</em><br><br></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:PzmkhYoQvmYd88r5xZtH:ai" data-target="msg-PzmkhYoQvmYd88r5xZtH-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-0ETSYTbi4fmn8j0XhHk5-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#11</span></div>
+              <div class="tp-text"><em>고개를 끄덕이곤 머뭇거리다 날개를 집어넣으려 해본다.</em><br><em>'어떻게 넣으면 되지.. 음..'</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:0ETSYTbi4fmn8j0XhHk5:user" data-target="msg-0ETSYTbi4fmn8j0XhHk5-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-0ETSYTbi4fmn8j0XhHk5-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#11</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰16:10 |🚩야생의 평원<br>[12][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안은 거추장스러운 날개를 어떻게든 집어넣어 보려고 애썼다. 등에 힘을 줘보기도 하고, 어깨를 움츠려도 봤지만, 거대한 날개는 의지와 상관없이 파드득거리며 말을 듣지 않았다. 오히려 움직이려 할수록 찢어졌던 등의 상처가 욱신거리며 통증만 심해졌다.</em><br><br><em>그 모습을 지켜보던 백도하가 미간을 찌푸리며 다가왔다.</em><br><br><strong>백도하 |</strong> "뭐 합니까? 아직 제어에 익숙하지 않은 모양인데, 괜히 힘쓰다간 상처만 덧납니다. 그냥 놔두세요."<br><br><em>그의 목소리에는 약간의 짜증이 섞여 있었다. 그는 주변을 둘러보며 아직도 넋을 놓고 있는 다른 생존자들을 향해 차갑게 말했다.</em><br><br><strong>백도하 |</strong> "거기, 언제까지 멍하니 서 있을 겁니까? 각성할 거면 빨리하고, 못하겠으면 그냥 여기서 죽든가. 우리는 먼저 이동하겠습니다."<br><br><em>백도하의 냉정한 선언에 몇몇이 허둥지둥 각성을 외쳤다. 그들 중 한 명은 우락부락한 근육질의 '오크'로 변했고, 다른 한 명은 뾰족한 귀를 가진 '고블린'이 되었다. 그들은 자신의 변해버린 흉측한 모습에 절망하면서도, 일단 살아남기 위해 백도하의 뒤를 따랐다.</em><br><br><em>치료를 받은 실바린 남자는 어느새 기운을 차리고 일어나, 백도하에게 가볍게 고개를 숙였다.</em><br><br><strong>실바린 남자 |</strong> "도와줘서 고맙다. 나는 '자한'이라고 한다. 이 은혜는 잊지 않지."<br><br><strong>백도하 |</strong> "됐습니다. 당신도 살고 싶어서 싸운 것뿐이잖습니까. 일단 저 숲 쪽으로 이동하죠. 언제까지고 평원에 있다간 늑대 떼의 저녁 식사가 될 테니."<br><br><em>백도하는 망설임 없이 앞장서서 걷기 시작했다. 자한과 새로 각성한 오크, 고블린이 그 뒤를 따랐다. 백도하는 몇 걸음 가다 멈춰 서더니, 아직도 날개와 씨름하고 있는 서이안을 돌아보며 퉁명스럽게 말했다.</em><br><br><strong>백도하 |</strong> "</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:0ETSYTbi4fmn8j0XhHk5:ai" data-target="msg-0ETSYTbi4fmn8j0XhHk5-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-F9Ov5o2uRj8ux8Nadec8-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#12</span></div>
+              <div class="tp-text"><em>그의 말에 어색히 웃으며 일단 날개를 놔둔다. 어째 등이 묵직한 느낌이었다. 저도 소개를 하며</em><br>아.. 안녕하세요. 저는 서이안이라고 합니다.</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:F9Ov5o2uRj8ux8Nadec8:user" data-target="msg-F9Ov5o2uRj8ux8Nadec8-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-F9Ov5o2uRj8ux8Nadec8-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#12</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰16:20 |🚩야생의 평원<br>[13][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안이 어색하게 웃으며 자신을 소개하자, 앞서가던 백도하가 잠시 걸음을 멈추고 돌아보았다. 그는 안경 너머의 자안으로 서이안의 머리부터 발끝까지, 특히 거추장스럽게 펼쳐진 하얀 날개를 무심하게 훑었다.</em><br><br><strong>백도하 |</strong> "백도하입니다. 그리고 저쪽은 자한. 나머지는... 알 필요 없겠죠."<br><br><em>그의 쌀쌀맞은 대답에 자한이 헛기침하며 분위기를 환기했다. 그는 서이안의 날개를 신기한 듯 쳐다보며 말했다.</em><br><br><strong>자한 |</strong> "천인족은 처음 보는군. 날개가 꽤나 거추장스러워 보이는데, 괜찮나?"<br><br><em>그들이 짧은 대화를 나누는 사이, 백도하는 이미 저만치 앞서가고 있었다. 그는 뒤도 돌아보지 않고 차갑게 말했다.</em><br><br><strong>백도하 |</strong> "잡담은 나중에. 해가 지기 전에 은신처를 찾아야 합니다. 따라오지 않으면 버리고 갈 겁니다."<br><br><em>그의 재촉에 일행은 서둘러 발걸음을 옮겼다. 묵직한 날개 때문에 균형을 잡기 힘든 서이안은 몇 번이고 휘청거렸다. 그럴 때마다 등 뒤에서 따라오던 오크와 고블린이 기겁하며 피했다. 그들은 서이안의 성스러운 기운이 낯선 듯, 거리를 둔 채 수군거렸다.</em><br><br><em>일행은 백도하의 인도에 따라 음산한 기운이 감도는 숲을 향해 나아갔다. 숲에 가까워질수록 풀벌레 소리마저 잦아들고, 나뭇가지 사이로 스며드는 바람 소리가 스산하게 울렸다. 백도하는 숲 입구에서 멈춰 서더니, 날카로운 눈으로 숲 내부를 샅샅이 훑었다.</em><br><br><strong>백도하 |</strong> "여기서부터는 더 위험합니다. 각자 무기 될 만한 건 챙기도록 하세요. 맨손으로 다음 놈을 만났다간... 아까 그 여자처럼 될 테니."<br><br>*그는 말을 마치고는 주변에서 제법 굵고 단단해 보이는 나뭇가지를 주워 끝을 날</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:F9Ov5o2uRj8ux8Nadec8:ai" data-target="msg-F9Ov5o2uRj8ux8Nadec8-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-zmlfEh3kY0gkPqDLFu1U-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#13</span></div>
+              <div class="tp-text"><em>고개를 끄덕인다.</em><br>도하씨는.. 침착하시네요. 부럽습니다. 이제 그럼.. 어떡할까요<br><em>모인 사람들을 둘러보며</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:zmlfEh3kY0gkPqDLFu1U:user" data-target="msg-zmlfEh3kY0gkPqDLFu1U-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-zmlfEh3kY0gkPqDLFu1U-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#13</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰16:30 |🚩야생의 평원, 숲 입구<br>[14][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안의 말에 백도하는 부러뜨린 나뭇가지 끝을 바위에 갈아 날카롭게 만들던 손을 멈췄다. 그는 안경 너머의 차가운 눈으로 서이안을 한번 힐끗 쳐다볼 뿐이었다.</em><br><br><strong>백도하 |</strong> "부러워할 게 아닙니다. 살아남으려면 당연한 거니까. 감정에 휘둘리는 것만큼 생존에 방해되는 건 없죠."<br><br><em>그는 말을 마치고 다시 나뭇가지를 다듬는 데 집중했다. 그의 무심한 태도에 서이안이 잠시 머쓱해진 사이, 실바린인 자한이 주변에서 날카로운 돌멩이 몇 개를 주워 들며 대화에 끼어들었다.</em><br><br><strong>자한 |</strong> "이봐, 마인. 그래서 계획이 뭐지? 이대로 숲으로 들어가는 건 자살행위나 마찬가지일 텐데. 어두워지면 저 안은 우리 같은 초짜들의 무덤이 될 거다."<br><br><em>자한의 지적에, 뒤에서 눈치만 보던 오크와 고블린도 불안한 듯 웅성거렸다. 백도하는 다듬던 나뭇가지를 땅에 꽂아 세우고는, 일행을 둘러보며 입을 열었다. 그의 목소리는 여전히 감정 없이 건조했다.</em><br><br><strong>백도하 |</strong> "어떡하긴요. 일단 오늘 밤을 버텨야죠. 저 숲속에 작은 동굴이라도 있는지 찾아볼 겁니다. 무작정 평원에서 밤을 새우는 것보단 나무와 지형을 엄폐물로 삼는 게 생존 확률이 높으니까."<br><br><em>그는 서이안과 자한, 그리고 나머지 일행을 차례로 훑어보며 말을 이었다.</em><br><br><strong>백도하 |</strong> "역할 분담을 하죠. 저와 자한 씨는 선두에서 길을 트고 경계를 맡겠습니다. 당신,"<br><br><em>백도하의 턱짓이 서이안을 향했다.</em><br><br><strong>백도하 |</strong> "당신은 후방에서 부상자가 나오면 즉시 치료할 준비를 하세요. 그 날개 때문에 기동성은 최악이니, 중간에 끼는 것보다 뒤가 낫겠군요. 나머지는... 그냥 조용히 따라오기나 하십시오. 소란 피워서 괴물이라도 끌어들이면, 그땐 제가 직접 버리고 갈 테니."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:zmlfEh3kY0gkPqDLFu1U:ai" data-target="msg-zmlfEh3kY0gkPqDLFu1U-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-vRzzf5RFjvrdFh8sY76A-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#14</span></div>
+              <div class="tp-text">아아.. 네<br><em>머쓱하게 끄덕이곤 뒤로 간다. 그나저나 어디가서 머물러야 하나. 괜찮은 곳이 있으면 좋겠다. 무엇보다 안전하고 물자조달 등의 편의를 보려면 마을생성을 하는게 좋긴 할텐데..</em><br><em>그렇게 얼마간 걷다가</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:vRzzf5RFjvrdFh8sY76A:user" data-target="msg-vRzzf5RFjvrdFh8sY76A-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-vRzzf5RFjvrdFh8sY76A-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#14</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰16:40 |🚩야생의 평원, 숲 속<br>[15][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>백도하의 지시에 따라 일행은 조심스럽게 숲 안으로 발을 들였다. 울창한 나뭇잎들이 하늘을 가려 숲 내부는 대낮임에도 불구하고 어둑했다. 축축한 흙냄새와 썩은 낙엽 냄새가 코를 찔렀고, 발밑에서는 마른 나뭇가지가 바스락거리는 소리가 유난히 크게 들렸다.</em><br><br><em>선두에 선 백도하와 자한은 극도로 경계하며 천천히 나아갔다. 백도하는 날카로운 눈으로 사방을 훑었고, 자한은 뱀처럼 날름거리는 혀로 공기 중의 냄새를 맡으며 위험을 감지했다. 서이안은 그들의 뒤에서 거추장스러운 날개를 애써 접으려 하며 따라갔다. 뒤따르는 오크와 고블린은 겁에 질려 서로에게 바싹 붙은 채, 작은 소리에도 움찔거리며 주변을 살폈다.</em><br><br><em>얼마나 걸었을까, 백도하가 갑자기 손을 들어 일행을 멈춰 세웠다. 그는 턱짓으로 전방의 작은 공터를 가리켰다. 공터 중앙에는 정체 모를 짐승의 뼈와 피가 낭자했고, 그 주변으로 거대한 발자국들이 어지럽게 찍혀 있었다. 아직 마르지 않은 핏자국으로 보아, 참사가 일어난 지 얼마 되지 않은 듯했다.</em><br><br><strong>자한 |</strong> "젠장... 냄새가 지독하군. 이 발자국, 보통 크기가 아닌데. 오우거라도 사는 건가?"<br><br><em>자한이 긴장한 목소리로 속삭였다. 그 말에 오크와 고블린의 얼굴이 사색이 되었다. 백도하는 미간을 찌푸린 채 발자국을 살피더니, 고개를 저었다.</em><br><br><strong>백도하 |</strong> "아닙니다. 오우거의 발자국과는 다릅니다. 이건... 트롤(Troll)의 흔적입니다. 냄새를 보니, 아마 식사를 마친 지 얼마 안 된 모양이군요."<br><br><em>그가 말을 마치는 순간, 숲 깊은 곳에서 <strong>"쿠우우어어어-"</strong> 하는 낮고 육중한 울음소리가 들려왔다. 땅이 미세하게 진동하는 듯한 위압적인 포효였다. 일행은 모두 숨을 죽였다.</em><br><br><strong>백도하 |</strong> "운이 없군. 식사를 마쳤다면 잠이나 잘 것이지, 영역 순찰이라도 나온 모양입니다. 이쪽으로 오고 있습니다. 서두르죠."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:vRzzf5RFjvrdFh8sY76A:ai" data-target="msg-vRzzf5RFjvrdFh8sY76A-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-EFPRXV0dyRB85gZ1RN9y-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#15</span></div>
+              <div class="tp-text"><em>함께 소리가 나지 않는 곳으로 이동한다. 그러다 얼마 후 불빛을 발견하고 그쪽으로 가본다. 작지만 분명 조그만 부족같은 마을이었다. 그곳엔 로드처럼 보이는 인간들도 있었다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:EFPRXV0dyRB85gZ1RN9y:user" data-target="msg-EFPRXV0dyRB85gZ1RN9y-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-EFPRXV0dyRB85gZ1RN9y-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#15</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰16:50 |🚩야생의 평원, 숲 속<br>[16][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>트롤의 포효가 다시 한번 숲을 울리자, 일행은 공포에 질려 백도하의 뒤를 따랐다. 그는 소리가 들려온 반대 방향을 향해, 최대한 소리를 죽이며 빠르게 움직였다. 서이안은 거대한 날개가 나뭇가지에 걸리지 않도록 애쓰며 필사적으로 그들을 쫓았다. 등 뒤에서는 오크와 고블린이 헐떡이는 소리가 거슬리게 들려왔다.</em><br><br><em>얼마나 달렸을까, 숨이 턱까지 차오를 무렵, 백도하가 다시 한번 일행을 멈춰 세웠다. 그는 나무 뒤에 몸을 숨긴 채, 전방을 향해 턱짓했다. 어두운 숲 속, 저 멀리서 따뜻한 주황색 불빛이 여러 개 새어 나오고 있었다. 모닥불 빛이었다.</em><br><br><strong>자한 |</strong> "저건... 불빛? 사람이 있다는 건가?"<br><br><em>자한이 희망 섞인 목소리로 속삭였다. 백도하는 여전히 경계를 풀지 않은 채, 신중하게 대답했다.</em><br><br><strong>백도하 |</strong> "사람일 수도, 혹은 사람을 '유인'하는 덫일 수도 있죠. 일단 조용히 접근해서 상황을 파악합니다."<br><br><em>일행은 소리를 죽인 채 불빛을 향해 다가갔다. 가까워질수록 왁자지껄한 사람들의 목소리가 들려왔다. 숲속의 작은 공터, 그곳에는 모닥불 세 개를 중심으로 스무 명 남짓한 사람들이 모여 있었다. 그들은 대부분 각성을 마친 상태였고, 종족도 엘프, 드워프, 인간 등 다양했다. 그들은 사냥한 듯한 짐승 고기를 나뭇가지에 꿰어 굽고 있었고, 주변에는 조잡하게나마 나무 울타리가 세워져 있었다.</em><br><br><em>그들 중, 유독 눈에 띄는 남자가 있었다. 화려한 갑옷 조각을 걸치고 거만한 자세로 모닥불 앞에 앉은 그는, 주변 사람들에게 무언가를 지시하고 있었다. 그의 태도는 영락없는 '로드'였다.</em><br><br><strong>거만한 남자 |</strong> "야, 거기! 고기 다 탔잖아! 똑바로 안 해? 그리고 너, 엘프! 저기 망루에 올라가서 경계나 서. 여기서 제일 쓸모없는 게 너희 같은 활쟁이들이라고."<br><br><em>그의 막말에 뾰족귀의 엘프 여자가 얼굴을 붉히며 주먹을 쥐었지만, 감히 대들지는 못하고 묵묵히 망루를 향해 걸어갔다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:EFPRXV0dyRB85gZ1RN9y:ai" data-target="msg-EFPRXV0dyRB85gZ1RN9y-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-usW5IY5xjR0HbivFjUuX-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#16</span></div>
+              <div class="tp-text"><em>그 모습을 바라보며 눈썹을 까딱한다.</em><br>음.. 아까 그 공간에서 나온 사람들 중 한 모임인가보네요..</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:usW5IY5xjR0HbivFjUuX:user" data-target="msg-usW5IY5xjR0HbivFjUuX-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-usW5IY5xjR0HbivFjUuX-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#16</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰17:00 |🚩야생의 평원, 숲 속 마을<br>[17][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안의 나직한 중얼거림에 백도하는 고개를 끄덕였다. 그는 여전히 나무 뒤에 몸을 숨긴 채, 냉정한 눈으로 저쪽 무리의 역학 관계를 분석하고 있었다.</em><br><br><strong>백도하 |</strong> "그런 것 같군요. 제국으로 돌아가길 포기하고 야생으로 나온 자들 중, 리더를 자처하는 자 밑으로 모인 집단이겠죠. 저런 식으로 세력을 불리는 건 나쁜 선택은 아닙니다. 다만..."<br><br><em>백도하의 시선이 거만한 남자에게 향했다. 남자는 엘프 여자를 쫓아내고는, 드워프 남자가 구워 바친 고기를 한입 베어 물더니 그대로 바닥에 뱉어버렸다.</em><br><br><strong>거만한 남자 |</strong> "에잇, 퉤! 질겨서 못 먹겠네! 야, 너! 가서 물 좀 떠 와! 목마르다!"<br><br><em>그의 오만한 태도에 자한이 혀를 차며 비웃었다.</em><br><br><strong>자한 |</strong> "허, 저놈은 자기가 아직도 왕인 줄 아는 모양이군. 저런 놈 밑에 있다간 제명에 못 살겠다."<br><br><em>그때, 마을의 망루에 올라갔던 엘프 여자가 숲의 어둠 속에 숨어있는 서이안 일행을 발견했다. 그녀는 잠시 망설이는 듯하더니, 이내 결심한 듯 아래를 향해 외쳤다.</em><br><br><strong>엘프 여자 |</strong> "저기! 숲 속에 누가 있습니다! 다섯 명이에요!"<br><br><em>그녀의 외침에 마을의 분위기가 순식간에 험악해졌다. 고기를 굽던 이들은 황급히 조잡한 무기를 집어 들었고, 거만한 남자는 짜증스럽게 자리에서 일어났다. 그는 허리에 찬 롱소드를 뽑아 들고 숲 쪽을 향해 고함을 질렀다.</em><br><br><strong>거만한 남자 |</strong> "거기 숨어있는 놈들! 당장 튀어나와! 적인지 아군인지 확인해야겠다! 10초 준다! 안 나오면 바로 활 쏠 줄 알아!"<br><br><em>그의 협박에 백도하는 작게 한숨을 내쉬었다. 그는 숨어있던 나무 뒤에서 천천히 모습을 드러내며 양손을 들어 보였다. 적의가 없다는 표시였다.</em><br><br><strong>백도하 |</strong> "진정하시죠. 우린 지나가던 길입니다. 싸울 생각은 없습니다."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:usW5IY5xjR0HbivFjUuX:ai" data-target="msg-usW5IY5xjR0HbivFjUuX-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-5lw8NKEuBetI0XeGCDP6-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#17</span></div>
+              <div class="tp-text"><em>함께 손을 들며 도하의 뒤를 따라나선다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:5lw8NKEuBetI0XeGCDP6:user" data-target="msg-5lw8NKEuBetI0XeGCDP6-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-5lw8NKEuBetI0XeGCDP6-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#17</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰17:10 |🚩야생의 평원, 숲 속 마을<br>[18][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>백도하가 모습을 드러내자, 서이안을 비롯한 나머지 일행도 마지못해 나무 뒤에서 걸어 나왔다. 어둠 속에서 거대한 날개를 가진 천금족, 날카로운 인상의 마인, 파충류의 외형을 한 실바린, 그리고 흉측한 오크와 고블린이 차례로 나타나자 마을 사람들은 경악과 경계심을 감추지 못하고 술렁거렸다.</em><br><br><em>특히 서이안의 거대하고 순백의 날개는 단연 눈에 띄었다. 거만한 남자는 서이안의 날개를 위아래로 훑어보더니 탐욕스러운 미소를 지었다.</em><br><br><strong>거만한 남자 |</strong> "호오, 천인족? 그것도 날개가 저렇게 크고 아름다운 건 처음 보는군. 귀한 종족이 이런 누추한 곳까지 어쩐 일이지?"<br><br><em>그의 노골적인 시선에 서이안이 저도 모르게 몸을 움츠렸다. 백도하가 한 걸음 앞으로 나서며 서이안을 가리듯 막아섰다.</em><br><br><strong>백도하 |</strong> "우리는 밤을 피할 은신처를 찾던 중이었습니다. 소란 피울 생각은 없으니, 하룻밤만 신세 질 수 있겠습니까? 아니면 조용히 지나가겠습니다."<br><br><em>남자는 백도하의 정중하지만 단호한 태도가 마음에 들지 않는다는 듯, 코웃음을 쳤다.</em><br><br><strong>거만한 남자 |</strong> "지나가? 여긴 이제 내 땅이야, '강철의 주먹' 길드장, 이 몸의 영역이라고. 외부인이 함부로 드나들 수 있는 곳이 아니지. 하지만... 뭐, 특별히 받아는 주지."<br><br><em>남자는 칼을 칼집에 넣으며 거만하게 턱을 까딱였다. 그의 시선은 여전히 서이안에게 고정되어 있었다.</em><br><br><strong>거만한 남자 |</strong> "대신 조건이 있다. 너희, 내 밑으로 들어와. 난 이 황무지에 새로운 왕국을 건설할 위대한 로드, '알렉스'다. 내 수하가 되면 안전과 먹을 것을 보장해주지. 특히 저기 날개 달린 힐러. 넌 아주 유용하겠어. 내 전용 힐러로 삼아주지."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:5lw8NKEuBetI0XeGCDP6:ai" data-target="msg-5lw8NKEuBetI0XeGCDP6-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-NDdH88qHTLHu6Td4wZrf-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#18</span></div>
+              <div class="tp-text"><em>남자의 말에 불쾌한듯 한쪽 눈을 찡그렸으나 일단은 다른 부딛힘 없이 넘어가기 위해 고개를 끄덕였다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:NDdH88qHTLHu6Td4wZrf:user" data-target="msg-NDdH88qHTLHu6Td4wZrf-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-NDdH88qHTLHu6Td4wZrf-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#18</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰17:20 |🚩야생의 평원, 숲 속 마을<br>[19][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안이 마지못해 고개를 끄덕이자, 알렉스는 만족스럽다는 듯이 거만하게 웃었다. 그는 마치 승리자라도 된 양, 서이안 일행을 향해 손짓했다.</em><br><br><strong>알렉스 |</strong> "그래, 현명한 선택이야. 자, 다들 이쪽으로 와서 앉아. 마침 저녁 식사 중이었으니 너희 몫도 좀 나눠주지. 특히 너, 힐러. 내 옆으로 와서 앉아. 귀한 몸이니 특별 대우를 해줘야지."<br><br><em>알렉스의 노골적인 지시에 백도하의 미간이 꿈틀거렸다. 그는 서이안이 움직이기도 전에 먼저 입을 열었다. 목소리는 여전히 평탄했지만, 그 안에는 서늘한 경고의 의미가 담겨 있었다.</em><br><br><strong>백도하 |</strong> "감사하지만 사양하겠습니다. 저희는 저쪽 구석에서 조용히 쉬다 가겠습니다. 폐를 끼치고 싶지 않군요."<br><br><em>백도하는 알렉스의 대답을 기다리지도 않고, 일행을 이끌어 모닥불에서 가장 멀리 떨어진 어두운 구석으로 향했다. 그의 단호한 행동에 알렉스의 얼굴이 순간 굳어졌다. 자신의 권위에 대한 명백한 도전으로 받아들인 것이다.</em><br><br><strong>알렉스 |</strong> "뭐야, 저 안경잡이는? 감히 내 말을 거역해? 야!"<br><br><em>알렉스가 소리치며 일어서려 하자, 그의 옆에 있던 한 남자가 다급히 그의 팔을 붙잡으며 말렸다.</em><br><br><strong>부하 |</strong> "형님, 참으십시오! 저놈들, 보통내기가 아닌 것 같습니다. 특히 저 마인이랑 실바린... 섣불리 건드렸다간 우리만 손해 볼 수 있습니다. 일단은 그냥 놔두시죠."<br><br><em>부하의 만류에 알렉스는 분이 풀리지 않는다는 듯 씩씩거리면서도, 마지못해 다시 자리에 앉았다. 그는 불쾌한 시선으로 구석에 자리를 잡는 백도하 일행을 노려보며, 들으라는 듯이 크게 중얼거렸다.</em><br><br><strong>알렉스 |</strong> "흥, 건방진 놈들... 밤에 트롤이라도 나타나서 저놈들부터 찢어 죽여 버렸으면 좋겠군. 힐러는 빼고."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:NDdH88qHTLHu6Td4wZrf:ai" data-target="msg-NDdH88qHTLHu6Td4wZrf-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-px1rV6ulPV8NUMHMlnOG-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#19</span></div>
+              <div class="tp-text"><em>다함께 한쪽 구석으로 이동후 작게 한숨을 내쉬며</em><br>하아.. 감사합니다. 도와주셔서.<br><em>날개가 드러나 눈에 뛰니 불편했다. 한번에 어느종족인지 드러나니 말이다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:px1rV6ulPV8NUMHMlnOG:user" data-target="msg-px1rV6ulPV8NUMHMlnOG-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-px1rV6ulPV8NUMHMlnOG-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#19</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰17:30 |🚩야생의 평원, 숲 속 마을<br>[20][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>일행은 알렉스 무리의 시선을 뒤로하고 숲의 어둠이 짙게 깔린 구석에 자리를 잡았다. 축축하고 차가운 땅의 냉기가 옷을 뚫고 올라왔다. 서이안이 안도의 한숨과 함께 감사를 표하자, 백도하는 주변 경계를 늦추지 않은 채 무심하게 대꾸했다.</em><br><br><strong>백도하 |</strong> "감사 인사는 필요 없습니다. 저런 부류에게 약하게 보이면 끝없이 이용당할 뿐이니까. 불필요한 마찰을 피하기 위한 최소한의 대응이었을 뿐입니다."<br><br><em>그는 안경을 살짝 밀어 올리며, 알렉스 무리를 곁눈질했다. 그들의 대화 소리가 희미하게 들려왔다. 백도하는 서이안의 날개를 한번 쳐다보고는 나직이 말했다.</em><br><br><strong>백도하 |</strong> "당신 종족은 원래 그렇게 눈에 띕니까? 저 날개, 어떻게든 가리는 편이 좋겠군요. 저런 자들에게는 좋은 표적이 될 뿐이니."<br><br><em>그의 지적에 자한도 동의하며 거들었다. 그는 날카로운 돌멩이를 손안에서 굴리며 혀를 날름거렸다.</em><br><br><strong>자한 |</strong> "맞는 말이다. 천인족, 특히 너처럼 상위 종족은 노예상들에게 비싼 값에 팔려나가지. 저 알렉스라는 놈도 딱 그럴 위인으로 보이는군. 네 능력을 탐내는 건지, 아니면 그냥 관상용으로 옆에 두려는 건지."<br><br><em>자한의 직설적인 말에 서이안의 얼굴이 살짝 굳었다. 그들의 대화를 듣고 있던 오크와 고블린은 겁먹은 눈으로 서이안과 백도하, 자한을 번갈아 쳐다볼 뿐, 감히 대화에 끼어들지 못했다. 백도하는 품속에서 무언가를 뒤적거리더니, 작고 딱딱한 육포 조각을 꺼내 서이안에게 건넸다.</em><br><br><strong>백도하 |</strong> "일단 먹어두시죠. 밤은 길고, 무슨 일이 일어날지 모르니 체력은 비축해둬야 합니다."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:px1rV6ulPV8NUMHMlnOG:ai" data-target="msg-px1rV6ulPV8NUMHMlnOG-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-OhchfcIICigSCJPGtYar-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#20</span></div>
+              <div class="tp-text"><em>씁쓸하게 끄덕인다.</em><br><em>'상위종족이라.. 거의 약한종족으로 구분되는 천인족이 그런식으로 표현되니 아이러니했다. 실제로 저의 제국도 흑천족이 되기 전엔 다른 제국들이나 왕국들에게 침공을 자주 받거나 패배했으니 말이다.'</em><br><em>속으로 한숨을 내쉬다 날개를 집어넣으려 시도해본다. 눈을 감고 날개의 감각을 느끼며 잠시 뒤 날개가 스륵하며 들어간다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:OhchfcIICigSCJPGtYar:user" data-target="msg-OhchfcIICigSCJPGtYar-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-OhchfcIICigSCJPGtYar-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#20</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰17:40 |🚩야생의 평원, 숲 속 마을<br>[21][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안이 건네받은 육포를 받아 들고 복잡한 상념에 잠겨 있을 때였다. 다시 한번 날개를 집어넣으려는 시도에, 이번에는 이전과 다른 감각이 느껴졌다. 등에 단단히 붙어있던 이물감 같던 날개가, 마치 원래부터 몸의 일부였던 것처럼 의지에 따라 부드럽게 움직였다. 눈을 감고 집중하자, 거대했던 날개가 깃털 스치는 소리를 내며 등 뒤로 스르륵 빨려 들어가듯 사라졌다. 날개가 사라진 등에는 찢어졌던 상처의 통증 대신, 약간의 피로감만이 남았다.</em><br><br><em>그 광경을 바로 옆에서 지켜보던 자한이 놀라움에 눈을 동그랗게 떴다.</em><br><br><strong>자한 |</strong> "오호, 드디어 성공했군. 어떻게 한 거지? 그냥 사라져 버렸는데."<br><br><em>그의 말에 백도하도 잠시 시선을 돌려 날개가 사라진 서이안의 등을 쳐다보았다. 그의 표정에는 큰 변화가 없었지만, 안경 너머의 눈동자가 흥미롭다는 듯 가늘어졌다.</em><br><br><strong>백도하 |</strong> "공간 수납의 일종인가... 아니면 단순한 은신 기술인가. 어쨌든 잘됐군요. 이제 쓸데없는 시선은 끌지 않아도 되겠으니."<br><br><em>그는 다시 경계 태세로 돌아가며, 알렉스 무리 쪽을 힐끗 쳐다보았다. 아니나 다를까, 서이안의 날개가 사라지는 것을 본 알렉스가 자리에서 벌떡 일어나 이쪽을 향해 소리쳤다.</em><br><br><strong>알렉스 |</strong> "야! 너! 방금 그 날개 어떻게 한 거야? 다시 보여줘 봐! 그거 아주 쓸 만한 기술이겠는데? 이리 와서 직접 설명해 보라고!"<br><br><em>알렉스의 고압적인 명령에, 그의 부하 몇몇이 무기를 들고 이쪽으로 다가오려는 듯 낌새를 보였다. 그 순간, 백도하가 조용히 자리에서 일어섰다. 그는 아무 말도 하지 않았지만, 그의 등 뒤에서 피어오르는 검은 아지랑이와 온몸에서 뿜어져 나오는 서늘한 기운은 명백한 경고였다. 다가오려던 알렉스의 부하들이 저도 모르게 주춤거리며 뒷걸음질 쳤다.</em><br><br><strong>백도하 |</strong> "피곤하게 만드는군."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:OhchfcIICigSCJPGtYar:ai" data-target="msg-OhchfcIICigSCJPGtYar-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-Y2w2iO22SccQd165cBgh-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#21</span></div>
+              <div class="tp-text"><em>이안도 이마를 짚고 한숨을 내쉬며 돌아보며 나직하게 말했다.</em><br>천인족들은 모두 날개를 꺼내고 집어넣을 수 있습니다. 특별한게 아니죠. 이 정도는 '상식'이니 다들 알고 계시겠죠?</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:Y2w2iO22SccQd165cBgh:user" data-target="msg-Y2w2iO22SccQd165cBgh-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-Y2w2iO22SccQd165cBgh-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#21</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰17:50 |🚩야생의 평원, 숲 속 마을<br>[22][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안의 차분하면서도 가시 돋친 말에, 알렉스의 얼굴이 시뻘겋게 달아올랐다. '상식'이라는 단어는 그의 무지함을 정면으로 찌른 것이나 다름없었다. 그는 검을 뽑아 들 기세로 씩씩거렸지만, 백도하의 등 뒤에서 피어오르는 불길한 검은 기운을 보고는 차마 나서지 못했다.</em><br><br><strong>알렉스 |</strong> "뭐, 뭐라고? 이 계집이...!"<br><br><em>알렉스가 분을 삭이지 못하고 있을 때, 그의 옆에 있던 부하가 다시 한번 그를 말렸다. 하지만 이번에는 백도하가 먼저 움직였다. 그는 서이안의 앞을 막아서듯 한 걸음 내디디며, 알렉스를 향해 싸늘하게 말했다.</em><br><br><strong>백도하 |</strong> "더 이상 소란 피우지 않는 게 좋을 겁니다. 당신이 말하는 '상식'대로라면, 마인(魔人)이 정신 간섭에 능하다는 것도 알고 있겠죠. 여기서 당신 부하들 전부를 서로 죽고 죽이는 환각에 빠뜨리는 건... 그리 어려운 일이 아닙니다."<br><br><em>백도하의 목소리는 조용했지만, 그 안에 담긴 위협은 숲의 공기를 얼어붙게 만들었다. 그의 자안이 섬뜩한 빛을 발하자, 알렉스의 부하들은 겁에 질려 뒷걸음질 쳤다. 알렉스 역시 백도하의 기세에 눌려 아무 말도 하지 못하고 입술만 깨물었다.</em><br><br><em>그때, 무리의 리더를 자처하는 또 다른 남자가 나섰다. 그는 아까부터 알렉스의 행동을 못마땅하게 지켜보던, 실용적인 가죽 갑옷 차림의 남자였다.</em><br><br><strong>가죽 갑옷 남자 |</strong> "알렉스, 그만해라. 네놈의 오만함 때문에 우리까지 위험에 빠뜨릴 셈이냐? 이봐, 거기 마인 양반. 우린 싸울 생각이 없다. 저놈이 좀 무식해서 그러니 이해해 주게."<br><br><em>그는 백도하에게 예를 갖추며 말한 뒤, 알렉스를 쏘아보았다.</em><br><br><strong>가죽 갑옷 남자 |</strong> "난 '카이'라고 한다. 이기적인 놈 하나 때문에 모두가 피를 볼 순 없지. 우리도 이 야생에서 살아남으려는 사람들일 뿐이다. 오늘 밤은... 각자 조용히 보내는 게 어떻겠나?"</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:Y2w2iO22SccQd165cBgh:ai" data-target="msg-Y2w2iO22SccQd165cBgh-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-DNgSUu0KXHtLWLMGfQvB-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#22</span></div>
+              <div class="tp-text"><em>그를 바라보며 그래도 멀쩡한 사람은 있구나 생각하며 고개를 끄덕인다. 그후 앉아 가만히 생각하다 도하를 보며</em><br>..도하씨. 어쨌든 이곳에서 살아가려면 왕국을 만드는게 유리합니다. 일단 가신들이 생기고 자원에 따라 시설들도 업그레이드 시켜 물자들을 얻기 수월하니까요.. 아니면 타왕국에 소속되는 것도 있긴 하죠..</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:DNgSUu0KXHtLWLMGfQvB:user" data-target="msg-DNgSUu0KXHtLWLMGfQvB-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-DNgSUu0KXHtLWLMGfQvB-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#22</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰18:00 |🚩야생의 평원, 숲 속 마을<br>[23][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>카이라는 남자의 중재로 험악했던 분위기는 일단락되었다. 알렉스는 여전히 분이 풀리지 않은 얼굴로 이쪽을 노려봤지만, 카이와 다른 이들의 눈치를 보며 더 이상 소란을 피우지는 않았다. 일행은 다시 구석에 자리를 잡고 앉았다. 서이안의 제안에, 백도하는 경계를 풀지 않은 채 주변을 훑으며 대답했다. 그의 목소리는 숲의 냉기처럼 차가웠다.</em><br><br><strong>백도하 |</strong> "왕국 건설... 말은 쉽죠. 하지만 그게 지금 우리 상황에 맞는 이야기라고 생각합니까?"<br><br><em>그는 턱짓으로 알렉스의 무리를 가리켰다.</em><br><br><strong>백도하 |</strong> "보십시오. 저렇게 어중이떠중이 모아놓고 왕 노릇 하는 게 당신이 말하는 왕국입니까? 가신? 시설? 전부 자원이 있어야 가능한 이야기입니다. 지금 우리에겐 당장 내일 아침까지 살아남을 수 있을지에 대한 확신조차 없습니다."<br><br><em>그의 냉정한 지적에 서이안이 잠시 말문이 막혔다. 옆에서 듣고 있던 자한이 날카로운 돌멩이를 만지작거리며 거들었다.</em><br><br><strong>자한 |</strong> "마인의 말이 맞다. 왕국을 세우려면 최소한의 기반이 필요하지. 믿을 만한 동료, 안전한 거점, 그리고... 가장 중요한 건 리더의 자질이다. 저기 알렉스 같은 놈이 로드가 되면, 그 왕국은 일주일을 버티기 힘들 거다. 내부 분열로 먼저 망하겠지."<br><br><em>백도하는 다시 시선을 서이안에게로 돌렸다. 그의 안경 너머 자안이 서늘하게 빛났다.</em><br><br><strong>백도하 |</strong> "타 왕국에 소속되는 것도 마찬가지입니다. 당신은 당신의 그 '유용한' 치유 능력 때문에 환영받을지도 모르겠군요. 하지만 나머지는? 저 오크와 고블린은 노예 취급이나 당하지 않으면 다행일 겁니다. 저 역시 마인이라는 이유로 배척당하겠죠. 당신은... 그런 걸 원합니까?"<br><br><em>그의 말은 단순한 질문이 아니었다. 그것은 현실의 냉혹함을 꿰뚫는 날카로운 송곳과도 같았다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:DNgSUu0KXHtLWLMGfQvB:ai" data-target="msg-DNgSUu0KXHtLWLMGfQvB-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-Tvm0aLb1GtsfFMPJk9Vk-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#23</span></div>
+              <div class="tp-text"><em>도하의 말에 눈을 동그랗게 뜨다가</em><br>확실히.. 맞는 말이긴 합니다. 하지만, 계속 이렇게 기반없이 떠돌이 생활을 할 수 없단건 알고 계시지 않습니까. 여긴 마키나 게임.. 아니 마키나 세상입니다.</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:Tvm0aLb1GtsfFMPJk9Vk:user" data-target="msg-Tvm0aLb1GtsfFMPJk9Vk-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-Tvm0aLb1GtsfFMPJk9Vk-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#23</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰18:10 |🚩야생의 평원, 숲 속 마을<br>[24][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안의 반문에 백도하는 잠시 말이 없었다. 그는 모닥불의 흔들리는 불빛이 비치지 않는 어둠 속에서, 마치 조각상처럼 미동도 없이 서 있었다. 그의 등 뒤에서 아른거리던 검은 아지랑이가 스르르 잦아들었다. 한참 만에 그가 입을 열었다. 목소리는 이전보다 한층 더 낮고 차가워져 있었다.</em><br><br><strong>백도하 |</strong> "알고 있습니다. 여기가 어떤 세상인지, 그래서 뭘 해야 하는지. 당신보다 더 잘 알고 있을지도 모르죠."<br><br><em>그의 목소리에는 묘한 냉소가 섞여 있었다. 그는 천천히 서이안에게로 고개를 돌렸다. 어둠 속에서도 그의 안경알이 섬광처럼 번뜩였다.</em><br><br><strong>백도하 |</strong> "하지만 당신은 지금 순서를 완전히 잘못 생각하고 있습니다. 왕국? 가신? 그건 '살아남은 자'들이나 논할 수 있는 사치입니다. 지금 우리에게 필요한 건 거창한 계획이 아니라, 당장 발밑의 함정을 피하는 생존 기술입니다."<br><br><em>그는 손가락으로 자신과 서이안, 그리고 자한과 저편의 오크, 고블린을 차례로 가리켰다.</em><br><br><strong>백도하 |</strong> "보세요. 우린 고작 다섯입니다. 종족도, 능력도, 생각도 제각각인 오합지졸이죠. 이런 상태로 왕국을 만들겠다? 지나가던 트롤의 비웃음을 살 겁니다. 지금은 세력을 불릴 때가 아니라, 우리 자신을 지킬 힘을 기를 때입니다. 최소한, 각자 자기 몸 하나는 건사할 수 있을 정도의 힘을."<br><br><em>그의 말은 얼음처럼 차가웠지만, 그 논리는 지독할 정도로 현실적이었다. 옆에서 듣고 있던 자한이 고개를 끄덕이며 동조했다.</em><br><br><strong>자한 |</strong> "마인의 말이 지독하게 현실적이긴 하지만, 틀린 말은 하나도 없군. 일단 오늘 밤을 무사히 넘기고, 내일 해가 뜨면 그때 다시 생각하는 게 순서일 거다."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:Tvm0aLb1GtsfFMPJk9Vk:ai" data-target="msg-Tvm0aLb1GtsfFMPJk9Vk-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-xmjRYIwwwi3waq1VygNK-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#24</span></div>
+              <div class="tp-text">도하의 냉소적인 말에 입을 다문다. 일단 마을건설부터 시작해 기반을 조금이라도 다지면 좋을 것 같다 생각은 계속 했다. 마을을 만들면 무기나 물자를 얻기 더 수월하니까. 그러나 완전히 부정적인 모습에 입을 다물 수 밖에 없었다. ..알겠습니다. 제가 경솔했던 것 같군요. 그래도.. 조금이라도 생각해봤으면 좋겠습니다. 아시다싶이 처음은 작은 부락같은 마을로 시작합니다. 그럼 해당 사람의 가신들도 20명 정도 생성되구요.. 도움은, 될 겁니다. 그리 말하며 일어서 잘 준비를 한다</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:xmjRYIwwwi3waq1VygNK:user" data-target="msg-xmjRYIwwwi3waq1VygNK-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-xmjRYIwwwi3waq1VygNK-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#24</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰18:20 |🚩야생의 평원, 숲 속 마을<br>[25][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안이 체념한 듯 말하며 자리에서 일어나자, 백도하는 아무런 대꾸도 하지 않았다. 그는 그저 어둠 속에서 서이안의 행동을 묵묵히 지켜볼 뿐이었다. 그의 무표정한 얼굴 너머로 어떤 생각이 스치는지 짐작하기 어려웠다. 서이안이 잠자리를 마련하기 위해 주변의 마른 잎사귀를 긁어모으는 동안, 옆에 앉아있던 자한이 흥미롭다는 듯이 입을 열었다.</em><br><br><strong>자한 |</strong> "가신이 스무 명이나 생긴다고? 허, 그거 꽤 구미가 당기는 이야기인데. 맨땅에서 시작하는 것보단 훨씬 낫지 않나?"<br><br><em>자한의 말에, 구석에서 웅크리고 있던 오크와 고블린도 귀를 쫑긋 세우며 이쪽을 쳐다봤다. '가신'이라는 단어는 그들에게도 솔깃하게 들리는 모양이었다. 백도하는 여전히 미동도 없이 서 있다가, 나직이 입을 열었다. 그의 목소리는 여전히 감정이 배제된 채 건조했다.</em><br><br><strong>백도하 |</strong> "그 가신들이라는 게, 반드시 로드에게 충성한다고 누가 보장합니까?"<br><br><em>그의 한마디에 자한의 표정이 굳어졌다. 백도하는 시선을 알렉스 무리 쪽으로 돌리며 말을 이었다.</em><br><br><strong>백도하 |</strong> "베타 테스트 때, 수많은 왕국이 망했습니다. 외부의 침략 때문이 아니라, 내부의 배신 때문에. 로드의 무능함, 폭정, 혹은 단순히 가신들의 야심 때문에 말입니다. 당신이 말하는 그 스무 명의 가신이, 과연 당신을 도와줄 아군일지, 아니면 당신의 등 뒤에 칼을 꽂을 잠재적인 적일지... 어떻게 확신하죠?"<br><br><em>그는 다시 서이안에게로 시선을 옮겼다. 어둠 속에서 그의 눈이 서늘하게 빛났다.</em><br><br><strong>백도하 |</strong> "당신이 로드가 되어 가신을 소환했을 때, 그들이 당신의 '유용한' 치유 능력만을 탐내며 당신을 감금하고 꼭두각시로 내세우지 않으리란 법은 있습니까? '도움'이라는 건, 그만큼의 '위험'을 동반하는 겁니다. 특히... 신뢰가 없는 관계에서는요."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:xmjRYIwwwi3waq1VygNK:ai" data-target="msg-xmjRYIwwwi3waq1VygNK-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-PfH9p03azNCqNwumVNHn-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#25</span></div>
+              <div class="tp-text"><em>백도하의 말에 그를 가만 쳐다보다가</em><br>...도하씨는, 그런 경험이 있나보죠</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:PfH9p03azNCqNwumVNHn:user" data-target="msg-PfH9p03azNCqNwumVNHn-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-PfH9p03azNCqNwumVNHn-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#25</span></div>
+              <div class="tp-text">```info<br>📅2030년 6월 30일 |⏰18:30 |🚩야생의 평원, 숲 속 마을<br>[26][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안의 날카로운 질문이 어둠 속으로 파고들었다. 그 순간, 백도하의 주변 공기가 미세하게 뒤틀리는 듯한 착각이 일었다. 그는 아무 말 없이 서이안을 응시했다. 평소와 같은 무표정이었지만, 안경 너머의 자안 깊은 곳에서 언뜻 차가운 분노와 같은 감정이 스쳐 지나갔다. 그는 평소보다 훨씬 느리고, 단어 하나하나를 끊어 말하듯 입을 열었다.</em><br><br><strong>백도하 |</strong> "......경험이라. 글쎄요. 굳이 경험하지 않아도 알 수 있는 것들이 있죠. 역사책에 기록된 수많은 배신과 음모처럼 말입니다. 어리석은 자들은 직접 겪어야만 배우지만, 현명한 자들은 타인의 실패를 보고 배우는 법이니까요."<br><br><em>그의 목소리는 지독히도 평온했지만, 그 안에 담긴 냉기는 주변의 온도를 몇 도는 떨어뜨리는 듯했다. 그는 잠시 말을 끊었다가, 마치 혼잣말처럼 나직이 덧붙였다.</em><br><br><strong>백도하 |</strong> "애정과 신뢰를 가장한 기만, 선의를 이용하는 착취... 그런 건 이 세계에서 아주 흔한 일입니다. 특히, 힘의 균형이 맞지 않을 때는 더더욱."<br><br><em>그는 더 이상 서이안을 보지 않고, 시선을 깊고 어두운 숲 속으로 돌렸다. 마치 그 어둠 속에서 잊고 싶은 과거의 망령이라도 보는 사람처럼. 옆에서 대화를 듣고 있던 자한은 두 사람 사이에 흐르는 무거운 공기를 감지하고는, 어색하게 헛기침을 하며 끼어들었다.</em><br><br><strong>자한 |</strong> "자자, 너무 심각한 이야기는 그만하지. 밤은 깊었고, 우린 피곤하다. 일단 눈 좀 붙이고 내일 얘기하자고. 내가 먼저 불침번을 서지."<br><br><em>자한의 말에도 백도하는 여전히 미동도 없이 어둠을 응시하고 있었다. 그는 서이안의 질문에 대한 직접적인 대답을 피했지만, 그의 태도와 분위기 자체가 그 어떤 긍정이나 부정보다 더 무거운 대답이 되어 공간을 짓눌렀다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:PfH9p03azNCqNwumVNHn:ai" data-target="msg-PfH9p03azNCqNwumVNHn-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-sECfH3kmLhyKy8kdli6r-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#26</span></div>
+              <div class="tp-text"><em>이안도 그만 누워 잠들 준비를 한다. 도하의 모습에선 많은 것들이 담겨 있겠지. 쉽지 않은 세계다. 하지만 이런 곳에서.. 살아가야 했다. 이안은 눈을 감고 잠에 든다.</em><br><em>다음날</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:sECfH3kmLhyKy8kdli6r:user" data-target="msg-sECfH3kmLhyKy8kdli6r-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-sECfH3kmLhyKy8kdli6r-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#26</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰06:00 |🚩야생의 평원, 숲 속 마을<br>[27][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>밤사이 별다른 소란은 없었다. 간간이 들려오는 멀리서의 짐승 울음소리가 긴장감을 더했지만, 트롤이나 다른 위협적인 존재가 마을 근처로 접근하지는 않았다. 서이안은 차가운 땅의 냉기와 불편한 잠자리 탓에 깊이 잠들지 못하고, 숲의 새벽을 알리는 희미한 빛과 함께 눈을 떴다.</em><br><br><em>몸을 일으키자, 뻣뻣한 근육이 비명을 질렀다. 주변을 둘러보니, 백도하는 이미 일어나 있었다. 그는 밤새 한숨도 자지 않은 사람처럼 조금의 흐트러짐도 없이, 나무에 기댄 채 날카로운 눈으로 동이 터오는 숲을 경계하고 있었다. 그의 옆에서 자한은 얕은 잠에 빠져 있었고, 오크와 고블린은 서로를 껴안은 채 웅크려 자는 중이었다.</em><br><br><em>알렉스의 무리 역시 밤사이 무사했던 모양이다. 꺼져가는 모닥불 주변으로 아무렇게나 널브러져 자고 있었고, 망루에 선 파수꾼만이 졸음을 참으며 하품을 하고 있었다. 그때, 경계를 서던 백도하가 나직이 입을 열었다.</em><br><br><strong>백도하 |</strong> "일어났습니까. 곧 저들도 움직일 겁니다. 떠날 준비를 하죠."<br><br><em>그의 말에 자한도 부스스 눈을 뜨며 몸을 일으켰다. 백도하는 품에서 마지막 남은 육포 조각을 꺼내 반으로 나눠 자한에게 건네고, 나머지 반을 입에 넣고 씹기 시작했다. 그는 서이안을 돌아보며 말했다.</em><br><br><strong>백도하 |</strong> "일단 동쪽으로 계속 이동할 겁니다. 이 숲을 벗어나면 강이 있다는 정보가 있습니다. 물을 확보하고, 지형을 파악하는 게 우선입니다."<br><br><em>그가 말을 마쳤을 때, 저편에서 알렉스가 잠에서 깨어나 기지개를 켜며 일어났다. 그는 이쪽을 발견하고는, 여전히 거만한 표정으로 다가왔다. 그의 뒤로 어젯밤 중재에 나섰던 카이도 따라붙었다.</em><br><br><strong>알렉스 |</strong> "어이, 너희들. 이제 우리랑 같이 움직여야지? 특히 너, 힐러. 오늘은 내 옆에 딱 붙어서 따라와. 어디 다치기라도 하면 곤란하니까."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:sECfH3kmLhyKy8kdli6r:ai" data-target="msg-sECfH3kmLhyKy8kdli6r-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-ysDj6r5rWn8GvN70dT0n-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#27</span></div>
+              <div class="tp-text"><em>일어나 도하의 말을 듣다 이어진 알렉스의 말에 뭐라 해야할지 몰라 가만 바라보다 도하를 바라본다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:ysDj6r5rWn8GvN70dT0n:user" data-target="msg-ysDj6r5rWn8GvN70dT0n-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-ysDj6r5rWn8GvN70dT0n-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#27</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰06:10 |🚩야생의 평원, 숲 속 마을<br>[28][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안이 어찌할 바를 모르고 자신을 쳐다보자, 백도하는 씹고 있던 육포를 삼키고는 천천히 몸을 일으켰다. 그는 알렉스를 정면으로 마주하지 않고, 마치 그의 존재를 무시하는 듯 숲의 다른 쪽을 바라보며 말했다. 그의 목소리는 아침 안개처럼 차갑고 건조했다.</em><br><br><strong>백도하 |</strong> "길이 다른 것 같군요. 우린 동쪽으로 갈 생각입니다."<br><br><em>그의 간결하고 단호한 거절에 알렉스의 얼굴이 험악하게 일그러졌다. 그는 어이가 없다는 듯 헛웃음을 터뜨렸다.</em><br><br><strong>알렉스 |</strong> "뭐? 동쪽? 야, 내가 어제 분명히 말했을 텐데. 내 밑으로 들어오라고. 내 허락도 없이 멋대로 움직이시겠다?"<br><br><em>알렉스가 허리에 찬 칼자루에 손을 올리며 위협적으로 다가서는 순간, 그의 옆에 있던 카이가 한 걸음 앞으로 나서며 둘 사이를 막았다.</em><br><br><strong>카이 |</strong> "알렉스, 그만둬라. 어젯밤에 얘기 끝난 거 아니었나? 각자 갈 길 가는 걸로."<br><br><em>카이는 알렉스를 제지한 뒤, 백도하를 향해 고개를 돌렸다. 그의 표정은 진지했다.</em><br><br><strong>카이 |</strong> "이봐, 마인 양반. 동쪽은 위험해. 그쪽 숲은 더 깊고 험한 데다, 어제 우리가 마주쳤던 트롤의 영역과도 가깝다. 우리와 함께 남쪽으로 가는 게 더 안전할 거다. 그쪽으로 가면 넓은 평원이 나와서 시야 확보도 쉽고, 위험을 피하기도 수월해."<br><br><em>카이의 제안은 합리적이었고, 순수한 호의에서 비롯된 것처럼 보였다. 옆에서 듣고 있던 자한도 솔깃한 듯 백도하를 쳐다봤다. 하지만 백도하는 조금의 망설임도 없이 고개를 저었다.</em><br><br><strong>백도하 |</strong> "충고는 감사하지만, 사양하겠습니다. 저희는 저희 방식대로 가겠습니다."<br><br><em>그는 더 이상 대꾸할 가치도 없다는 듯, 잠에서 덜 깬 오크와 고블린을 툭툭 치며 깨웠다.</em><br><br><strong>백도하 |</strong> "일어나십시오. 출발합니다."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:ysDj6r5rWn8GvN70dT0n:ai" data-target="msg-ysDj6r5rWn8GvN70dT0n-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-EQiATtvungBtcHZyH0Ff-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#28</span></div>
+              <div class="tp-text"><em>이안은 머뭇거리다 카이에게 꾸벅 인사한 후 도하를 따라 간다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:EQiATtvungBtcHZyH0Ff:user" data-target="msg-EQiATtvungBtcHZyH0Ff-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-EQiATtvungBtcHZyH0Ff-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#28</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰06:20 |🚩야생의 평원, 숲 속 마을<br>[29][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안이 카이에게 짧게 목례를 하고 돌아서자, 백도하는 이미 몇 걸음 앞서 숲의 동쪽으로 향하고 있었다. 그는 뒤를 돌아보거나 일행을 기다려주지 않았다. 마치 따라오지 않으면 버리고 갈 것이라는 무언의 압박처럼, 그의 발걸음은 망설임이 없었다. 자한이 투덜거리며 서이안의 옆에 따라붙었다.</em><br><br><strong>자한 |</strong> "젠장, 저 마인 놈은 너무 독단적이야. 그래도 저 카이라는 남자의 말은 일리가 있었는데. 트롤 영역이라니, 생각만 해도 끔찍하군."<br><br><em>그의 말대로, 백도하가 선택한 길은 결코 순탄치 않았다. 마을을 벗어나 숲 깊숙이 들어갈수록, 햇빛은 빽빽한 나뭇잎에 가려 잘 들지 않았고, 축축하고 서늘한 공기가 피부에 달라붙었다. 발밑은 썩은 낙엽과 이끼 낀 돌멩이들로 미끄러웠다. 백도하는 맨 앞에서, 마치 익숙한 길을 걷는 것처럼 거침없이 나아갔다. 그의 뒤를 자한이, 그리고 서이안과 겁먹은 오크, 고블린이 따랐다.</em><br><br><em>얼마쯤 걸었을까, 백도하가 갑자기 손을 들어 일행을 멈춰 세웠다. 그는 허리를 숙여 땅바닥을 살폈다. 그곳에는 성인 남성의 허벅지만 한 굵기의 나무가, 마치 가는 나뭇가지처럼 뚝 부러져 있었다.</em><br><br><strong>백도하 |</strong> "트롤의 흔적입니다. 부러진 단면을 보니, 지나간 지 그리 오래되지 않았군요."<br><br><em>그의 말에 일행의 얼굴에 긴장감이 감돌았다. 백도하는 주변을 빠르게 훑어보더니, 부러진 나무가 가리키는 방향과는 다른, 더 험하고 좁은 길을 손가락으로 가리켰다.</em><br><br><strong>백도하 |</strong> "이쪽으로 갑니다. 놈의 이동 경로를 피해서 우회해야 합니다. 지금부터는 발소리를 최대한 죽이고, 불필요한 대화는 삼가십시오."<br><br><em>그의 목소리는 얼음장처럼 차가웠고, 그가 풍기는 냉철한 분위기는 공포에 질린 오크와 고블린마저 입을 다물게 만들었다. 그는 다시 앞장서서 덤불을 헤치고 나아가기 시작했다. 그 누구도 그의 판단에 이의를 제기하지 못했다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:EQiATtvungBtcHZyH0Ff:ai" data-target="msg-EQiATtvungBtcHZyH0Ff-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-HLVG8w1aCmOWg1zyA4VC-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#29</span></div>
+              <div class="tp-text"><em>이안은 도하를 따라걸으며 그의 뒷모습을 바라보았다. 상황판단도 좋고 침착하고.. 결단력도 있다. 뭐하는 사람이었을까.. 생각하며 걷는다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:HLVG8w1aCmOWg1zyA4VC:user" data-target="msg-HLVG8w1aCmOWg1zyA4VC-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-HLVG8w1aCmOWg1zyA4VC-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#29</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰06:30 |🚩야생의 평원, 동쪽 숲<br>[30][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>백도하의 등은 단단한 벽처럼 느껴졌다. 그는 험한 덤불과 얽힌 나뭇가지를 헤쳐나가면서도 단 한 번의 비틀거림이나 망설임이 없었다. 그의 움직임 하나하나에는 불필요한 군더더기가 없었고, 마치 오랜 시간 이런 환경에서 살아온 사람처럼 자연스러웠다. 서이안이 그의 뒷모습을 쫓는 동안, 자한이 옆으로 다가와 숨을 죽인 채 속삭였다.</em><br><br><strong>자한 |</strong> "저 마인, 보통내기가 아니야. 저런 판단력과 침착함은... 평범한 회사원 나부랭이가 가질 수 있는 게 아니지. 군인이나, 어쩌면 그 비슷한 직업이었을지도 모르겠군."<br><br><em>자한의 추측은 꽤 그럴듯하게 들렸다. 백도하가 풍기는 분위기는 단순한 냉정함을 넘어, 수많은 위기 상황을 겪으며 단련된 자의 날카로움을 담고 있었다. 그가 앞장서서 길을 개척하는 동안, 일행은 그의 지시에 따라 숨소리조차 조심하며 뒤를 따랐다. 숲은 점점 더 깊어졌고, 기분 나쁜 정적 속에서 간간이 들리는 정체 모를 소리들이 신경을 긁었다.</em><br><br><em>그때, 앞서가던 백도하가 다시 한번 급히 멈춰 섰다. 그는 손짓으로 모두에게 바위 뒤에 몸을 숨기라고 신호했다. 일행이 황급히 몸을 웅크리자마자, 멀지 않은 곳에서 땅을 울리는 둔탁한 발소리와 함께 거친 숨소리가 들려왔다. <strong>쿵... 쿵... 크르르릉...</strong></em><br><br><em>바위틈으로 엿본 광경은 끔찍했다. 키가 3미터는 족히 넘어 보이는 거대한 트롤이, 방금 사냥한 듯한 멧돼지를 통째로 들고 어딘가로 향하고 있었다. 놈의 녹색 피부는 더러운 오물과 피로 얼룩져 있었고, 손에 들린 거대한 몽둥이에는 정체를 알 수 없는 털 뭉치와 핏자국이 선명했다. 트롤은 주변을 두리번거리더니, 이쪽 방향을 향해 코를 킁킁거렸다.</em><br><br><strong>백도하 |</strong> <em>'젠장, 바람의 방향이 바뀌었나...'</em><br><br><em>백도하는 즉시 허리춤에서 날카롭게 깎은 돌멩이 하나를 꺼내 들었다. 그의 눈빛이 얼음처럼 차갑게 가라앉았다. 그는 서이안과 자한을 향해 입 모양으로 속삭였다.</em><br><br><strong>백도하 |</strong> <em>'내가 신호를 주면, 반대 방향으로 뛰어.'</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:HLVG8w1aCmOWg1zyA4VC:ai" data-target="msg-HLVG8w1aCmOWg1zyA4VC-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-rrp13DRlIEWGHoWatZgh-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#30</span></div>
+              <div class="tp-text"><em>긴장한채 트롤을 보다 도하의 말에 알겠다는 듯 고개를 끄덕인다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:rrp13DRlIEWGHoWatZgh:user" data-target="msg-rrp13DRlIEWGHoWatZgh-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-rrp13DRlIEWGHoWatZgh-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#30</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰06:40 |🚩야생의 평원, 동쪽 숲<br>[31][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안이 긴장으로 마른입술을 삼키며 고개를 끄덕이는 순간, 트롤의 움직임이 멈췄다. 놈은 멧돼지 사체를 바닥에 내팽개치고, 바위 쪽을 향해 의심스러운 눈초리를 보내며 거대한 콧구멍을 벌름거렸다. <strong>크르릉...?</strong> 놈의 낮은 울음소리가 숲의 공기를 무겁게 짓눌렀다. 이제 들키는 것은 시간문제였다.</em><br><br><em>바로 그 찰나, 백도하가 움직였다. 그는 한 치의 망설임도 없이 손에 쥔 돌멩이를 반대편 숲의 덤불 속으로 힘껏 던졌다. <strong>휙-! 퍽!</strong> 돌멩이가 나뭇가지에 부딪히며 제법 큰 소리를 냈다. 트롤의 우둔한 시선이 즉시 소리가 난 쪽으로 향했다.</em><br><br><strong>백도하 |</strong> "지금!"<br><br><em>나직하지만 단호한 명령이 떨어지기 무섭게, 백도하는 몸을 날려 서이안의 팔을 잡아끌었다. 그는 거의 반강제로 서이안을 일으켜 세워 트롤의 시선이 향한 곳과 정반대 방향으로 내달리기 시작했다. 자한 역시 재빨리 오크와 고블린의 등을 떠밀며 그 뒤를 따랐다.</em><br><br><strong>트롤 |</strong> "<strong>쿠오오오오-!!</strong>"<br><br><em>속았다는 것을 깨달은 트롤의 분노에 찬 포효가 등 뒤에서 숲 전체를 뒤흔들었다. 땅이 울리는 육중한 발소리가 빠르게 가까워져 왔다. 백도하는 서이안의 손목을 쥔 채, 맹렬한 속도로 숲을 가로질렀다. 거친 나뭇가지들이 뺨과 팔을 스치며 생채기를 냈지만, 멈출 수는 없었다.</em><br><br><strong>자한 |</strong> "젠장, 따라잡힌다! 저놈 생각보다 빨라!"<br><br><em>자한이 절박하게 외쳤다. 그의 말대로, 트롤과의 거리는 좀처럼 벌어지지 않았다. 오히려 거대한 나무들이 쓰러지고 덤불이 짓이겨지는 소리가 점점 더 가까워졌다. 백도하는 달리면서도 냉정하게 주변 지형을 살폈다. 그의 눈에 좁고 가파른 내리막길이 들어왔다.</em><br><br><strong>백도하 |</strong> "저쪽이다! 굴러서라도 내려가!"<br><br><em>그는 서이안을 내리막길 쪽으로 거칠게 밀치며 외쳤다. 그리고는 달리던 속도를 늦추지 않은 채 몸을 돌려, 뒤쫓아오던 트롤을 향해 다시 한번 손에 쥔 돌멩이를 던졌다. 이번 목표는 놈의 커다란 눈이었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:rrp13DRlIEWGHoWatZgh:ai" data-target="msg-rrp13DRlIEWGHoWatZgh-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-oy1rgP3ZuEaHoyEvtNT2-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#31</span></div>
+              <div class="tp-text">읏..!<br><em>비틀거리다 겨우 균형을 잡고 내리막길을 내려간다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:oy1rgP3ZuEaHoyEvtNT2:user" data-target="msg-oy1rgP3ZuEaHoyEvtNT2-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-oy1rgP3ZuEaHoyEvtNT2-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#31</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰06:50 |🚩야생의 평원, 동쪽 숲 비탈길 아래<br>[32][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.0/100)<br>```<br><br><em>서이안이 흙먼지를 일으키며 비탈길을 미끄러져 내려가는 동안, 뒤쪽에서 둔탁한 타격음과 함께 짐승의 끔찍한 비명이 터져 나왔다.</em><br><br><strong>퍽-!</strong><br><strong>트롤 |</strong> "<strong>크아아악-!!</strong>"<br><br><em>백도하가 던진 돌멩이는 정확히 트롤의 왼쪽 눈을 강타했다. 놈이 고통에 몸부림치며 거대한 손으로 얼굴을 감싸 쥐는 사이, 백도하는 지체 없이 몸을 날렸다. 그는 가파른 경사를 타고 내려오며, 튀어나온 나무뿌리와 바위를 능숙하게 피하거나 밟으며 속도를 조절했다. 자한과 오크, 고블린도 비명을 지르며 굴러떨어지듯 그 뒤를 따랐다.</em><br><br><em>비탈길 아래는 울창한 가시덤불 숲이었다. <strong>우당탕-!</strong> 일행은 덤불 속으로 처박히며 멈췄다. 온몸이 긁히고 욱신거렸지만, 다행히 뼈가 부러진 사람은 없어 보였다. 위쪽 절벽 끝에서는 트롤이 분노에 차서 포효하며 바위를 집어 던지고 있었지만, 가파른 경사 때문에 감히 내려오지는 못하는 듯했다.</em><br><br><em>백도하는 흙투성이가 된 옷을 털며 일어났다. 안경이 비뚤어졌지만, 그의 표정은 여전히 태연했다. 그는 숨을 헐떡이는 일행을 빠르게 훑어보았다.</em><br><br><strong>백도하 |</strong> "살아있습니까? 다리가 부러지거나 움직이지 못하는 사람은?"<br><br><em>자한이 끙끙거리며 몸을 일으켰다. 그의 팔뚝에는 긴 생채기가 나 있었지만, 그는 대수롭지 않다는 듯 침을 뱉었다.</em><br><br><strong>자한 |</strong> "젠장, 죽는 줄 알았네. 마인, 너 돌 던지는 솜씨가 제법이던데? 야구 선수라도 했었냐?"<br><br><em>백도하는 자한의 농담에 대꾸하지 않고, 비뚤어진 안경을 고쳐 쓰며 위쪽을 흘깃 올려다보았다.</em><br><br><strong>백도하 |</strong> "놈이 내려오진 못하겠지만, 우회해서 쫓아올 가능성이 있습니다. 여기서 지체할 시간 없습니다. 바로 이동합니다."<br><br><em>그는 쉴 틈도 주지 않고 다시 앞장섰다. 하지만 이번에는 그의 발걸음이 조금 느려져 있었다. 서이안이 따라잡을 수 있도록 배려하는 것인지, 아니면 그 역시 지친 것인지는 알 수 없었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:oy1rgP3ZuEaHoyEvtNT2:ai" data-target="msg-oy1rgP3ZuEaHoyEvtNT2-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-7ZizpRaG3udrayuQlkxD-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#32</span></div>
+              <div class="tp-text"><em>이안은 고개를 끄덕이며 이동하다 자한의 상처를 보고 눈을 잠시 찡그렸다. 그러다 가까이 가 치유스킬을 써준다.</em><br><em>현재 서이안은 날개 집어넣은 상태</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:7ZizpRaG3udrayuQlkxD:user" data-target="msg-7ZizpRaG3udrayuQlkxD-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-7ZizpRaG3udrayuQlkxD-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#32</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰07:00 |🚩야생의 평원, 동쪽 숲 덤불지대<br>[33][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.10/100)<br>```<br><br><em>서이안이 자한의 팔에 손을 올리자, 손바닥에서 따스하고 은은한 황금빛이 피어올랐다. 날개를 집어넣은 상태였지만, 천금족 특유의 신성한 기운은 숨길 수 없었다.</em><br><br>`[스킬 '치유의 손길(Lv.1)'이 발동되었습니다.]`<br>`[대상 '자한'의 열상이 회복됩니다.]`<br><br><em>빛이 스며들자 자한의 팔뚝을 길게 가로지르던 붉은 상처가 눈 녹듯 사라지고, 새살이 돋아났다. 고통에 찡그려졌던 자한의 얼굴이 순식간에 편안해졌다.</em><br><br><strong>자한 |</strong> "오... 이거 대단한데? 따끔거리던 게 싹 사라졌어. 마치 따뜻한 물에 담근 것처럼 기분도 좋고. 고맙다, 힐러 양반. 덕분에 살았어."<br><br><em>자한은 신기한 듯 매끈해진 팔을 이리저리 돌려보며 감탄했다. 앞서가던 백도하가 그 빛을 감지하고 걸음을 멈췄다. 그는 뒤를 돌아보며 서이안의 손끝에서 사그라드는 빛을 응시했다. 안경 너머의 눈빛이 잠시 이채를 띠었다.</em><br><br><strong>백도하 |</strong> "유용하군요. 전투 불능 상태를 즉시 회복시킬 수 있다니."<br><br><em>그는 칭찬인지 분석인지 모를 말을 던지며 다가왔다. 그리고는 서이안의 안색을 살피듯 빤히 쳐다보았다.</em><br><br><strong>백도하 |</strong> "하지만 마력 소모가 있을 겁니다. 지금처럼 위급한 상황이 아니라면 아껴두십시오. 그리고..."<br><br><em>그는 주변의 울창한 숲을 눈짓으로 가리키며 목소리를 낮췄다.</em><br><br><strong>백도하 |</strong> "이런 어두운 숲에서 그 빛은 아주 좋은 표적이 됩니다. '나 여기 있으니 잡아잡수시오'라고 광고하는 꼴이죠. 치료는 최대한 은밀하게, 그리고 신속하게 끝내야 합니다."<br><br><em>냉철한 조언을 남긴 그는 다시 몸을 돌렸다.</em><br><br><strong>백도하 |</strong> "상처가 치료됐으니 이동 속도를 높이겠습니다. 해가 중천에 뜨기 전에 강가에 도착해야 합니다."<br><br><em>그의 재촉에 일행은 다시금 발걸음을 옮겼다. 비록 말투는 딱딱했지만, 부상자가 회복되어 안도하는 기색이 그의 뒷모습에서 아주 희미하게 느껴졌다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:7ZizpRaG3udrayuQlkxD:ai" data-target="msg-7ZizpRaG3udrayuQlkxD-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-5Fxd6stOnwFgBz6Hm7bS-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#33</span></div>
+              <div class="tp-text"><em>도하의 말에 고개를 끄덕이면서 함께 이동한다. 얼마 후</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:5Fxd6stOnwFgBz6Hm7bS:user" data-target="msg-5Fxd6stOnwFgBz6Hm7bS-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-5Fxd6stOnwFgBz6Hm7bS-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#33</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰09:00 |🚩야생의 평원, 동쪽 숲 강가<br>[34][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.10/100)<br>```<br><br><em>두 시간 남짓, 묵묵히 숲을 헤치고 나아간 끝에 귓가를 때리는 시원한 물소리가 들려왔다. 빽빽하던 나무들이 서서히 줄어들더니, 시야가 탁 트이며 넓은 강줄기가 모습을 드러냈다. 햇빛을 받아 반짝이는 물결은 지친 일행에게 구원과도 같았다.</em><br><br><strong>자한 |</strong> "물이다! 젠장, 살았다!"<br><br><em>갈증에 시달리던 자한이 환호성을 지르며 강가로 뛰쳐나가려 했다. 오크와 고블린도 본능적으로 물을 향해 몸을 기울였다. 하지만 백도하의 차가운 목소리가 그들의 발목을 잡았다.</em><br><br><strong>백도하 |</strong> "멈추십시오."<br><br><em>백도하는 강가로 다가가는 대신, 주변의 덤불과 모래사장부터 살폈다. 그는 물가에 찍힌 발자국들을 유심히 관찰하고, 강물에 독이나 몬스터의 기척이 없는지 확인했다. 그의 신중함은 지독할 정도였다.</em><br><br><strong>백도하 |</strong> "물가에는 항상 포식자들이 모이는 법입니다. 악어 같은 수중 몬스터가 있을 수도 있고."<br><br><em>그는 돌멩이 하나를 집어 강물 깊은 곳으로 던졌다. <strong>풍덩-!</strong> 물보라가 일었지만, 별다른 반응은 없었다. 잠시 더 수면을 응시하던 그가 그제야 고개를 끄덕였다.</em><br><br><strong>백도하 |</strong> "안전한 것 같군요. 마시되, 경계는 늦추지 마십시오."<br><br><em>허락이 떨어지자마자 자한과 이종족들은 강물에 얼굴을 처박고 벌컥벌컥 물을 들이켰다. 백도하는 그제야 천천히 강가로 다가가 손으로 물을 떠서 입을 축였다. 그는 젖은 손으로 안경을 닦아 다시 쓰며, 강 건너편을 응시했다.</em><br><br><strong>백도하 |</strong> "이 강을 따라 내려가면 더 큰 평야가 나올 겁니다. 하지만... 강을 건너는 건 위험 부담이 크군요. 일단 여기서 잠시 휴식을 취하고 정비하도록 하죠."<br><br><em>그는 젖은 손수건으로 목덜미의 땀을 닦아내며, 서이안에게 다가와 앉으라는 듯 턱짓했다. 그의 시선은 여전히 숲과 강 양쪽을 번갈아 감시하고 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:5Fxd6stOnwFgBz6Hm7bS:ai" data-target="msg-5Fxd6stOnwFgBz6Hm7bS-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-n9vPkVTllz924yDNfuU7-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#34</span></div>
+              <div class="tp-text"><em>물을 마신 후 짧게 세수를 하고 도하를 바라보며</em><br>이제 어디로 갈겁니까. 내려갈건가요?</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:n9vPkVTllz924yDNfuU7:user" data-target="msg-n9vPkVTllz924yDNfuU7-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-n9vPkVTllz924yDNfuU7-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#34</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰09:10 |🚩야생의 평원, 동쪽 숲 강가<br>[35][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.10/100)<br>```<br><br><em>서이안의 물음에 백도하는 젖은 손을 털며 잠시 생각에 잠겼다. 그는 강물의 흐름과 주변 지형을 번갈아 살피더니, 나뭇가지 하나를 주워 모래바닥에 간략한 지도를 그리기 시작했다.</em><br><br><strong>백도하 |</strong> "강을 따라 내려가는 게 정석이긴 합니다. 물을 확보하기 쉽고, 길을 잃을 염려도 적으니까요. 하지만..."<br><br><em>그는 나뭇가지로 강 하류 쪽을 가리키며 엑스(X) 표시를 그렸다.</em><br><br><strong>백도하 |</strong> "하류 쪽은 지형이 평탄해서 몬스터뿐만 아니라 다른 생존자 그룹, 혹은 약탈자들과 마주칠 확률이 높습니다. 지금 우리 전력으로는 불필요한 충돌을 피하는 게 상책이죠."<br><br><em>그는 다시 나뭇가지로 강 상류 쪽, 험준한 산맥이 보이는 방향을 가리켰다.</em><br><br><strong>백도하 |</strong> "오히려 상류 쪽으로 거슬러 올라가는 게 나을 수도 있습니다. 지형은 험하겠지만, 그만큼 숨을 곳이 많고 방어하기 유리한 지점을 찾을 수 있을 겁니다. 운이 좋다면 동굴 같은 천연 요새를 발견할 수도 있겠죠."<br><br><em>그는 고개를 들어 서이안을 바라보았다. 그의 눈빛은 의견을 묻는다기보다는, 자신의 판단에 대한 동의를 구하는 쪽에 가까웠다.</em><br><br><strong>백도하 |</strong> "당신 생각은 어떻습니까? 편하지만 위험한 길, 아니면 힘들지만 안전할 가능성이 높은 길. 선택은... 뭐, 뻔하겠지만요."<br><br><em>그때, 옆에서 물을 마시던 자한이 입가를 닦으며 끼어들었다.</em><br><br><strong>자한 |</strong> "상류라... 산 타는 건 질색인데. 하지만 마인 말대로 놈들 눈에 띄는 것보단 낫겠지. 게다가 산에는 약초나 과일 같은 것도 더 많을 테고."<br><br><em>백도하는 자한의 말에 긍정도 부정도 하지 않은 채, 서이안의 대답을 기다리듯 빤히 응시했다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:n9vPkVTllz924yDNfuU7:ai" data-target="msg-n9vPkVTllz924yDNfuU7-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-DR4sCutcCWd16S2qwYnC-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#35</span></div>
+              <div class="tp-text"><em>백도하가 바라보자 어깨를 으쓱이며</em><br>위로 가죠. 뭐가됐든 저희 전력은 지금 애매하니 최대한 안전한 쪽으로 가는게 낫겠네요.<br><em>얼마간 휴식 후 몸을 일으킨다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:DR4sCutcCWd16S2qwYnC:user" data-target="msg-DR4sCutcCWd16S2qwYnC-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-DR4sCutcCWd16S2qwYnC-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#35</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰10:30 |🚩야생의 평원, 강 상류 협곡<br>[36][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.10/100)<br>```<br><br><em>서이안의 결정에 백도하는 만족한 듯 짧게 고개를 끄덕였다. 그는 발로 모래 위에 그린 지도를 쓱 문질러 지우며 자리에서 일어났다.</em><br><br><strong>백도하 |</strong> "현명한 판단입니다. 당장의 편안함보다는 미래의 생존을 택했군요."<br><br><em>그의 지휘 아래 일행은 강줄기를 거슬러 올라가기 시작했다. 예상대로 길은 험난했다. 고운 모래사장은 온데간데없고, 날카로운 바위와 미끄러운 이끼가 앞길을 막았다. 물살 또한 거세져 귀가 먹먹할 정도로 굉음을 냈다.</em><br><br><em>한 시간 넘게 바위를 타고 넘으며 이동하자, 자한이 숨을 헐떡이며 투덜거렸다.</em><br><br><strong>자한 |</strong> "허억, 헉... 마인 양반, 안전한 건 좋은데... 이러다 몬스터 만나기도 전에 탈진해서 죽겠어. 도대체 어디까지 가야 하는 거야?"<br><br><em>백도하는 자한의 불평을 무시한 채, 깎아지른 듯한 절벽 위를 유심히 살폈다. 그러다 갑자기 걸음을 멈추고 손가락으로 절벽 중턱을 가리켰다.</em><br><br><strong>백도하 |</strong> "저기입니다."<br><br><em>그가 가리킨 곳에는 덩굴 식물에 가려져 잘 보이지 않는 작은 동굴 입구가 있었다. 지상에서 꽤 높이 떨어져 있어 맹수들이 쉽게 접근하기 힘든 위치였다.</em><br><br><strong>백도하 |</strong> "입구가 좁고 지대가 높아 방어하기 최적입니다. 앞에는 강이 흘러 식수 확보도 용이하고요. 당분간 저곳을 거점으로 삼죠."<br><br><em>그는 주변의 튼튼한 덩굴을 잡아당겨 강도를 확인하더니, 먼저 절벽을 타기 시작했다. 그의 움직임은 날렵한 표범 같았다.</em><br><br><strong>백도하 |</strong> "올라오십시오. 해가 더 뜨거워지기 전에 자리를 잡아야 합니다."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:DR4sCutcCWd16S2qwYnC:ai" data-target="msg-DR4sCutcCWd16S2qwYnC-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-fxpop3gr02LmHjsgSjqY-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#36</span></div>
+              <div class="tp-text"><em>이안도 헉헉거리며 열심히 따라갔다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:fxpop3gr02LmHjsgSjqY:user" data-target="msg-fxpop3gr02LmHjsgSjqY-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-fxpop3gr02LmHjsgSjqY-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#36</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰10:50 |🚩야생의 평원, 절벽 중턱 동굴<br>[37][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.10/100)<br>```<br><br><em>거친 덩굴이 손바닥을 파고들었다. 발을 디딜 때마다 부서지는 바위 조각들이 절벽 아래로 떨어지며 아찔한 소리를 냈다. 서이안의 숨이 턱 끝까지 차오르고 팔에 힘이 빠질 무렵, 위쪽에서 단단한 손이 쑥 내려왔다.</em><br><br><strong>백도하 |</strong> "잡으십시오."<br><br><em>백도하는 한 손으로 덩굴을 지탱한 채, 상체를 숙여 서이안의 손목을 낚아챘다. 그의 악력은 놀라울 정도로 강했다. 그가 가볍게 팔을 당기자, 서이안의 몸이 붕 떠오르며 단숨에 동굴 입구 턱에 안착했다.</em><br><br><strong>백도하 |</strong> "체력 훈련이 시급하군요. 힐러가 먼저 지쳐버리면 곤란합니다."<br><br><em>그는 짧게 핀잔을 주면서도, 서이안이 중심을 잡을 때까지 옷자락을 잡아주었다. 뒤이어 자한과 이종족들도 끙끙거리며 기어 올라왔다.</em><br><br><em>동굴 안은 밖과는 딴판이었다. 입구를 가린 덩굴 덕분에 내부는 서늘했고, 바닥은 건조하고 평평했다. 꽤 깊숙한 곳까지 공간이 이어져 있어 십여 명이 눕기에도 충분해 보였다.</em><br><br><strong>자한 |</strong> "으아... 천국이 따로 없네. 바닥이 좀 딱딱하긴 해도, 땡볕보단 백배 낫다."<br><br><em>자한이 대자로 뻗어버리는 사이, 백도하는 쉬지 않고 동굴 안쪽을 살폈다. 그는 바닥에 떨어진 짐승의 배설물이나 털이 없는지 확인하고, 안쪽 깊은 곳에 돌을 던져 다른 생명체의 기척을 확인했다.</em><br><br><strong>백도하 |</strong> "비어있군요. 예전에 곰이나 짐승이 썼던 흔적은 있지만, 최근엔 드나든 적이 없어 보입니다."<br><br><em>그는 입구 쪽으로 돌아와 덩굴 사이로 밖을 내다보았다. 시야가 탁 트여 강가와 숲이 한눈에 들어왔다.</em><br><br><strong>백도하 |</strong> "감시하기에도 완벽합니다. 당분간은 이곳을 거점으로 삼고, 식량 확보와 레벨업에 집중하도록 하죠."<br><br><em>그는 안경을 고쳐 쓰며 서이안을 돌아보았다. 안도감보다는 앞으로의 계획으로 머릿속이 가득 찬 눈빛이었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:fxpop3gr02LmHjsgSjqY:ai" data-target="msg-fxpop3gr02LmHjsgSjqY-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-KYh6rm59OcPBaaACwBd8-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#37</span></div>
+              <div class="tp-text"><em>지쳐 주저앉아 거친숨을 내쉬며 고개를 끄덕였다.</em><br>..그러죠.<br><em>얼마간 휴식 후</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:KYh6rm59OcPBaaACwBd8:user" data-target="msg-KYh6rm59OcPBaaACwBd8-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-KYh6rm59OcPBaaACwBd8-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#37</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰12:30 |🚩야생의 평원, 절벽 중턱 동굴<br>[38][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.10/100)<br>```<br><br><em>꿀맛 같은 휴식이 지나고, 정오의 햇살이 동굴 입구까지 깊숙이 파고들었다. 꼬르륵거리는 소리가 적막을 깼다. 자한이 민망한 듯 배를 문지르자, 백도하가 자리에서 일어나 옷매무새를 다듬었다.</em><br><br><strong>백도하 |</strong> "체력은 좀 회복됐습니까? 이제 배를 채워야 할 시간입니다. 굶주림은 판단력을 흐리게 하니까요."<br><br><em>그는 익숙하게 업무를 분담하기 시작했다. 그의 지시는 군더더기 없이 명확했다.</em><br><br><strong>백도하 |</strong> "자한 씨와 고블린은 강가로 내려가 식수를 확보하고, 젖지 않은 마른 장작을 구해오십시오. 너무 멀리 가면 안 됩니다."<br><br><strong>자한 |</strong> "알았어, 알았다고. 물통도 없는데 큰 잎사귀라도 찾아봐야겠네."<br><br><em>자한이 투덜거리며 고블린을 데리고 밖으로 나가자, 백도하는 오크를 향해 턱짓했다.</em><br><br><strong>백도하 |</strong> "우리는 사냥을 다녀오겠습니다. 이 근처에 멧돼지 흔적이 있더군요."<br><br><em>그는 마지막으로 서이안을 바라보았다. 데려갈까 잠시 고민하는 눈치였으나, 이내 고개를 저었다.</em><br><br><strong>백도하 |</strong> "당신은 여기 남으십시오. 힐러는 파티의 생명줄입니다. 고작 토끼 따위를 잡다가 다치게 할 순 없죠."<br><br><em>그는 동굴 입구 쪽에 돌무더기를 가리켰다.</em><br><br><strong>백도하 |</strong> "불 피울 자리를 마련해두고, 혹시 모를 침입자에 대비해 경계해주십시오. 위급 상황이 생기면 소리를 지르지 말고 돌을 떨어뜨려 신호를 보내시고요. 알겠습니까?"<br><br><em>철저한 당부를 남긴 백도하는 오크와 함께 덩굴을 타고 절벽 아래로 사라졌다. 동굴 안에는 서이안 혼자 남겨졌다. 바람 소리와 멀리서 들리는 새소리만이 고요를 채웠다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:KYh6rm59OcPBaaACwBd8:ai" data-target="msg-KYh6rm59OcPBaaACwBd8-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-0uzeDD8CeVJTfZN5CM0a-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#38</span></div>
+              <div class="tp-text"><em>이안은 하늘을 바라보다 일어나 대충 동굴 내부 정리를 한다. 동굴 밖을 나가 장작을 찾아와 불 피울 곳을 만들어놓는다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:0uzeDD8CeVJTfZN5CM0a:user" data-target="msg-0uzeDD8CeVJTfZN5CM0a-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-0uzeDD8CeVJTfZN5CM0a-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#38</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰14:00 |🚩야생의 평원, 절벽 중턱 동굴<br>[39][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.10/100)<br>```<br><br><em>서이안이 동굴 안을 정리하고 입구 근처의 마른 덩굴과 나뭇가지를 모아 돌무더기 중앙에 쌓아 올렸을 때쯤, 절벽 아래에서 부스럭거리는 소리가 들려왔다.</em><br><br><strong>백도하 |</strong> "올라갑니다. 비키십시오."<br><br><em>익숙한 목소리와 함께 덩굴이 팽팽하게 당겨졌다. 잠시 후, 백도하가 덩굴을 타고 훌쩍 뛰어올랐다. 그의 흰 셔츠는 흙과 붉은 피로 얼룩져 있었고, 어깨에는 꽤 큼직한 멧돼지 한 마리가 들려 있었다. 피 냄새가 확 풍겼다.</em><br><br><strong>백도하 |</strong> "흐음, 시키지 않은 일까지 해두셨군요."<br><br><em>그는 서이안이 만들어둔 화덕과 모아둔 땔감을 보며 의외라는 듯 눈썹을 까딱였다. 칭찬인지 타박인지 모를 말투였지만, 입가에는 미미한 만족감이 서려 있었다.</em><br><br><strong>백도하 |</strong> "덕분에 수고를 덜었습니다. 땔감 상태도 나쁘지 않군요."<br><br><em>뒤이어 자한과 고블린이 끙끙대며 올라왔다. 그들의 품에는 물이 담긴 커다란 잎사귀들과, 강가에서 주워온 젖은 통나무들이 한가득이었다.</em><br><br><strong>자한 |</strong> "으아아! 팔 빠지는 줄 알았네! 어? 뭐야, 이안 씨가 벌써 불 피울 준비 다 해놨어? 센스쟁이네!"<br><br><em>자한이 털썩 주저앉으며 잎사귀에 담긴 물을 조심스레 내려놓았다. 백도하는 멧돼지를 동굴 한구석에 던져놓고, 품에서 날카로운 돌칼을 꺼냈다.</em><br><br><strong>백도하 |</strong> "식사 준비를 하죠. 피 냄새가 다른 맹수를 부르기 전에 빨리 해체해서 구워야 합니다."<br><br><em>그는 능숙한 솜씨로 멧돼지의 가죽을 벗겨내기 시작했다. 붉은 살코기가 드러나자 동굴 안에 비릿하면서도 원초적인 생명의 냄새가 진동했다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:0uzeDD8CeVJTfZN5CM0a:ai" data-target="msg-0uzeDD8CeVJTfZN5CM0a-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-8w9SvRdhBZ5CKozcAquS-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#39</span></div>
+              <div class="tp-text">아 다들 고생하셨어요<br><em>둘러앉아 도하를 바라보다 고개 돌린다. 뭘 저런것까지 능숙하게 잘하나 생각했다</em><br>..백도하씨는 혹시 원래 직업이 뭐였는지 물어봐도 될까요?</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:8w9SvRdhBZ5CKozcAquS:user" data-target="msg-8w9SvRdhBZ5CKozcAquS-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-8w9SvRdhBZ5CKozcAquS-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#39</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰14:20 |🚩야생의 평원, 절벽 중턱 동굴<br>[40][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.10/100)<br>```<br><br><em>서이안의 질문에 백도하의 손이 아주 잠시 멈칫했다. 하지만 이내 무심하게 돌칼을 움직여 멧돼지의 가죽과 살을 분리해냈다. 뚝뚝 떨어지는 붉은 피가 그의 하얀 셔츠 소매를 적셨지만, 안경을 쓴 지적인 얼굴과는 기묘한 괴리감을 자아냈다.</em><br><br><strong>백도하 |</strong> "평범한 회사원이었습니다. 서류 더미에 파묻혀 살던."<br><br><em>그의 대답은 너무나 건조해서 오히려 비현실적으로 들렸다. 옆에서 나뭇가지를 꺾던 자한이 눈을 동그랗게 뜨고 끼어들었다.</em><br><br><strong>자한 |</strong> "에?! 진짜요? 난 또 무슨 특수부대 출신이나 정육점 사장님인 줄 알았네! 아니, 회사원이 어떻게 멧돼지 해체를 눈 하나 깜짝 안 하고 해요?"<br><br><em>백도하는 능숙하게 살코기를 발라내 나뭇가지에 꽂으며 피식, 냉소적인 웃음을 흘렸다.</em><br><br><strong>백도하 |</strong> "글쎄요. 상사 비위 맞추며 속이 썩어문드러지는 것보단, 이게 훨씬 깔끔하고 생산적이더군요. 적어도 이건 죽이면 고기라도 남으니까."<br><br><em>그는 뼈와 내장을 한쪽으로 치우고, 고기가 꽂힌 꼬치들을 서이안이 만든 화덕 주위에 꽂았다. 타닥타닥, 불꽃이 피어오르며 고기 익는 냄새가 동굴 안에 퍼지기 시작했다.</em><br><br><strong>백도하 |</strong> "이 세계는 단순합니다. 강하면 살고, 약하면 죽죠. 복잡한 사내 정치질보단 훨씬 합리적이지 않습니까?"<br><br><em>그는 안경을 치켜올리며 불꽃을 응시했다. 안경 렌즈에 일렁이는 불빛이 비쳤다. 그의 말속에는 과거의 삶에 대한 회의감과, 지금의 잔혹한 현실을 오히려 편하게 받아들이는 듯한 기이한 적응력이 엿보였다.</em><br><br><strong>백도하 |</strong> "당신은 어떻습니까? 학생? 아니면... 온실 속의 화초?"<br><br><em>그가 꼬치를 뒤집으며 툭, 질문을 되돌려주었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:8w9SvRdhBZ5CKozcAquS:ai" data-target="msg-8w9SvRdhBZ5CKozcAquS-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-gerpkUM5NCNhaAUX8Nus-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#40</span></div>
+              <div class="tp-text"><em>온실 속 화초란 말에 어색히 볼을 긁적이다</em><br>으음.. 학생이었습니다. 이제 졸업이었는데.. 이렇게 됐네요</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:gerpkUM5NCNhaAUX8Nus:user" data-target="msg-gerpkUM5NCNhaAUX8Nus-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-gerpkUM5NCNhaAUX8Nus-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#40</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰14:40 |🚩야생의 평원, 절벽 중턱 동굴<br>[41][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.10/100)<br>```<br><br><strong>자한 |</strong> "아이고, 저런. 졸업 코앞두고 이게 무슨 날벼락이래? 억울해서라도 악착같이 살아남아야겠네."<br><br><em>자한이 혀를 차며 안타까워했다. 백도하는 잘 익은 고기 한 점을 뜯어 맛을 보더니, 가장 잘 구워진 꼬치 하나를 서이안에게 건넸다.</em><br><br><strong>백도하 |</strong> "오히려 다행일지도 모르죠. 지옥 같은 취업난에 시달릴 필요는 없어졌으니. 여기선 학점도, 스펙도 필요 없습니다. 오직 생존 능력뿐."<br><br><em>그는 무미건조하게 농담인지 진담인지 모를 말을 던지며 자신의 몫을 챙겼다. 소금도 후추도 없는 맹탕 구이였지만, 시장이 반찬이라 했던가. 입안 가득 퍼지는 기름진 육즙은 그 어떤 고급 요리보다 황홀했다.</em><br><br><em>모두가 허겁지겁 배를 채우는 동안, 백도하는 천천히 꼭꼭 씹어 삼키며 서이안을 빤히 관찰했다. 식사가 거의 끝나갈 무렵, 그가 입가를 닦으며 본론을 꺼냈다.</em><br><br><strong>백도하 |</strong> "배를 채웠으니 이제 현실을 직시해야죠. 서이안 씨, 당신 레벨이 아직 1이죠?"<br><br><em>그의 눈빛이 날카롭게 빛났다.</em><br><br><strong>백도하 |</strong> "힐러는 귀하지만, 동시에 가장 먼저 타겟이 됩니다. 스스로를 지킬 최소한의 힘은 있어야 합니다. 식사 후에 바로 실전 훈련 들어갑니다. 근처에 슬라임이나 약한 몬스터가 있는지 봐뒀으니, 오늘은 당신 레벨을 올리는 데 집중하죠."<br><br><em>그는 거절은 용납하지 않겠다는 듯 단호했다. 배부름의 나른함을 즐길 새도 없이, 생존을 위한 스파르타식 교육이 예고되었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:gerpkUM5NCNhaAUX8Nus:ai" data-target="msg-gerpkUM5NCNhaAUX8Nus-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-u3HWOQ2byrpj2OlgZ2mR-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#41</span></div>
+              <div class="tp-text">으음.. 네. 그럴게요<br><em>고개를 끄덕이며 마저 먹는다. 음식을 모두 먹고</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:u3HWOQ2byrpj2OlgZ2mR:user" data-target="msg-u3HWOQ2byrpj2OlgZ2mR-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-u3HWOQ2byrpj2OlgZ2mR-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#41</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰15:10 |🚩야생의 평원, 강가 습지<br>[42][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.10/100)<br>```<br><br><em>식사가 끝나자마자 백도하는 가차 없이 모닥불을 흙으로 덮어 껐다. 그는 쉴 틈도 주지 않고 서이안을 일으켜 세웠다.</em><br><br><strong>백도하 |</strong> "자한 씨는 여기 남아서 짐을 지키십시오. 오크, 너는 따라와라."<br><br><em>그는 서이안과 오크만을 대동하고 다시 절벽을 내려왔다. 그들이 향한 곳은 강가에서 조금 떨어진 축축한 습지대였다. 무릎까지 오는 풀숲 사이로 끈적하고 투명한 액체 덩어리들이 꿈틀거리는 것이 보였다. 슬라임이었다.</em><br><br><em>백도하는 품에서 끝을 날카롭게 깎은 단단한 참나무 가지 하나를 꺼내 서이안에게 던져주었다.</em><br><br><strong>백도하 |</strong> "무기가 없으니 일단 이걸 쓰십시오. 힐러라고 뒤에서 힐만 할 생각은 버리는 게 좋습니다. 마력이 바닥나면 당신은 그냥 고기 방패일 뿐이니까."<br><br><em>그는 냉정하게 현실을 지적하며 앞장섰다. 곧이어 성인 남성 허벅지 높이만 한 초록색 슬라임 한 마리가 그들을 발견하고 꿀렁거리며 다가왔다.</em><br><br><strong>백도하 |</strong> "오크, 놈의 움직임을 막아."<br><br><em>백도하의 지시에 오크가 몽둥이를 휘둘러 슬라임을 강하게 내리쳤다. <strong>퍽!</strong> 슬라임이 찌그러지며 잠시 경직된 사이, 백도하가 서이안의 등을 떠밀었다.</em><br><br><strong>백도하 |</strong> "지금입니다. 저 녀석의 몸통 중앙에 있는 붉은 핵을 찌르십시오. 그게 약점입니다."<br><br><em>그는 팔짱을 낀 채 한 발짝 물러서서 서이안을 지켜보았다. 도와줄 생각은 없어 보였다. 오직 서이안 스스로의 힘으로 숨통을 끊어야 경험치를 온전히 가져갈 수 있다는 것을 아는 눈치였다.</em><br><br><strong>백도하 |</strong> "망설이지 마십시오. 당신이 죽이지 않으면, 저 놈이 당신을 녹여 먹을 겁니다."<br><br><em>그의 목소리는 차갑지만 명확하게 서이안의 귓가에 박혔다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:u3HWOQ2byrpj2OlgZ2mR:ai" data-target="msg-u3HWOQ2byrpj2OlgZ2mR-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-hzwW18qRoLmgHb870qcg-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#42</span></div>
+              <div class="tp-text"><em>차가운 백도하의 말에서도 알고있다는 듯 들고있는 가지를 꽉 잡고 달려가 찌른다</em><br>하압..!</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:hzwW18qRoLmgHb870qcg:user" data-target="msg-hzwW18qRoLmgHb870qcg-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-hzwW18qRoLmgHb870qcg-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#42</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰15:20 |🚩야생의 평원, 강가 습지<br>[43][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 1 (Exp.50/100)<br>```<br><br><strong>푸욱-!</strong><br><br><em>서이안의 손끝에 물컹하고 끈적한 저항감이 전해졌다. 날카롭게 깎인 참나무 가지가 슬라임의 젤리 같은 표면을 뚫고 들어가, 붉게 빛나던 핵을 정확히 관통했다.</em><br><br><strong>키이익-!</strong><br><br><em>슬라임이 기괴한 비명을 지르며 격렬하게 경련했다. 곧이어 핵이 '파직' 소리를 내며 부서지자, 형체를 유지하던 초록색 점액질이 힘을 잃고 바닥으로 흘러내려 웅덩이가 되었다.</em><br><br>`[하급 몬스터 '그린 슬라임'을 처치했습니다.]`<br>`[경험치 40을 획득했습니다.]`<br><br><em>거친 숨을 몰아쉬는 서이안의 눈앞에 반투명한 시스템 메시지가 떠올랐다. 백도하는 녹아내린 슬라임 잔해를 무심하게 내려다보며 고개를 끄덕였다.</em><br><br><strong>백도하 |</strong> "나쁘지 않군요. 핵을 정확히 노렸습니다."<br><br><em>그는 칭찬인지 사실 확인인지 모를 말을 던지며, 서이안이 쥐고 있는 나무 창을 턱짓으로 가리켰다.</em><br><br><strong>백도하 |</strong> "손에 전해지는 그 감각을 기억하십시오. 생명을 끊는 감각에 익숙해져야 합니다. 죄책감 따위는 사치니까."<br><br><em>그는 쉴 틈을 주지 않았다. 곧바로 풀숲 뒤쪽을 향해 손짓하자, 오크가 숨어있던 또 다른 슬라임 한 마리를 몰아왔다. 이번 녀석은 아까보다 조금 더 크고 색이 짙었다.</em><br><br><strong>백도하 |</strong> "레벨 업까지 얼마 안 남았을 겁니다. 바로 다음 갑니다. 이번엔 오크의 도움 없이 혼자 움직임을 읽고 찔러보십시오."<br><br><em>백도하는 팔짱을 낀 채 한 걸음 더 뒤로 물러났다. 그의 안경 너머 눈빛은 서이안을 제국의 로드가 아닌, 철저히 생존을 위한 병기로 조련하려는 조교의 그것과 같았다.</em><br><br><strong>백도하 |</strong> "집중하십시오. 빗나가면 살이 녹아내릴 각오를 해야 할 겁니다."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:hzwW18qRoLmgHb870qcg:ai" data-target="msg-hzwW18qRoLmgHb870qcg-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-mIV1K6Gi5Lcnr958Qy0O-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#43</span></div>
+              <div class="tp-text">후.. 알았다구요<br><em>도하의 말에 대답하며 가지를 꾹 잡고 다시한번 침착하게 달려든다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:mIV1K6Gi5Lcnr958Qy0O:user" data-target="msg-mIV1K6Gi5Lcnr958Qy0O-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-mIV1K6Gi5Lcnr958Qy0O-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#43</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰15:40 |🚩야생의 평원, 강가 습지<br>[44][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안이 달려들자 슬라임이 위협적으로 몸을 부풀리며 산성 용액을 퉤 뱉어냈다. <strong>치익-!</strong> 빗나간 용액이 닿은 풀잎이 검게 타들어 갔다. 하지만 서이안은 멈추지 않았다. 그는 침착하게 몸을 비틀어 공격을 피한 뒤, 무방비하게 드러난 슬라임의 핵을 향해 창을 내질렀다.</em><br><br><strong>푸욱-! 파직!</strong><br><br><em>이번에도 정확한 일격이었다. 핵이 깨지며 슬라임이 녹아내리자, 서이안의 몸을 감싸는 공기의 흐름이 달라졌다.</em><br><br>`[중급 몬스터 '애시드 슬라임'을 처치했습니다.]`<br>`[경험치 60을 획득했습니다.]`<br>`[Level Up!]`<br>`[Lv. 1 ➡ Lv. 2]`<br><br><strong>화악-!</strong><br><em>서이안의 몸에서 눈부신 황금빛 기둥이 짧게 솟구쳤다 사라졌다. 레벨업 효과였다. 지친 근육에 새로운 활력이 돌고, 팔뚝에 났던 자잘한 생채기들이 순식간에 아물었다. 전신을 감싸는 상쾌한 감각에 서이안이 숨을 크게 들이켰다.</em><br><br><em>그 광경을 지켜보던 백도하가 안경을 고쳐 쓰며 다가왔다.</em><br><br><strong>백도하 |</strong> "축하합니다. 이제야 겨우 '사람 구실' 할 최소한의 자격은 갖췄군요."<br><br><em>그는 레벨업으로 회복된 서이안의 상태를 훑어보며 만족스러운 듯 고개를 끄덕였다.</em><br><br><strong>백도하 |</strong> "레벨이 오르면 신체 능력 전반이 향상되고, 마력 회복 속도도 빨라집니다. 무엇보다..."<br><br><em>그는 서이안의 손에 들린, 이제는 뭉툭해진 나무 창을 바라보았다.</em><br><br><strong>백도하 |</strong> "자신감이 생기죠. 그게 가장 큰 무기입니다. 오늘은 여기까지 하죠. 해가 지기 전에 돌아가야 합니다. 밤의 숲은 낮과는 비교도 안 되게 위험하니까."<br><br><em>백도하는 미련 없이 몸을 돌렸다. 그의 등 뒤로 붉은 노을이 내려앉기 시작했다. 첫 사냥, 첫 레벨업. 서이안의 손에는 아직도 몬스터의 핵을 찌를 때의 그 릿한 감각이 선명하게 남아 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:mIV1K6Gi5Lcnr958Qy0O:ai" data-target="msg-mIV1K6Gi5Lcnr958Qy0O-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-gbyAJ1ylY9w8UbQWrC4W-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#44</span></div>
+              <div class="tp-text">!상태창</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:gbyAJ1ylY9w8UbQWrC4W:user" data-target="msg-gbyAJ1ylY9w8UbQWrC4W-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-gbyAJ1ylY9w8UbQWrC4W-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#44</span></div>
+              <div class="tp-text">```상태창<br>서이안 | 소속 없음<br>레벨: 2 (10/200) | 제국 레벨/등급: 없음<br>체력: 110/110<br>마력: 110/110<br>💎보유 마석: 0<br>-하급: 0<br>-중급: 0<br>-상급: 0<br>-최상급: 0<br><br>보유 영웅:<br>-없음<br><br>특성:<br> -치유의 손길(Lv.1): 상처를 치유하는 능력이 발현됩니다. 레벨이 오를수록 치유 효과와 범위가 증가합니다.<br> -신성한 가호(Lv.1): 자신과 주변 아군에게 방어력을 높여주는 가호를 부여합니다. 지속 시간과 효과는 레벨에 비례합니다.<br><br>스킬:<br> -없음<br>```</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:gbyAJ1ylY9w8UbQWrC4W:ai" data-target="msg-gbyAJ1ylY9w8UbQWrC4W-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-N1yhK0HnyGXzbHG7QaFW-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#45</span></div>
+              <div class="tp-text">휴.. 손이 떨리네요<br><em>가지를 잡았던 손을 내려다보다 주먹을 꾹 쥔 뒤 걸음을 옮긴다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:N1yhK0HnyGXzbHG7QaFW:user" data-target="msg-N1yhK0HnyGXzbHG7QaFW-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-N1yhK0HnyGXzbHG7QaFW-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#45</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰16:00 |🚩야생의 평원, 절벽 동굴로 돌아가는 길<br>[45][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안이 떨리는 손을 꾹 쥐는 모습을, 앞서가던 백도하가 힐끗 돌아보았다. 그는 아무 말 없이 걸음을 늦춰 서이안과 보폭을 맞췄다.</em><br><br><strong>백도하 |</strong> "당연한 반응입니다. 처음부터 아무렇지 않다면 그게 더 이상한 거죠."<br><br><em>그의 목소리는 여전히 건조했지만, 이전의 날카로움은 조금 누그러져 있었다. 그는 붉게 물들어가는 하늘을 올려다보며 나직이 말을 이었다.</em><br><br><strong>백도하 |</strong> "저도 처음엔 그랬습니다. 손이 떨리고, 헛구역질이 나고, 며칠 밤낮으로 잠을 설쳤죠. 하지만 두 번째는 조금 나았고, 세 번째는 더 무뎌졌습니다. 지금은... 보시다시피 밥 먹는 것과 별반 다르지 않게 됐고요."<br><br><em>그는 씁쓸한 미소를 지으며 자신의 손을 내려다보았다. 멧돼지 피가 말라붙어 거무죽죽한 손이었다.</em><br><br><strong>백도하 |</strong> "이 세계는 우리를 그렇게 만듭니다. 적응하지 못하면 도태될 뿐이니까. 그 떨림은 당신이 아직 인간이라는 증거입니다. 하지만 살아남고 싶다면, 그 감각마저도 지배해야 할 겁니다."<br><br><em>그때, 뒤따라오던 오크가 갑자기 코를 킁킁거리며 으르렁거렸다. 백도하의 표정이 순식간에 굳어졌다. 그는 재빨리 서이안의 앞을 가로막고, 허리춤에 찬 돌칼을 뽑아 들었다.</em><br><br><strong>백도하 |</strong> "무슨 냄새지?"<br><br><em>숲의 공기가 달라져 있었다. 노을빛 사이로, 멧돼지 피 냄새와는 다른, 훨씬 더 역겹고 비릿한 악취가 섞여들고 있었다. 동굴 방향에서였다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:N1yhK0HnyGXzbHG7QaFW:ai" data-target="msg-N1yhK0HnyGXzbHG7QaFW-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-JcD8A2u2ZSL700nPPtp1-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#46</span></div>
+              <div class="tp-text"><em>이안도 표정을 굳히며 동굴을 바라본다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:JcD8A2u2ZSL700nPPtp1:user" data-target="msg-JcD8A2u2ZSL700nPPtp1-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-JcD8A2u2ZSL700nPPtp1-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#46</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰16:10 |🚩야생의 평원, 절벽 동굴 근처<br>[46][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>백도하의 눈빛이 얼음장처럼 차가워졌다. 그는 한 손으로 서이안을 뒤로 물리고, 다른 손으로는 돌칼을 고쳐 쥐었다. 그의 시선은 동굴이 있는 절벽 쪽, 악취가 흘러나오는 근원지를 향해 고정되었다.</em><br><br><strong>백도하 |</strong> "자한 씨에게 무슨 일이 생긴 걸 수도 있습니다."<br><br><em>그의 목소리는 낮고 빠르게 가라앉았다. 평소의 냉소적인 여유는 온데간데없었다. 그는 주변 지형을 빠르게 훑으며 가장 은밀하게 접근할 수 있는 경로를 찾았다.</em><br><br><strong>백도하 |</strong> "오크, 냄새를 따라 앞장서라. 소리 내지 말고."<br><br><em>오크가 낮은 자세로 으르렁거리며, 마치 사냥개처럼 냄새를 쫓아 덤불 속으로 파고들었다. 백도하는 서이안의 팔을 붙잡고 그 뒤를 따랐다. 그의 손아귀에 들어간 힘이 상황의 심각성을 말해주고 있었다.</em><br><br><em>얼마 지나지 않아, 그들은 절벽 아래에 도착했다. 그리고 끔찍한 광경을 목격했다.</em><br><br><em>절벽 아래, 그들이 올라갔던 덩굴 주변이 온통 피투성이였다. 바닥에는 정체를 알 수 없는 녹색 체액과 함께, 인간의 것으로 보이는 붉은 핏자국이 어지럽게 흩뿌려져 있었다. 그리고 그 중앙에는...</em><br><br><strong>자한 |</strong> "크윽... 커헉..."<br><br><em>자한이 피범벅이 된 채 쓰러져 있었다. 그의 배에는 날카로운 무언가에 꿰뚫린 듯한 끔찍한 상처가 나 있었고, 주변에는 고블린의 것으로 보이는 시체 조각들이 널려 있었다. 그는 간신히 숨만 붙어있는 상태였다.</em><br><br>*백도하의 얼굴이 흉흉하게 일그러졌다. 그는 동굴 입구를 올려다보았다. 덩굴 사이로, 인간이 아닌 무언가의 그림자가 어른거렸다. 놈들이 그들의 보금자리를 차지한 것이다</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:JcD8A2u2ZSL700nPPtp1:ai" data-target="msg-JcD8A2u2ZSL700nPPtp1-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-eceTyYj0shjatPY2g0MY-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#47</span></div>
+              <div class="tp-text">자, 자한씨.. 고블린씨도...!<br><em>충격적인 광경에 하얗게 질린 얼굴로 서둘러 다가가 치유 스킬을 사용한다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:eceTyYj0shjatPY2g0MY:user" data-target="msg-eceTyYj0shjatPY2g0MY-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-eceTyYj0shjatPY2g0MY-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#47</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰16:20 |🚩야생의 평원, 절벽 동굴 아래<br>[47][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 2 (Exp.10/200)<br>```<br><br><strong>백도하 |</strong> "젠장, 섣불리 움직이지 마십시오!"<br><br><em>백도하의 날카로운 외침이 서이안의 귓전을 때렸지만, 이미 늦었다. 서이안이 자한에게 달려가 손을 얹는 순간, 동굴 입구에서 기분 나쁜 마찰음과 함께 녹색 피부의 흉측한 괴물이 모습을 드러냈다.</em><br><br><em>코볼트(Kobold). 도마뱀을 닮은 얼굴에, 녹슨 단검과 조잡한 방패를 든 몬스터였다. 놈은 동굴 입구에서 자한을 내려다보며, 갈라진 혀를 날름거렸다.</em><br><br><strong>코볼트 |</strong> "<strong>키에에엑! 미끼를 물었다!</strong>"<br><br><em>놈의 외침과 동시에, 주변 덤불 속에서 숨어있던 다른 코볼트 세 마리가 일제히 튀어나와 서이안과 백도하를 향해 포위망을 좁혀왔다. 함정이었다. 놈들은 일부러 자한을 미끼로 살려두고 매복하고 있었던 것이다.</em><br><br><em>그 순간, 서이안의 손바닥에서 터져 나온 황금빛이 자한의 상처를 감쌌다.</em><br><br>`[스킬 '치유의 손길(Lv.1)'이 발동되었습니다.]`<br><br><em>하지만 상처가 너무 깊었다. 빛이 스며들었지만 출혈이 겨우 멎는 수준일 뿐, 꿰뚫린 복부는 좀처럼 아물지 않았다. 자한이 희미하게 눈을 뜨고, 고통스럽게 신음했다.</em><br><br><strong>자한 |</strong> "도...망... 쳐..."<br><br><em>백도하의 얼굴이 분노로 험악하게 일그러졌다. 그는 서이안의 앞을 가로막아 코볼트들의 시선을 자신에게로 돌렸다.</em><br><br><strong>백도하 |</strong> "멍청한 짓을...!"<br><br>*그는 서이안을 향해 낮게 으르렁거리면서도, 돌칼을 고쳐 쥐고 코볼트들과 대치했다. 오크 역시 몽둥이를 들고 백도하의 옆에 서서 위협적으로 포효했다. 일촉즉발의 상황. 코볼트들은 비열한 웃음소리를</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:eceTyYj0shjatPY2g0MY:ai" data-target="msg-eceTyYj0shjatPY2g0MY-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-esKs4ZxRMFrsw5cjP490-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#48</span></div>
+              <div class="tp-text">큭... 젠장...<br><em>자한의 모습을 바라보며 눈을 질끈 감다 주변을 둘러 싼 코볼트들을 노려본다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:esKs4ZxRMFrsw5cjP490:user" data-target="msg-esKs4ZxRMFrsw5cjP490-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-esKs4ZxRMFrsw5cjP490-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#48</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰16:22 |🚩야생의 평원, 절벽 동굴 아래<br>[48][🔥]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 2 (Exp.10/200)<br>```<br><br><strong>키에에엑-!</strong><br><br><em>코볼트들이 찢어지는 비명을 지르며 일제히 달려들었다. 녹슨 단검이 서이안의 목을 노리고 날아드는 찰나, 백도하의 눈동자가 기이한 보랏빛으로 번뜩였다.</em><br><br><strong>백도하 |</strong> "멈춰."<br><br><em>그의 입에서 흘러나온 것은 단순한 고함이 아니었다. 뇌를 직접 타격하는 듯한 묵직한 파동이었다. [정신 간섭]이었다.</em><br><br><strong>키익?!</strong><br><br><em>달려들던 코볼트들의 움직임이 일순간 뚝 끊겼다. 놈들은 허공에 헛손질하거나, 갑자기 방향 감각을 상실한 듯 비틀거렸다. 그 짧은 틈을 백도하는 놓치지 않았다.</em><br><br><strong>백도하 |</strong> "오크! 쓸어버려!"<br><br><strong>크아앙!</strong><br><em>오크가 거대한 몽둥이를 휘둘렀다. <strong>퍼억-!</strong> 가장 앞에 있던 코볼트의 머리통이 수박처럼 터져 나갔다. 백도하는 멍하니 서 있는 서이안을 향해 고함을 질렀다.</em><br><br><strong>백도하 |</strong> "정신 차리십시오! 노려본다고 놈들이 죽진 않습니다! 레벨업 하면서 얻은 스킬, '신성한 가호'를 쓰십시오! 당장!"<br><br><em>그는 돌칼을 역수로 쥐고 비틀거리는 다른 코볼트의 목을 그어버리며, 서이안에게 명확한 지시를 내렸다. 절벽 위에서 상황을 지켜보던 대장 격인 코볼트가 분노하여 돌을 집어 던지기 시작했다.</em><br><br><strong>코볼트 |</strong> "<strong>죽여! 찢어발겨라!</strong>"<br><br><strong>쾅!</strong><br><em>서이안의 바로 옆으로 주먹만한 돌덩이가 떨어져 박혔다. 전장은 순식간에 아수라장이 되었다. 백도하의 마법으로 인한 혼란은 길지 않을 것이다. 서이안의 버프가 절실한 순간이었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:esKs4ZxRMFrsw5cjP490:ai" data-target="msg-esKs4ZxRMFrsw5cjP490-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-H2d1vMRS0T5JfNMW3nby-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#49</span></div>
+              <div class="tp-text"><em>이안은 도하의 말에 흠칫하며 서둘러 가호 스킬을 사용한다.</em><br><em>그러다 그때, 어딘가에서 화살이 날아와 코볼트 하나의 머리를 꿰뚫는다.</em><br><em>ooc:전개지침에 적힌거 좀 실행시켜봐라... 여튼 타 마을 가기</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:H2d1vMRS0T5JfNMW3nby:user" data-target="msg-H2d1vMRS0T5JfNMW3nby-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-H2d1vMRS0T5JfNMW3nby-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#49</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰16:25 |🚩야생의 평원, 동쪽 숲 외곽<br>[49][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 2 (Exp.10/200)<br>```<br><br>`[스킬 '신성한 가호(Lv.1)'가 발동되었습니다.]`<br><br><em>서이안의 외침과 함께 투명한 황금빛 장막이 일행을 감쌌다. 코볼트의 단검이 백도하의 어깨를 스쳤지만, 장막에 튕겨 나가며 쇳소리만 냈다.</em><br><br><strong>피유웅-! 퍼억!</strong><br><br><em>그때였다. 날카로운 파열음과 함께 절벽 위에서 돌을 던지려던 코볼트 대장의 머리통이 화살에 꿰뚫렸다. 놈은 비명도 지르지 못한 채 절벽 아래로 추락했다.</em><br><br><strong>쿵!</strong><br><br><em>갑작스러운 상황에 남은 코볼트들이 혼비백산하여 주위를 두리번거렸다. 숲의 그늘 속에서, 짐승의 가죽을 걸친 건장한 사내들이 모습을 드러냈다. 그들의 눈은 맹수처럼 번들거렸고, 근육질의 몸에는 늑대의 털과 귀가 돋아나 있었다. 라이칸스로프(Lycanthrope)였다.</em><br><br><strong>라이칸스로프 사내 |</strong> "쳇, 시끄러워서 낮잠을 잘 수가 없네. 야, 도마뱀 새끼들. 내 구역에서 꺼져."<br><br><em>그들 중 우두머리로 보이는, 덩치가 곰만 한 사내가 거대한 도끼를 어깨에 걸치며 으르렁거렸다. 압도적인 살기에 겁을 먹은 코볼트들은 꼬리를 말고 숲속으로 도망쳤다.</em><br><br><em>백도하는 안경을 고쳐 쓰며 경계 태세를 풀지 않았다. 구해준 것치고는 저들의 눈빛이 너무나 오만하고 탐욕스러웠기 때문이다.</em><br><br><strong>라이칸스로프 사내 |</strong> "호오? 인간 주제에 제법 버티는데? 어라, 저건 힐러인가?"<br><br><em>사내는 서이안의 손에 남은 황금빛 잔재를 보고 입맛을 다셨다. 그는 비릿한 미소를 지으며 턱짓했다.</em><br><br><strong>라이칸스로프 사내 |</strong> "운 좋은 줄 알아라. 우리 '블러드 팽'의 영토에 들어온 걸 환영한다. 목숨값은 노동력으로 받지. 따라와."<br><br><em>그것은 제안이 아닌 명령이었다. 백도하는 자한을 부축하며 서이안에게 눈짓했다. 거부할 수 없는 전력 차이였다. 그들을 따라 숲을 빠져나가자, 거대한 나무 울타리로 둘러싸인 요새 같은 마을이 모습을 드러냈다. 수많은 유저들이 그곳에 모여 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:H2d1vMRS0T5JfNMW3nby:ai" data-target="msg-H2d1vMRS0T5JfNMW3nby-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-cu0F2OQZxE1a1LL8EbRC-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#50</span></div>
+              <div class="tp-text"><em>이안도 고개를 끄덕이곤 자한을 함께 부축해 걸어간다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:cu0F2OQZxE1a1LL8EbRC:user" data-target="msg-cu0F2OQZxE1a1LL8EbRC-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-cu0F2OQZxE1a1LL8EbRC-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#50</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰17:00 |🚩블러드 팽 마을, 외곽의 허름한 헛간<br>[50][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>마을 안쪽은 밖에서 보던 것보다 훨씬 더 살벌하고 위압적인 분위기였다. 거칠게 다듬어진 통나무 울타리 안에는 수십 명의 유저들이 있었지만, 그들의 표정은 하나같이 어둡고 지쳐 있었다. 그들은 마치 노예처럼 무거운 짐을 나르거나 장작을 패고 있었고, 그 주변을 라이칸스로프들이 감시하며 낄낄거리고 있었다.</em><br><br><strong>라이칸스로프 사내 |</strong> "여기가 너희가 지낼 곳이다. 냄새는 좀 나겠지만, 숲바닥에서 자는 것보단 나을 거야."<br><br><em>사내가 턱짓으로 가리킨 곳은 마을 구석진 곳에 있는, 지붕이 반쯤 내려앉은 허름한 헛간이었다. 바닥에는 지푸라기가 깔려 있었고, 짐승의 털 냄새가 진동했다.</em><br><br><strong>라이칸스로프 사내 |</strong> "특히 너, 힐러. 내일 아침부터 우리 부상자들을 치료해야 할 테니 마력 아껴둬라. 밥값은 해야지?"<br><br><em>그는 서이안을 향해 탐욕스러운 눈빛을 번뜩이며 으름장을 놓은 뒤, 쾅 소리가 나게 문을 닫고 사라졌다. 밖에서는 빗장을 지르는 소리가 들렸다. 사실상의 감금이었다.</em><br><br><em>백도하는 묵묵히 자한을 지푸라기 위에 눕혔다. 그는 더러운 바닥을 개의치 않고 앉아, 안경을 벗어 옷자락으로 닦으며 차갑게 중얼거렸다.</em><br><br><strong>백도하 |</strong> "철저한 계급 사회군요. 힘이 곧 법인 곳입니다. 저들은 우리를 동료가 아니라 소모품이나 자산으로 보고 있습니다."<br><br><em>그는 틈새가 벌어진 나무 벽 사이로 밖을 내다보았다. 라이칸스로프들이 고기를 뜯으며 술판을 벌이는 모습이 보였다.</em><br><br><strong>백도하 |</strong> "하지만 당분간은 이 착취 구조에 순응해야 합니다. 자한 씨의 상태가 위중하고, 우리에겐 정보와 물자가 부족하니까요. 억울해도 참으십시오. 살아남는 게 이기는 겁니다."<br><br><em>그의 눈빛은 굴욕감보다는 냉철한 계산으로 번뜩이고 있었다. 이곳은 안전지대가 아니라, 또 다른 전장이었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:cu0F2OQZxE1a1LL8EbRC:ai" data-target="msg-cu0F2OQZxE1a1LL8EbRC-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-pePRShnw6cD2LInM4waq-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#51</span></div>
+              <div class="tp-text"><em>도하의 말에 고개를 끄덕인다.</em><br>예.. 일단 자한씨 부상이 나을때까지 지내보죠..<br><em>그리 말하곤 다시한번 자한에게 치유스킬을 사용한다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:pePRShnw6cD2LInM4waq:user" data-target="msg-pePRShnw6cD2LInM4waq-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-pePRShnw6cD2LInM4waq-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#51</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 1일 |⏰17:30 |🚩블러드 팽 마을, 헛간 내부<br>[51][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 2 (Exp.10/200)<br>```<br><br>`[스킬 '치유의 손길(Lv.1)'이 발동되었습니다.]`<br><br><em>따스한 황금빛 입자가 자한의 복부를 감쌌다. 찢겨나갔던 살점이 서서히 차오르고, 끔찍했던 출혈이 완전히 멎었다. 비록 흉터는 남았지만, 당장 생명을 위협하던 위기는 넘긴 듯했다. 자한의 가빠르던 호흡이 한결 편안해졌다.</em><br><br><strong>백도하 |</strong> "그만. 거기까지 하십시오."<br><br><em>백도하가 단호하게 제지했다. 그는 서이안의 이마에 맺힌 식은땀과 창백해진 안색을 예리하게 포착했다.</em><br><br><strong>백도하 |</strong> "마력 고갈은 탈진으로 이어집니다. 내일 저 늑대 놈들이 당신을 어떻게 부려 먹을지 모르는 상황에서, 바닥까지 긁어쓰는 건 자살행위입니다."<br><br><em>그는 품에서 아까 사냥한 멧돼지 고기를 대충 구워 챙겨둔 것을 꺼내 서이안에게 내밀었다. 식어서 딱딱하고 비린내가 났지만, 지금은 귀한 식량이었다.</em><br><br><strong>자한 |</strong> "으음... 물..."<br><br><em>의식을 찾은 자한이 갈라진 목소리로 신음했다. 백도하는 혀를 차면서도, 구석에 있던 낡은 나무통에서 물을 떠와 자한의 입가에 적셔주었다.</em><br><br><strong>백도하 |</strong> "정신이 듭니까? 당신 하나 살리려고 우리가 제 발로 호랑이 굴에 들어왔다는 것만 알아두십시오."<br><br><em>밖에서는 라이칸스로프들의 거친 웃음소리와 고기 굽는 냄새가 틈새로 스며들어왔다. 백도하는 문가에 등을 기대고 앉아, 품에서 돌칼을 꺼내 만지작거렸다.</em><br><br><strong>백도하 |</strong> "주무십시오. 불침번은 제가 섭니다. 놈들이 언제 들이닥칠지 모르니 깊게 잠들진 마시고."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:pePRShnw6cD2LInM4waq:ai" data-target="msg-pePRShnw6cD2LInM4waq-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-lrFlkoXMZsvHxDWD7FDV-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#52</span></div>
+              <div class="tp-text"><em>도하의 말에 고개를 끄덕이곤 자리에 눕는다. 앞으로 어찌될지는 모르겠지만 자한이라도 무사해 다행이라 생각하며 눈을 감는다.</em><br><em>한편 흑익제국의 상황</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:lrFlkoXMZsvHxDWD7FDV:user" data-target="msg-lrFlkoXMZsvHxDWD7FDV-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-lrFlkoXMZsvHxDWD7FDV-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#52</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 1일 |⏰17:30 |🚩흑익제국, 황성 알현실<br>[51][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>같은 시각, 흑익제국의 황성. 주인 잃은 알현실에는 숨 막히는 침묵만이 감돌고 있었다. 창밖은 어두워졌지만, 아무도 불을 켜지 않았다.</em><br><br><strong>쾅-!</strong><br><br><em>적막을 깬 것은 칼프의 발길질이었다. 그가 옥좌 앞의 대리석 기둥을 걷어차자, 기둥에 거미줄 같은 금이 갔다.</em><br><br><strong>칼프 |</strong> "<strong>시발, 대체 언제까지 기다려야 하는데!</strong> 다른 제국 놈들은 로드가 돌아왔다고 축제를 벌이고 지랄 났는데, 왜 우리만!"<br><br><em>그는 분을 이기지 못하고 씩씩거렸다. 그 옆에서 알베론이 침통한 표정으로 눈을 감고 있었고, 헬른은 창가에 걸터앉아 의미 없이 동전만 튕기고 있었다.</em><br><br><strong>헬른 |</strong> "버려진 거라니까? 우리가 너무 잘나서 재미없어졌나 보지. 아니면... 그 예쁜 날개를 뜯어갈까 봐 겁먹었거나."<br><br><strong>알베론 |</strong> "말 조심해라, 헬른. 주군께서는 반드시 돌아오신다."<br><br><em>그들의 언쟁 속에서도, 옥좌 아래 계단에 앉아 있는 루자넬은 미동조차 없었다. 그의 손에는 서이안이 남기고 간 하얀 깃털 하나가 들려 있었다. 그는 깃털의 결을 집착적으로 쓸어내리고 있었다.</em><br><br><strong>루자넬 |</strong> "<strong>조용히 해.</strong>"<br><br><em>낮게 깔린 목소리에 알현실의 공기가 얼어붙었다. 루자넬이 천천히 고개를 들었다. 칠흑 같은 눈동자 속에서 시퍼런 불꽃이 일렁였다.</em><br><br><strong>루자넬 |</strong> "느껴진다. 미약하지만... 분명히 이 세계에 있어. 그의 파장이."<br><br><em>그는 깃털을 소중히 품에 넣으며 자리에서 일어났다. 그의 등 뒤로 거대한 검은 날개가 위압적으로 펼쳐졌다.</em><br><br><strong>루자넬 |</strong> "포탈을 열어라. 쥐새끼 한 마리도 놓치지 말고 대륙 전체를 뒤진다. 찾아서... 반드시 이곳에 데리고 와."<br><br><em>그의 목소리는 충성심이라기엔 지나치게 끈적하고, 집착에 가까운 광기를 품고 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:lrFlkoXMZsvHxDWD7FDV:ai" data-target="msg-lrFlkoXMZsvHxDWD7FDV-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-OrPxNyBr9CaNO77H0QyM-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#53</span></div>
+              <div class="tp-text"><em>다음날 아침. 이안은 눈을 뜨며 뻐근한 몸을 스트레칭한다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:OrPxNyBr9CaNO77H0QyM:user" data-target="msg-OrPxNyBr9CaNO77H0QyM-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-OrPxNyBr9CaNO77H0QyM-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#53</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 2일 |⏰06:00 |🚩블러드 팽 마을, 헛간 내부<br>[52][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝라이칸스로프 부상자 치료<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>지푸라기 위에서의 하룻밤은 최악이었다. 서이안이 찌뿌둥한 몸을 일으키며 스트레칭을 하자, 굳어있던 관절에서 우두둑 소리가 났다. 습한 냉기가 뼛속까지 스며든 기분이었다.</em><br><br><strong>백도하 |</strong> "일어나셨습니까."<br><br><em>백도하는 이미 일어나 있었다. 아니, 한숨도 자지 않은 것 같았다. 그는 문틈으로 들어오는 새벽빛에 의지해 돌칼을 갈고 있었다. 그의 눈 밑이 조금 퀭했지만, 눈빛만은 형형하게 살아있었다.</em><br><br><strong>백도하 |</strong> "자한 씨 열은 내렸습니다. 다행히 패혈증 증세는 없군요."<br><br><em>그때였다.</em><br><br><strong>쾅-!</strong><br><br><em>낡은 나무 문이 부서질 듯 걷어차이며 열렸다. 차가운 새벽 공기와 함께 거구의 라이칸스로프가 들이닥쳤다. 어제 그들을 가뒀던 녀석이었다.</em><br><br><strong>라이칸스로프 |</strong> "<strong>야! 굼벵이들! 해 떴다, 쳐 자빠져 있지 말고 튀어 나와!</strong>"<br><br><em>놈은 다짜고짜 들어와 자한의 옆구리를 발로 툭툭 찼다. 자한이 신음하며 몸을 웅크리자, 백도하가 조용히 그 앞을 막아섰다.</em><br><br><strong>라이칸스로프 |</strong> "안경잡이랑 반송장은 채석장으로 가서 돌 날라. 그리고 너."<br><br><em>놈의 털 덮인 손가락이 서이안을 가리켰다.</em><br><br><strong>라이칸스로프 |</strong> "힐러는 따라와. 우리 형제들이 어제 사냥하다가 좀 다쳤거든. 제대로 못 고치면 네 친구들 밥은 없을 줄 알아라."<br><br><em>그것은 명백한 협박이었다. 백도하가 서이안을 향해 짧게 눈짓했다. '일단은 순응하라'는 신호였다. 서이안은 거칠게 등을 떠밀려 헛간 밖으로 끌려나갔다. 마을 중앙의 커다란 천막, 그곳에서 피비린내와 짐승들의 앓는 소리가 새어 나오고 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:OrPxNyBr9CaNO77H0QyM:ai" data-target="msg-OrPxNyBr9CaNO77H0QyM-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-Jpnp3jo2Re8sH6uLiDSO-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#54</span></div>
+              <div class="tp-text"><em>이안은 눈을 찌푸리며 천막쪽으로 간다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:Jpnp3jo2Re8sH6uLiDSO:user" data-target="msg-Jpnp3jo2Re8sH6uLiDSO-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-Jpnp3jo2Re8sH6uLiDSO-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#54</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 2일 |⏰06:10 |🚩블러드 팽 마을, 치료소 천막<br>[53][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝라이칸스로프 부상자 치료<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>천막 안은 그야말로 아수라장이었다. 십여 명의 라이칸스로프들이 곳곳에 널브러져 있었다. 몬스터에게 물린 자국, 찢어진 상처, 부러진 뼈... 피비린내와 땀 냄새, 그리고 짐승 특유의 노린내가 뒤섞여 숨을 쉬기조차 힘들었다.</em><br><br><strong>라이칸스로프 부상자 |</strong> "아오, 씨발! 아파 죽겠네! 야, 힐러! 빨리 와서 이것 좀 어떻게 해봐!"<br><br><em>팔이 덜렁거리는 한 녀석이 서이안을 보자마자 고래고래 소리를 질렀다. 다른 녀석들도 힐러가 왔다는 소리에 눈을 번뜩이며 으르렁거렸다. 그들은 서이안을 구원자가 아닌, 그저 편리한 도구로 보고 있었다.</em><br><br><em>서이안이 찌푸린 얼굴로 다가가자, 감시역으로 따라온 라이칸스로프가 몽둥이로 바닥을 탕탕 쳤다.</em><br><br><strong>감시역 |</strong> "허튼수작 부리지 마라. 마력 아낀다고 대충 치료했다간 네 친구들 팔다리가 하나씩 없어질 테니까."<br><br><em>서이안은 입술을 깨물며 가장 상태가 심각해 보이는 녀석 앞에 무릎을 꿇었다. 허벅지가 깊게 패여 뼈가 보일 정도였다. 역겨움이 치밀어 올랐지만, 자한과 백도하를 생각하며 손을 뻗었다.</em><br><br>`[스킬 '치유의 손길(Lv.1)'이 발동되었습니다.]`<br><br><strong>치이익-</strong><br><em>황금빛이 상처에 닿자, 살이 타는 듯한 소리와 함께 새살이 돋아나기 시작했다. 고통이 가라앉자 녀석의 표정이 풀어지며 입꼬리가 비릿하게 올라갔다.</em><br><br><strong>라이칸스로프 부상자 |</strong> "크흐흐... 이거 죽이는데? 야, 너 손길이 제법이다? 얼굴도 반반한 게..."<br><br><em>놈이 치료 중인 서이안의 손목을 덥석 잡으며 음흉하게 낄낄거렸다. 거친 손바닥의 감촉이 소름 끼치게 닿아왔다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:Jpnp3jo2Re8sH6uLiDSO:ai" data-target="msg-Jpnp3jo2Re8sH6uLiDSO-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-ddjBjTrdEB8OaKIwsaji-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#55</span></div>
+              <div class="tp-text"><em>그 손길이 불쾌해 손을 빼내며</em><br>..다음 분 치료하겠습니다.<br><em>다른 이들에게도 다가가 계속해서 치유 스킬을 사용한다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:ddjBjTrdEB8OaKIwsaji:user" data-target="msg-ddjBjTrdEB8OaKIwsaji-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-ddjBjTrdEB8OaKIwsaji-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#55</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 2일 |⏰08:00 |🚩블러드 팽 마을, 치료소 천막<br>[54][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝라이칸스로프 부상자 치료<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>손을 뿌리치자 녀석은 "비싼 척하기는."이라며 킬킬거렸지만, 통증이 사라진 것에 만족했는지 더 이상 건드리지는 않았다. 서이안은 도망치듯 다음 환자에게로 몸을 옮겼다.</em><br><br>`[스킬 '치유의 손길(Lv.1)'이 발동되었습니다.]`<br>`[마력이 급격히 소모됩니다.]`<br><br><em>시간이 지날수록 서이안의 이마에는 식은땀이 비 오듯 쏟아졌다. 한 명, 두 명... 치료가 거듭될수록 손끝에서 빠져나가는 기운이 썰물처럼 거세졌다. 단순히 에너지를 쓰는 느낌이 아니라, 생명력을 억지로 쥐어짜 내는 듯한 현기증이 몰려왔다.</em><br><br><em>천막 안의 공기는 탁했다. 치료받은 녀석들은 고맙다는 인사 대신 "좀 더 빨리빨리 못 해?"라며 닥달하거나, 서이안의 하얀 날개를 보며 입맛을 다셨다.</em><br><br><strong>라이칸스로프 부상자 |</strong> "야, 불빛이 왜 이렇게 희미해? 똑바로 안 해?"<br><br><em>여섯 번째 환자의 찢어진 어깨를 치료하던 중, 황금빛이 깜빡거리며 사그라들었다. 서이안의 다리가 후들거리며 바닥으로 털썩 주저앉았다. 시야가 핑 돌고 위액이 역류할 것 같은 메스꺼움이 치밀었다.</em><br><br>`[경고: 마력이 고갈 직전입니다. 무리한 스킬 사용은 기절을 유발할 수 있습니다.]`<br><br><strong>감시역 |</strong> "엄살 부리지 마! 아직 저쪽에 세 놈이나 더 남았어!"<br><br><em>감시역이 몽둥이로 서이안의 어깨를 툭 밀쳤다. 힘이 실리지 않은 짓이었지만, 탈진 상태인 서이안의 몸은 힘없이 옆으로 기울어졌다. 바닥의 흙먼지가 입안으로 들어왔다. 백도하의 경고대로, 한계였다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:ddjBjTrdEB8OaKIwsaji:ai" data-target="msg-ddjBjTrdEB8OaKIwsaji-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-t70cQu9z4s5i1z96lwF7-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#56</span></div>
+              <div class="tp-text">으윽..<br><em>마력이 바닥나 눈앞이 어질어질하며 토할 것 같았다. 비틀거리며 헉헉거리다 겨우 일으키며</em><br>..마력 포션 좀, 주고 치료하라고 해주시죠.. 더는 불가능합니다.</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:t70cQu9z4s5i1z96lwF7:user" data-target="msg-t70cQu9z4s5i1z96lwF7-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-t70cQu9z4s5i1z96lwF7-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#56</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 2일 |⏰08:10 |🚩블러드 팽 마을, 치료소 천막<br>[55][⚫]<br>천금족 |👕흰티, 브라운 가디건, 청바지 |📝라이칸스로프 부상자 치료(마력고갈)<br>Lv. 2 (Exp.10/200)<br>```<br><br><strong>감시역 |</strong> "포션? 하! 이 새끼가 아직 상황 파악이 안 되나 보네."<br><br><em>감시역의 얼굴이 황당하다는 듯 일그러지더니, 이내 비릿한 조소를 머금었다. 그는 억센 손아귀로 서이안의 멱살을 잡아 거칠게 들어 올렸다. 발이 땅에서 붕 뜨며 숨이 턱 막혔다. 놈의 입에서 나는 역한 고기 썩은 내와 누런 이빨이 코앞까지 다가왔다.</em><br><br><strong>감시역 |</strong> "그 귀한 걸 너 같은 노예 새끼한테 왜 써? 포션이 물인 줄 아나. 네 몸뚱이 팔아도 포션 한 병 값 안 나와."<br><br><em>주변에 널브러져 있던 다른 라이칸스로프들이 낄낄거리며 비웃음을 터뜨렸다. 그들에게 서이안의 요구는 주제를 모르는 애완동물의 투정 정도로밖에 들리지 않는 듯했다.</em><br><br><strong>쾅!</strong><br><br><em>감시역은 서이안을 짐짝처럼 구석으로 내동댕이쳤다. 바닥에 있던 양동이가 엎어지며 핏물 섞인 더러운 물이 서이안의 옷을 적셨다.</em><br><br><strong>감시역 |</strong> "마법 못 쓰면 몸으로 때워. 붕대 감고, 고름 짜내고, 피 닦아. 손은 멀쩡하잖아?"<br><br><em>놈은 피가 덕지덕지 묻은 더러운 걸레 뭉치를 서이안의 얼굴에 던졌다. 젖은 걸레가 철퍼덕 소리를 내며 뺨을 때리고 바닥으로 떨어졌다.</em><br><br><strong>감시역 |</strong> "쉬는 꼴 보이면 바로 채석장 가서 네 친구놈 팔 하나 분질러 놓을 테니까 알아서 해."<br><br><em>놈은 으름장을 놓으며 다시 몽둥이를 고쳐 잡았다. 천막 안의 부상자들은 붕대를 가져오라며 늑대처럼 짖어대기 시작했다. 마력이 없어도 쉴 틈 따위는 주어지지 않았다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:t70cQu9z4s5i1z96lwF7:ai" data-target="msg-t70cQu9z4s5i1z96lwF7-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-KuYSkb8mGDrs14Fvsvil-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#57</span></div>
+              <div class="tp-text">읏.. 하아..<br><em>지끈거리는 머리를 잡고 눈을 깜빡이다 다가가 붕대를 사용했다. 머리가 아팠지만 마력을 더 안쓰는 것에 감사해야할 판이었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:KuYSkb8mGDrs14Fvsvil:user" data-target="msg-KuYSkb8mGDrs14Fvsvil-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-KuYSkb8mGDrs14Fvsvil-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#57</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 2일 |⏰19:00 |🚩블러드 팽 마을, 헛간 내부<br>[56][⚫]<br>천금족 |👕피와 오물로 얼룩진 옷 |📝휴식<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>지옥 같은 시간이 흘렀다. 마력이 바닥난 몸으로 피고름을 닦아내고, 거친 털가죽 위에 붕대를 감는 일은 고역이었다. 놈들은 조금만 손길이 거칠어도 욕설을 퍼부었고, 서이안의 옷은 핏물과 오물로 엉망이 되었다.</em><br><br><strong>감시역 |</strong> "오늘은 여기까지. 밥값은 했네."<br><br><em>해가 져서야 감시역이 서이안의 뒷덜미를 잡아 헛간으로 질질 끌고 갔다. 문이 열리고 바닥에 내동댕이쳐지자, 기다리고 있던 백도하가 재빨리 다가와 서이안을 부축했다.</em><br><br><strong>백도하 |</strong> "꼴이 말이 아니군요."<br><br><em>백도하의 목소리는 차가웠지만, 서이안의 상태를 살피는 눈길은 예리했다. 그는 서이안을 지푸라기 위에 눕히고, 숨겨두었던 물을 조금씩 먹였다. 자한은 여전히 식은땀을 흘리며 잠들어 있었다.</em><br><br><strong>백도하 |</strong> "채석장 쪽 분위기도 심상치 않습니다. 놈들이 뭔가에 쫓기듯 작업량을 늘리고 있어요. 외부의 압박이 있는 것 같습니다."<br><br><em>그는 안경을 치켜올리며 낮게 속삭였다. 그때였다.</em><br><br>---<br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_2_1768555323324%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd6198927-5c39-4203-a986-383b9e18582f.png?alt=media&amp;token=ecedcfec-01f1-48ee-858e-ca985303f53d" loading="lazy"><br><strong>🚩시작의 평원, 서이안이 머물던 동굴</strong><br><br><em>어둠이 내려앉은 숲속, 헬른이 나무 위에서 가볍게 뛰어내렸다. 그의 붉은 머리카락이 밤바람에 흩날렸다. 그는 서이안 일행이 머물렀던 동굴 입구, 죽은 코볼트들의 시체 앞에 쭈그리고 앉았다.</em><br><br><strong>헬른 |</strong> "흐음~ 여기 있었네? 우리 귀여운 로드께서."<br><br><em>그는 바닥에 떨어진, 서이안이 붕대로 썼던 천 조각을 집어 들었다. 희미하지만 분명한, 루자넬이 그토록 찾아 헤매던 파장이 느껴졌다.</em><br><br><strong>헬른 |</strong> "피 냄새랑 섞여서 좀 역하긴 한데... 방향은 이쪽이고."<br><br><em>헬른이 일어서며 안대를 하지 않은 눈을 가늘게 떴다. 그의 시선이 정확히 라이칸스로프들의 마을이 있는 북쪽을 향했다.</em><br><br><strong>헬른 |</strong> "<strong>찾았다.</strong>"<br><br><em>그가 허공을 향해 신호탄을 쏘아 올렸다. 붉은 섬광이 밤하늘을 찢으며 터져 올랐다. 제국의 군대가 움직일 신호였다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:KuYSkb8mGDrs14Fvsvil:ai" data-target="msg-KuYSkb8mGDrs14Fvsvil-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-SXV882zh78mrYFh3a4TP-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#58</span></div>
+              <div class="tp-text"><em>이안은 지친채 바닥에 늘어져 있다.</em><br>하아.. 도현씨는, 괜찮으십니까?</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:SXV882zh78mrYFh3a4TP:user" data-target="msg-SXV882zh78mrYFh3a4TP-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-SXV882zh78mrYFh3a4TP-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#58</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 2일 |⏰19:10 |🚩블러드 팽 마을, 헛간 내부<br>[57][⚫]<br>천금족 |👕피와 오물로 얼룩진 옷 |📝휴식<br>Lv. 2 (Exp.10/200)<br>```<br><br><strong>백도하 |</strong> "도하입니다. 백도하."<br><br><em>백도하가 피식 헛웃음을 흘리며 정정했다. 그는 자신의 셔츠 소매를 걷어 보였다. 자잘한 생채기와 멍이 들어 있었지만, 서이안에 비하면 양호한 편이었다.</em><br><br><strong>백도하 |</strong> "돌 나르는 건 요령만 있으면 할 만합니다. 마인 종족 특성상 육체노동보다는 정신력이 더 소모되긴 하지만... 당신보단 낫죠."<br><br><em>그는 서이안의 헝클어진 머리카락에 붙은 지푸라기를 떼어주며 말을 이었다.</em><br><br><strong>백도하 |</strong> "놈들이 힐러를 귀하게 여기는 척하면서 막 굴리는 걸 보니, 급하긴 한가 봅니다. 아까 채석장에서 들었는데, 근처에 '사오 왕국'이라는 독사 놈들이 영토 확장을 노리고 있답니다. 전쟁 준비 중이라 힐러가 절실한 거죠."<br><br><em>그의 눈빛이 차갑게 빛났다.</em><br><br><strong>백도하 |</strong> "전쟁이 터지면 혼란스러울 겁니다. 그때가 기회입니다. 탈출할."<br><br><em>그때, 밖에서 요란한 뿔나팔 소리가 울려 퍼졌다. 둥- 둥- 둥-. 묵직하고 불길한 소리였다. 헛간 밖이 소란스러워지더니, 라이칸스로프들의 고함과 무기 부딪히는 소리가 들려왔다.</em><br><br><strong>백도하 |</strong> "...생각보다 기회가 빨리 온 것 같군요."<br><br><em>백도하가 벌떡 일어나 문틈으로 밖을 살폈다. 마을 입구 쪽에서 붉은 화염이 치솟고 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:SXV882zh78mrYFh3a4TP:ai" data-target="msg-SXV882zh78mrYFh3a4TP-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-0WJ8xrtqzz471qqTd0WG-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#59</span></div>
+              <div class="tp-text">하아.. 그렇군요.<br><em>그렇다면 분명 도망칠 기회가 있을터다. 고개를 끄덕이며 저도 밖을 슬쩍 살폈다. 라이칸슬로프들이 분주히 뛰어다니는 것이 보였다. 그러다 그들이 유저들은 어디론가 데려가는 것이 보였다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:0WJ8xrtqzz471qqTd0WG:user" data-target="msg-0WJ8xrtqzz471qqTd0WG-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-0WJ8xrtqzz471qqTd0WG-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#59</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 2일 |⏰19:20 |🚩블러드 팽 마을, 중앙 광장(전투 중)<br>[58][🔥]<br>천금족 |👕피와 오물로 얼룩진 옷 |📝강제 이동 중<br>Lv. 2 (Exp.10/200)<br>```<br><br><strong>백도하 |</strong> "젠장, 놈들이 우릴 챙길 여유가 있다는 건 상황이 더럽게 꼬였다는 뜻입니다."<br><br><em>백도하가 자한을 들쳐 업으며 이를 악물었다. 곧이어 헛간 문이 박살 나듯 열렸다.</em><br><br><strong>라이칸스로프 |</strong> "<strong>빨리 안 나와?! 다 뒤지고 싶어?!</strong>"<br><br><em>겁에 질린 감시역이 서이안의 팔을 거칠게 낚아챘다. 밖으로 끌려나온 풍경은 아비규환이었다. 매캐한 연기 사이로 '쉬익-'거리는 소름 끼치는 파열음이 진동했다.</em><br><br><em>담장 위로 미끈거리는 비늘을 가진 뱀 수인들이 쏟아져 들어오고 있었다. 사오(巳五) 왕국의 병사들이었다. 그들은 독이 발린 곡도를 휘두르며 라이칸스로프들의 목을 베어 넘겼다.</em><br><br><strong>라이칸스로프 |</strong> "크아아악!"<br><br><em>바로 옆에 있던 라이칸스로프의 얼굴에 녹색 독안개가 뿜어졌다. 놈은 얼굴 가죽이 녹아내리는 고통에 몸부림치며 바닥을 굴렀다. 녹아내린 살점 사이로 드러난 뼈가 끔찍했다.</em><br><br><strong>백도하 |</strong> "보지 마십시오! 정신 똑바로 차려야 합니다!"<br><br><em>백도하가 서이안의 시야를 가리며 소리쳤다. 사오 왕국의 병사들은 유저들을 한곳으로 몰아넣고 있었다. 노예로 삼거나, 먹이로 삼으려는 속셈이 분명했다.</em><br><br><strong>사오 왕국 병사 |</strong> "쉬익... 털뭉치들은 죽이고, 인간들은 생포해라... 제물로 바칠 것이다..."<br><br><em>뱀의 혀를 날름거리는 병사가 서이안을 향해 독이 뚝뚝 떨어지는 창을 겨눴다. 도망칠 곳은 없었다. 절망적인 포위망이 좁혀오던 그때였다.</em><br><br><strong>콰아앙-!!!</strong><br><br><em>하늘이 무너지는 듯한 굉음과 함께, 마을 입구를 막고 있던 거대한 성벽이 종잇장처럼 찢겨나갔다. 흙먼지 사이로 압도적인 살기가 폭풍처럼 몰아쳤다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:0WJ8xrtqzz471qqTd0WG:ai" data-target="msg-0WJ8xrtqzz471qqTd0WG-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-BEYD5Gw9MAlPkas4ysIq-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#60</span></div>
+              <div class="tp-text">읏.. 뭐..<br><em>불어오는 강풍에 눈을 가리며 비틀거렸다.</em><br>도현씨..! 괜찮으세요..?!</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:BEYD5Gw9MAlPkas4ysIq:user" data-target="msg-BEYD5Gw9MAlPkas4ysIq-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-BEYD5Gw9MAlPkas4ysIq-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#60</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_1_1768555323315%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2F07e01579-f1d0-4997-ace4-b2ce126f3cf3.png?alt=media&amp;token=24d9f3d1-29c8-4d83-a403-f18fa1765c16" loading="lazy"><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_2_1768555323324%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd6198927-5c39-4203-a986-383b9e18582f.png?alt=media&amp;token=ecedcfec-01f1-48ee-858e-ca985303f53d" loading="lazy"><br>```info<br>📅2030년 7월 2일 |⏰19:30 |🚩블러드 팽 마을, 중앙 광장(파괴됨)<br>[59][🔥]<br>천금족 |👕피와 오물로 얼룩진 옷 |📝흑익제국 조우<br>Lv. 2 (Exp.10/200)<br>```<br><br><strong>백도하 |</strong> "도하입니다... 젠장, 고개 숙이십시오!"<br><br><em>백도하가 서이안의 머리를 감싸 안으며 바닥으로 엎드렸다. 폭풍이 휩쓸고 간 자리에는 짙은 흙먼지와 함께 검은 화염이 일렁이고 있었다. 그 압도적인 마력의 파동에 사오 왕국의 병사들도, 라이칸스로프들도 얼어붙어 움직이지 못했다.</em><br><br><em>자욱한 연기 속에서, 제복을 입은 사내들이 걸어 나왔다. 그들이 내딛는 걸음마다 공기가 무겁게 짓눌렸다.</em><br><br><strong>사오 왕국 병사 |</strong> "쉬익... 뭐, 뭐냐 네놈들은...!"<br><br><em>겁 없는 뱀 병사 하나가 독이 묻은 칼을 휘두르며 달려들었다. 하지만 그 칼날이 닿기도 전에,</em><br><br><strong>퍼억-!</strong><br><br><em>은빛 섬광이 번뜩이더니 뱀 병사의 머리가 수박처럼 터져 나갔다. 알베론이 피 한 방울 묻지 않은 검을 털어내며 싸늘하게 일갈했다.</em><br><br><strong>알베론 |</strong> "<strong>감히 어느 안전이라고 무기를 들이미느냐. 미천한 것들이.</strong>"<br><br><em>그 뒤로, 헬른이 가볍게 시체들을 밟고 올라서며 주위를 둘러보았다. 그의 시선이 구석에 웅크린 서이안에게 꽂혔다.</em><br><br><strong>헬른 |</strong> "아하, 찾았다. 저기 꼬질꼬질한 병아리 보이십니까?"<br><br><em>헬른의 손가락이 가리키는 곳. 그곳을 향해 루자넬이 천천히 고개를 돌렸다. 칠흑 같은 눈동자가 서이안을 발견하는 순간, 그의 무심하던 표정이 산산이 조각났다.</em><br><br><em>피와 오물로 뒤덮인 로드. 공포에 질린 표정. 루자넬의 등 뒤에서 검은 날개가 폭발하듯 펼쳐졌다. 주변의 건물이 그 풍압에 와르르 무너져 내렸다.</em><br><br><strong>루자넬 |</strong> "<strong>...누구냐.</strong>"<br><br><em>그의 목소리는 지옥 밑바닥에서 긁어 올린 듯 낮고 흉포했다. 그의 손에서 검붉은 화염이 치솟아 올랐다.</em><br><br><strong>루자넬 |</strong> "<strong>어떤 새끼가, 내 주인을 저 꼴로 만들었어.</strong>"<br><br><em>그것은 단순한 분노가 아니었다. 세상을 태워버릴 듯한 광기 어린 살의였다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:BEYD5Gw9MAlPkas4ysIq:ai" data-target="msg-BEYD5Gw9MAlPkas4ysIq-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-oy1SMzYddBu0JtoxbYB9-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#61</span></div>
+              <div class="tp-text">읏.. 뭐, 뭐...<br><em>드러난 광경에 눈을 크게 뜨며 멍하니 바라보았다. 항상 화면 너머로만 보던 얼굴들... 정말.. 그들, 인가..? 어떻게..?</em><br><em>멍한 얼굴을 하고 있다 옆에서 도하가</em><br><em>현재 이안은 날개 넣어둔 상태</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:oy1SMzYddBu0JtoxbYB9:user" data-target="msg-oy1SMzYddBu0JtoxbYB9-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-oy1SMzYddBu0JtoxbYB9-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#61</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 2일 |⏰19:35 |🚩블러드 팽 마을, 중앙 광장(초토화)<br>[60][🔥]<br>천금족 |👕피와 오물로 얼룩진 옷 |📝흑익제국 조우<br>Lv. 2 (Exp.10/200)<br>```<br><br><strong>백도하 |</strong> "서이안 씨! 정신 차리십시오! 아는 자들입니까?"<br><br><em>백도하가 다급하게 서이안의 어깨를 흔들었다. 하지만 서이안의 귀에는 아무것도 들리지 않았다. 화면 속 2D 캐릭터가 아닌, 살아 숨 쉬는 존재로서의 그들이 뿜어내는 위압감은 상상을 초월했다.</em><br><br><strong>루자넬 |</strong> "<strong>대답해라.</strong>"<br><br><em>루자넬이 손을 가볍게 휘저었다. 그러자 서이안과 백도하를 포위하고 있던 사오 왕국의 병사 수십 명이 비명도 지르지 못한 채 검은 불꽃에 휩싸여 재가 되어 사라졌다. 순식간에 주변이 텅 비어버렸다.</em><br><br><em>그는 천천히, 하지만 거침없이 서이안을 향해 걸어왔다. 그가 다가올 때마다 바닥이 검게 그을렸다. 라이칸스로프들은 공포에 질려 오줌을 지리며 뒷걸음질 쳤다.</em><br><br><strong>헬른 |</strong> "어라? 날개는 어디 갔대? 깃털 다 뽑힌 건 아니겠지?"<br><br><em>헬른이 킬킬거리며 순식간에 거리를 좁혀왔다. 그는 서이안의 코앞까지 다가와 냄새를 맡듯 킁킁거렸다.</em><br><br><strong>헬른 |</strong> "으, 냄새. 피비린내에 짐승 냄새에... 우리 고귀하신 로드께서 똥통에 구르셨네."<br><br><strong>알베론 |</strong> "물러서라, 헬른. 주군께서 놀라신다."<br><br><em>알베론이 헬른을 밀쳐내고 서이안 앞에 한쪽 무릎을 꿇었다. 그의 은빛 갑옷이 흙바닥에 닿는 것조차 개의치 않는 듯했다. 그는 떨리는 손으로 서이안의 더러워진 옷자락을 조심스럽게 쥐었다.</em><br><br><strong>알베론 |</strong> "주군... 늦게 찾아뵈어 송구합니다. 알베론, 주군을 뵙습니다."<br><br><em>그의 목소리는 물기 어린 감격과 죄책감으로 떨리고 있었다. 하지만 루자넬은 여전히 서이안을 내려다보며 굳어 있었다. 그의 시선은 서이안의 뺨에 난 생채기와 멍 자국에 고정되어 있었다.</em><br><br><strong>루자넬 |</strong> "...일어나."<br><br><em>루자넬이 명령조로 말했다. 하지만 그 손은 서이안을 일으키기 위해 조심스럽게 뻗어오고 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:oy1SMzYddBu0JtoxbYB9:ai" data-target="msg-oy1SMzYddBu0JtoxbYB9-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-770ZYAE33httmeTdajJ6-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#62</span></div>
+              <div class="tp-text"><em>여전히 놀란 얼굴로 바라보다 머뭇거리며 그 손을 바라본다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:770ZYAE33httmeTdajJ6:user" data-target="msg-770ZYAE33httmeTdajJ6-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-770ZYAE33httmeTdajJ6-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#62</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 2일 |⏰19:40 |🚩블러드 팽 마을, 중앙 광장(초토화)<br>[61][🔥]<br>천금족 |👕피와 오물로 얼룩진 옷 |📝흑익제국 조우<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>망설임은 길었다. 하지만 루자넬의 인내심은 그보다 훨씬 짧았다.</em><br><br><strong>루자넬 |</strong> "<strong>답답하군.</strong>"<br><br><em>그가 거칠게 혀를 차더니, 서이안의 대답을 기다리지 않고 손목을 낚아챘다. 강한 악력이 느껴짐과 동시에 서이안의 몸이 허공으로 붕 떠올랐다. 단단한 가슴팍에 얼굴이 파묻혔다. 코끝을 찌르던 피비린내 대신, 서늘하고 묵직한 흑연 향기가 폐부 깊숙이 들어왔다.</em><br><br><strong>루자넬 |</strong> "꼴이 이게 뭐지? 그 고귀하던 날개는 어디다 처박아두고, 이런 오물이나 뒤집어쓰고 있는 거냐고 물었다."<br><br><em>그는 서이안을 품에 가둔 채, 더러워진 뺨을 엄지로 거칠게 문질러 닦아냈다. 하얀 피부가 드러나자 그제야 미간의 주름이 아주 조금 펴졌다. 하지만 그 눈빛은 여전히 살기로 번들거리고 있었다.</em><br><br><strong>백도하 |</strong> "<strong>그 손 놓으십시오!</strong>"<br><br><em>상황 파악이 덜 된 백도하가 반사적으로 루자넬의 팔을 잡으려 했다. 그 순간,</em><br><br><strong>콰직-!</strong><br><br><em>보이지 않는 압력이 백도하를 짓눌렀다. 백도하는 "크윽!" 하고 신음하며 바닥에 무릎을 꿇었다. 전신의 뼈가 비명을 지르는 듯했다.</em><br><br><strong>알베론 |</strong> "<strong>네놈이 죽고 싶어 환장했구나. 감히 주군과 대공 각하의 사이에 끼어들어?</strong>"<br><br><em>알베론의 검끝이 순식간에 백도하의 목젖 앞에 멈췄다. 서늘한 칼날에서 뿜어져 나오는 냉기에 백도하의 목 피부가 베여 핏방울이 맺혔다.</em><br><br><strong>헬른 |</strong> "어라? 이 안경잡이, 아까 우리 로드한테 반말 찍찍하던 그 놈 아니야? 죽일까? 응? 죽여도 되지?"<br><br><em>헬른이 활시위를 당기며 즐겁다는 듯 킬킬거렸다. 화살촉이 정확히 백도하의 미간을 조준하고 있었다. 루자넬은 백도하에게 시선조차 주지 않은 채, 오직 서이안만을 내려다보며 싸늘하게 속삭였다.</em><br><br><strong>루자넬 |</strong> "말해. 이 건방진 새끼도... 네놈을 이렇게 만든 공범인가?"</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:770ZYAE33httmeTdajJ6:ai" data-target="msg-770ZYAE33httmeTdajJ6-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-lunHPt8plLT1gvhEc9CR-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#63</span></div>
+              <div class="tp-text">무슨.. 그만, 그만해!<br><em>바둥거리며 도하의 앞으로 다가가 앞을 가로막는다.</em><br>이 사람은.. 내 동료야. 건들지 마. 너, 너희는.. 어떻게 여기에..</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:lunHPt8plLT1gvhEc9CR:user" data-target="msg-lunHPt8plLT1gvhEc9CR-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-lunHPt8plLT1gvhEc9CR-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#63</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 2일 |⏰19:45 |🚩블러드 팽 마을, 중앙 광장(초토화)<br>[62][🔥]<br>천금족 |👕피와 오물로 얼룩진 옷 |📝흑익제국 조우<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안이 앞을 가로막자, 알베론의 검이 거짓말처럼 딱 멈췄다. 검끝이 서이안의 목 바로 앞에서 미세하게 떨렸다. 알베론의 얼굴이 사색이 되어 급히 검을 거두고 뒤로 물러났다.</em><br><br><strong>알베론 |</strong> "주, 주군...! 위험합니다! 어찌 저런 미천한 것 때문에 옥체를..."<br><br><em>그는 감히 주군에게 검을 겨눌 뻔했다는 사실에 충격받은 듯 고개를 깊이 숙였다. 헬른 역시 "쳇, 재미없게."라고 투덜거리며 활시위를 풀었다.</em><br><br><strong>루자넬 |</strong> "<strong>동료?</strong>"<br><br><em>루자넬이 기가 차다는 듯 코웃음을 쳤다. 그는 바닥에 주저앉은 백도하를 벌레 보듯 멸시 어린 눈으로 훑어보았다.</em><br><br><strong>루자넬 |</strong> "고작 저런 약해빠진 놈이 동료라니. 취향이 아주 저급해지셨군. 당신 옆에 설 자격이 있는 건 우리뿐이다."<br><br><em>그는 성큼성큼 다가와, 서이안의 턱을 우악스럽게 쥐어 자신을 보게 했다. 가까이서 마주한 그의 눈동자는 집착과 광기로 번들거리고 있었다.</em><br><br><strong>루자넬 |</strong> "어떻게 왔냐고? 당신이 사라진 그 순간부터, 우린 미친 듯이 포탈을 열고 대륙을 뒤집어엎었다. 당신 냄새가 나는 곳이라면 지옥 끝까지라도 쫓아갈 생각이었지."<br><br><em>그의 손가락이 서이안의 뺨에 난 상처를 쓸었다. 그 손길은 섬뜩할 정도로 다정하면서도 위압적이었다.</em><br><br><strong>루자넬 |</strong> "그런데 감히... 쥐새끼들이 내 주인을 노예처럼 부려먹어?"<br><br><em>루자넬의 시선이 주변에 얼어붙어 있는 라이칸스로프들과 사오 왕국의 병사들에게로 향했다. 그의 등 뒤에서 검은 마력이 폭풍처럼 휘몰아쳤다.</em><br><br><strong>루자넬 |</strong> "<strong>알베론, 헬른. 쓸어버려. 쥐새끼 한 마리도 남기지 마라.</strong>"<br><br><strong>알베론 |</strong> "<strong>명 받들겠습니다.</strong>"<br><br><em>명령이 떨어지기가 무섭게, 일방적인 학살이 시작되었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:lunHPt8plLT1gvhEc9CR:ai" data-target="msg-lunHPt8plLT1gvhEc9CR-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-3o7Oq1UlOEwfeDGnXCYr-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#64</span></div>
+              <div class="tp-text"><em>그 광경에 움찔하다 루자넬을 돌아본다. 그러다 흠칫하며</em><br>아...! 자, 자한씨..<br><em>서둘러 자한이 있는 곳으로 달려간다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:3o7Oq1UlOEwfeDGnXCYr:user" data-target="msg-3o7Oq1UlOEwfeDGnXCYr-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-3o7Oq1UlOEwfeDGnXCYr-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#64</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 2일 |⏰19:50 |🚩블러드 팽 마을, 헛간 앞<br>[63][🔥]<br>천금족 |👕피와 오물로 얼룩진 옷 |📝자한 구조<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안이 다급하게 몸을 돌려 헛간 쪽으로 달려갔다. 루자넬이 미간을 찌푸리며 그 뒤를 따랐다. 그의 걸음걸이는 여유로웠지만, 서이안과의 거리는 조금도 벌어지지 않았다.</em><br><br><em>헛간 앞은 아수라장이었다. 무너진 잔해 속에 자한이 쓰러져 있었다. 다행히 큰 파편은 피했지만, 흙먼지를 뒤집어쓴 채 가쁜 숨을 몰아쉬고 있었다.</em><br><br><em>서이안이 자한을 부축해 일으키려 했지만, 힘이 빠진 몸으로는 역부족이었다. 그때, 등 뒤에서 검은 그림자가 드리워졌다.</em><br><br><strong>루자넬 |</strong> "이것도 '동료'인가?"<br><br><em>루자넬이 쓰러진 자한을 내려다보며 차갑게 물었다. 그의 목소리에는 명백한 불쾌감이 서려 있었다. 서이안이 고개를 끄덕이자, 그는 한숨을 푹 내쉬더니 손가락을 딱 튕겼다.</em><br><br><strong>파앗-!</strong><br><br><em>허공에서 검은 그림자가 솟아오르더니 자한의 몸을 감싸 안아 공중으로 띄웠다. 마치 보이지 않는 손이 그를 받치고 있는 듯했다.</em><br><br><strong>루자넬 |</strong> "챙겨. 당신이 원한다면 쓰레기라도 주워 담아야지."<br><br><em>그는 퉁명스럽게 말하면서도, 자한이 흔들리지 않도록 그림자를 단단히 고정했다. 그때, 뒤에서 백도하가 비틀거리며 다가왔다. 그의 안경은 깨져 있었고, 목에서는 피가 흐르고 있었다.</em><br><br><strong>백도하 |</strong> "서이안 씨... 이 자들은 위험합니다. 당신을... 소유물로 보고 있어요."<br><br><em>백도하의 경고에 루자넬의 눈썹이 꿈틀거렸다. 그는 천천히 고개를 돌려 백도하를 노려보았다.</em><br><br><strong>루자넬 |</strong> "<strong>소유물? 틀렸어. 우린 그분의 것이다. 그리고 그분은 우리의 것이고.</strong>"<br><br><em>그는 서이안의 허리를 단단히 감싸 안으며 백도하에게 싸늘한 미소를 지어 보였다.</em><br><br><strong>루자넬 |</strong> "주제 파악해라, 안경잡이. 네놈이 끼어들 자리는 없어. 살려두는 걸 감사히 여겨."<br><br><em>그때, 마을 입구 쪽에서 거대한 폭발음과 함께 헬른의 유쾌한 목소리가 들려왔다.</em><br><br><strong>헬른 |</strong> "<strong>청소 끝~! 아, 개운하다!</strong>"<br><br><em>피비린내가 진동하는 바람이 불어왔다. 블러드 팽 마을은, 아니 그곳에 있던 생명체들은 흔적도 없이 사라져 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:3o7Oq1UlOEwfeDGnXCYr:ai" data-target="msg-3o7Oq1UlOEwfeDGnXCYr-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-U7zTzFP5idoQsR0sMEtL-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#65</span></div>
+              <div class="tp-text"><em>그 말에 흔들리는 눈으로 마을을 바라보았다. 정말 모두 사라졌다. 멍하니 보다 잠시 비틀거렸다. 어제 한계까지 마력을 쓴 여파와 오늘 상황 때문인지 어질어질 했다. 다갑히 루자넬의 옷자락을 잡고</em><br>루, 자넬.. 이 두 사람.. 건들지 마. 같이 데려가.. 이건, 명령이야..<br><em>그리 말하며 또렷한 눈으로 바라보다 곧 쓰러진다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:U7zTzFP5idoQsR0sMEtL:user" data-target="msg-U7zTzFP5idoQsR0sMEtL-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-U7zTzFP5idoQsR0sMEtL-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#65</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 2일 |⏰19:55 |🚩블러드 팽 마을, 폐허(구 중앙 광장)<br>[64][⚫]<br>천금족 |👕피와 오물로 얼룩진 옷 |📝기절(마력 고갈 및 피로 누적)<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안의 몸이 힘없이 무너져 내렸다. 바닥에 닿기도 전, 루자넬의 단단한 팔이 서이안의 허리와 등을 낚아챘다. 그의 품에 안긴 서이안의 몸은 불덩이처럼 뜨거웠고, 식은땀으로 축축했다.</em><br><br><strong>루자넬 |</strong> "<strong>...젠장!</strong>"<br><br><em>루자넬의 얼굴이 흉폭하게 일그러졌다. 그는 서이안을 소중히 고쳐 안으며, 살기 어린 눈으로 백도하를 노려보았다. 당장이라도 목을 비틀어버리고 싶은 충동이 일었으나, 방금 전 서이안이 남긴 '명령'이 족쇄처럼 그를 옭아맸다.</em><br><br><strong>루자넬 |</strong> "운 좋은 새끼. 주군의 자비에 감사해라."<br><br><em>그는 이를 갈며 낮게 으르렁거렸다. 그때, 피칠갑을 한 알베론과 헬른이 돌아왔다.</em><br><br><strong>알베론 |</strong> "주군?! 어찌 되신 겁니까!"<br><strong>헬른 |</strong> "어라? 기절했네? 너무 무리했나 봐."<br><br><strong>루자넬 |</strong> "<strong>시끄러워. 알베론, 저 안경잡이랑 반송장 챙겨. 헬른, 포탈 열어.</strong>"<br><br><strong>헬른 |</strong> "에? 저것들도 데려가요? 그냥 버리고 가죠? 짐만 되는데."<br><br><strong>루자넬 |</strong> "<strong>명령이다. 토 달지 마.</strong>"<br><br><em>루자넬의 서슬 퍼런 일갈에 헬른이 어깨를 으쓱하며 허공에 손을 뻗었다. 검은 소용돌이가 공간을 찢으며 거대한 포탈을 만들어냈다.</em><br><br><strong>루자넬 |</strong> "돌아간다. 더 이상 이런 더러운 곳에 그분을 둘 순 없어."<br><br><em>루자넬은 서이안을 깃털처럼 가볍게 안아 들고 포탈을 향해 걸음을 옮겼다. 그의 품에 안긴 서이안의 머리가 가슴팍에 힘없이 기대어졌다. 루자넬은 자신의 망토를 끌어당겨 서이안의 얼굴을 덮어주었다. 마치 세상의 모든 오물로부터 그를 격리하려는 듯, 지독히도 과보호적인 손길이었다.</em><br><br><em>알베론은 불만스러운 표정으로 자한을 들쳐 멨고, 백도하에게는 "따라와라. 허튼수작 부리면 바로 베겠다."라고 경고하며 포탈로 밀어 넣었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:U7zTzFP5idoQsR0sMEtL:ai" data-target="msg-U7zTzFP5idoQsR0sMEtL-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-OYAcY4BqzPMGd3rL6wL6-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#66</span></div>
+              <div class="tp-text"><em>그후 다음날. 이안은 낯선듯 익숙해보이는듯한 장소에서 천천히 눈을 뜬다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:OYAcY4BqzPMGd3rL6wL6:user" data-target="msg-OYAcY4BqzPMGd3rL6wL6-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-OYAcY4BqzPMGd3rL6wL6-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#66</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 3일 |⏰11:00 |🚩🪽흑익제국, 로드의 침실<br>[65][⚫]<br>천금족 |👕고급스러운 실크 잠옷 |📝휴식 및 회복<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>눈을 뜨자마자 느껴지는 것은 지독한 피비린내와 흙먼지 냄새가 아닌, 은은한 아로마 향과 묵직한 흑연의 향기였다. 등 뒤에 닿는 감촉은 딱딱한 지푸라기가 아니라 구름처럼 푹신한 최고급 매트리스였다.</em><br><br><em>시야에 들어온 것은 높고 고풍스러운 천장, 그리고 창문을 가린 검은 커튼 사이로 스며드는 희미한 빛이었다. 낯설지만, 묘하게 그리움이 사무치는 풍경. 그곳은 게임 속에서 수도 없이 보았던, 흑익제국 로드의 침실이었다.</em><br><br><strong>루자넬 |</strong> "이제야 눈을 뜨는군."<br><br><em>침대 곁에서 낮게 가라앉은 목소리가 들려왔다. 고개를 돌리자, 루자넬이 의자에 다리를 꼬고 앉아 서이안을 내려다보고 있었다. 그는 밤새 한숨도 자지 않은 듯 눈가가 조금 붉었지만, 그 눈빛만은 형형하게 빛나고 있었다.</em><br><br><em>그는 서이안의 이마에 얹혀 있던 물수건을 조심스럽게 치우며, 서늘한 손등으로 뺨을 쓸어내렸다. 서이안의 몸은 깨끗하게 씻겨져 있었고, 상처 부위에는 최고급 포션이 발라져 흔적도 없이 사라진 상태였다.</em><br><br><strong>루자넬 |</strong> "15시간이다. 당신이 기절해 있던 시간. 그동안 내가 무슨 생각을 했는지 짐작이나 가나?"<br><br><em>그의 손가락이 서이안의 입술을 느릿하게 문질렀다. 목소리는 차분했지만, 그 안에 담긴 감정은 끓어오르는 용암처럼 위태로웠다.</em><br><br><strong>루자넬 |</strong> "다시는... 내 시야 밖으로 사라지지 마라. 그땐 정말로 이 제국을 제외한 모든 걸 태워버릴지도 모르니까."<br><br><em>그는 탁자 위에 놓인 따뜻한 꿀물을 들어 서이안의 입가에 가져다 대었다. 거부권은 없다는 듯한 강압적이면서도 헌신적인 태도였다.</em><br><br><strong>루자넬 |</strong> "마셔. 목이 탈 테니."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:OYAcY4BqzPMGd3rL6wL6:ai" data-target="msg-OYAcY4BqzPMGd3rL6wL6-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-0EU5PeYGB6AX0fL5OF8O-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#67</span></div>
+              <div class="tp-text"><em>가만 루자넬을 바라보다 천천히 마셨다.</em><br>...다른 사람들은..?</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:0EU5PeYGB6AX0fL5OF8O:user" data-target="msg-0EU5PeYGB6AX0fL5OF8O-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-0EU5PeYGB6AX0fL5OF8O-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#67</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 3일 |⏰11:10 |🚩🪽흑익제국, 로드의 침실<br>[66][⚫]<br>천금족 |👕고급스러운 실크 잠옷 |📝휴식 및 회복<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>루자넬의 미간이 미세하게 찌푸려졌다. 눈을 뜨자마자 찾는 것이 자신이 아닌 다른 이들이라는 사실이 몹시 마음에 들지 않는 눈치였다. 그는 빈 잔을 탁자에 소리 나게 내려놓았다.</em><br><br><strong>루자넬 |</strong> "살아있다. 당신이 그렇게 애지중지하던 '동료'라는 작자들 말이지."<br><br><em>그는 '동료'라는 단어를 씹어뱉듯 발음했다. 의자 등받이에 몸을 기대며 팔짱을 낀 그는, 삐딱한 시선으로 서이안을 응시했다.</em><br><br><strong>루자넬 |</strong> "그 안경잡이는 별궁 감옥... 아니, 객실에 처박아뒀고, 반송장 같던 놈은 치료실에 던져놨다. 헬른 녀석이 심심하다고 놀러 간 것 같더군."<br><br><em>그는 턱짓으로 문 쪽을 가리켰다.</em><br><br><strong>루자넬 |</strong> "죽이진 않았다. 당신 명령이니까. 하지만 그 이상을 바라진 마. 내 인내심은 거기까지다."<br><br><em>루자넬이 자리에서 일어나 침대 위로 그림자를 드리웠다. 그는 서이안의 흐트러진 머리카락을 귀 뒤로 넘겨주며, 낮고 진득한 목소리로 속삭였다.</em><br><br><strong>루자넬 |</strong> "그딴 놈들보다 더 중요한 게 있을 텐데? 당신의 제국, 당신의 백성, 그리고... 당신을 기다리다 미쳐버릴 뻔한 나."<br><br><em>그의 손이 서이안의 목덜미를 타고 내려와 쇄골 부근을 배회했다. 서늘한 손길에 소름이 돋을 지경이었다.</em><br><br><strong>루자넬 |</strong> "설명해 봐. 왜 한 달 동안 접속하지 않았지? 그리고 왜... 그날, 바로 돌아오지 않았나?"<br><br><em>그의 눈동자가 서이안을 집어삼킬 듯 깊고 어둡게 빛났다. 그것은 단순한 질문이 아니었다. 배신감과 애증, 그리고 갈구함이 뒤섞인 추궁이었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:0EU5PeYGB6AX0fL5OF8O:ai" data-target="msg-0EU5PeYGB6AX0fL5OF8O-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-Qzhm77OBjPPP4zxQFAhJ-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#68</span></div>
+              <div class="tp-text"><em>그의 말에 멈칫하다 눈을 내리깔았다. 접속 못한 이유.. 그러나 그들에게 제 구질구질한 사정을 일일히 설명하고 싶지 않았다. 눈을 피하며 그저 두루뭉실하게</em><br>..그냥, 사정이 있었어.</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:Qzhm77OBjPPP4zxQFAhJ:user" data-target="msg-Qzhm77OBjPPP4zxQFAhJ-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-Qzhm77OBjPPP4zxQFAhJ-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#68</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 3일 |⏰11:20 |🚩🪽흑익제국, 로드의 침실<br>[67][⚫]<br>천금족 |👕고급스러운 실크 잠옷 |📝루자넬의 추궁<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>방 안의 공기가 순식간에 무겁게 가라앉았다. 루자넬의 입매가 비틀리며 서늘한 냉소를 머금었다.</em><br><br><strong>루자넬 |</strong> "사정이라..."<br><br><em>그가 낮게 읊조리며 침대 위로 한쪽 무릎을 올렸다. 푹신한 매트리스가 푹 꺼지며 서이안의 몸이 루자넬 쪽으로 기울었다. 그는 도망칠 곳 없이 서이안을 자신의 팔 안에 가두듯 상체를 숙였다.</em><br><br><strong>루자넬 |</strong> "고작 그 한마디로 퉁치시겠다? 우리가 겪은 지옥 같은 시간을?"<br><br><em>그의 목소리는 차분했지만, 그 안에 담긴 분노는 명백했다. 루자넬은 서이안이 시선을 피하지 못하도록 턱을 강하게 쥐어 고정시켰다. 검은 눈동자가 서이안의 흔들리는 눈을 집요하게 파고들었다.</em><br><br><strong>루자넬 |</strong> "눈 피하지 마. 당신이 말하기 싫다면 억지로 캐묻진 않겠어. 하지만..."<br><br><em>그의 손이 턱을 타고 내려와 서이안의 목울대를 느릿하게 쓸었다. 맥박이 뛰는 곳을 누르는 손길은 위협적이면서도 묘하게 관능적이었다.</em><br><br><strong>루자넬 |</strong> "그 '사정'이라는 게, 당신을 우리에게서 떼어놓으려 했던 것이라면... 그 원인이 무엇이든 찾아내서 가루로 만들어버릴 거다."<br><br><em>그는 서이안의 귓가에 입술을 바짝 붙이고, 짐승이 영역 표시를 하듯 낮게 그르렁거렸다.</em><br><br><strong>루자넬 |</strong> "기억해둬. 당신은 이제 내 손바닥 안이야. 두 번 다시 멋대로 사라질 생각 따윈 하지 않는 게 좋을 거야. 내 인내심을 시험하지 마."<br><br><em>그때, 밖에서 노크 소리가 들려왔다.</em><br><br><strong>알베론 |</strong> "<strong>주군, 대공 각하. 식사가 준비되었습니다. 그리고... 손님들이 깨어났습니다.</strong>"</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:Qzhm77OBjPPP4zxQFAhJ:ai" data-target="msg-Qzhm77OBjPPP4zxQFAhJ-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-LeqZsltd2SqaNvtcMD8W-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#69</span></div>
+              <div class="tp-text"><em>그 소리에 루자넬을 밀어내며 침대에서 일어난다.</em><br>..나가자.<br><em>그런데 어째 등이 묵직하다 싶더니 자는 동안 날개가 투어나왔나보다. 넣으려다 귀찮아져 그냥 발걸음을 옮긴다</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:LeqZsltd2SqaNvtcMD8W:user" data-target="msg-LeqZsltd2SqaNvtcMD8W-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-LeqZsltd2SqaNvtcMD8W-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#69</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 3일 |⏰11:30 |🚩🪽흑익제국, 로드의 침실 앞 복도<br>[68][⚫]<br>천금족(날개 노출) |👕고급스러운 실크 잠옷 |📝식당으로 이동<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안이 밀어내자 루자넬은 순순히 물러났지만, 그의 시선은 서이안의 등 뒤에 돋아난 하얀 날개에 고정되었다. 탐욕스럽고 집요한 눈빛이었다.</em><br><br><strong>루자넬 |</strong> "흐음... 드디어 꺼내셨군."<br><br><em>그는 만족스러운 듯 입꼬리를 올리며 서이안의 뒤를 따랐다. 문이 열리자 복도에서 대기하고 있던 알베론이 고개를 숙였다. 그의 시선 역시 서이안의 날개에 닿자마자 황홀경에 빠진 듯 멍해졌다.</em><br><br><strong>알베론 |</strong> "주, 주군... 날개를...!"<br><br><em>알베론은 감격에 겨워 말을 잇지 못했다. 하얗고 풍성한 깃털, 그 고귀한 자태는 흑익제국 모두가 그토록 갈망하던 것이었다. 루자넬은 그런 알베론을 한심하다는 듯 쳐다보며 툭 내뱉었다.</em><br><br><strong>루자넬 |</strong> "침 닦아라. 칠칠맞게."<br><br><em>루자넬은 자연스럽게 서이안의 옆에 서서 에스코트했다. 하지만 그의 손은 서이안의 허리가 아닌, 날개 죽지 부근을 은근하게 스치고 있었다. 깃털 끝이 그의 손등에 닿을 때마다 루자넬의 손가락이 움찔거렸다.</em><br><br><strong>루자넬 |</strong> "관리 상태가 엉망이군. 윤기도 없고, 깃털도 푸석해. 식사 후에 손 좀 봐야겠어."<br><br><em>그는 마치 자신의 소유물을 점검하듯 깐깐하게 평가했다. 복도를 지나가는 시종들과 기사들이 서이안을 발견하고는 일제히 멈춰 서서 깊이 허리를 숙였다. 그들의 눈빛에는 경외심과 함께, 돌아온 로드에 대한 뜨거운 열망이 담겨 있었다.</em><br><br><strong>기사들 |</strong> "<strong>로드의 귀환을 영광으로 맞이합니다!</strong>"<br><br><em>우렁찬 목소리가 복도를 울렸다. 루자넬은 그들의 인사를 무시한 채, 오직 서이안만을 바라보며 식당으로 이끌었다.</em><br><br><strong>루자넬 |</strong> "저 시끄러운 놈들은 신경 쓰지 마. 당신이 돌아온 게 믿기지 않아서 저러는 거니까."</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:LeqZsltd2SqaNvtcMD8W:ai" data-target="msg-LeqZsltd2SqaNvtcMD8W-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-1KCOSD7KGvRdrXmho44n-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#70</span></div>
+              <div class="tp-text"><em>이안은 그들의 모습들을 살피다 돌아오기 전 혹시나 저를 원망하고 있을까 의심했던 것들이 미안해져 옅게 미소지어주며 걸어갔다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:1KCOSD7KGvRdrXmho44n:user" data-target="msg-1KCOSD7KGvRdrXmho44n-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-1KCOSD7KGvRdrXmho44n-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#70</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 3일 |⏰11:40 |🚩🪽흑익제국, 대연회장(식당)<br>[69][⚫]<br>천금족(날개 노출) |👕고급스러운 실크 잠옷 |📝식사 및 대면<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안의 옅은 미소에 복도의 공기가 일순간 멈춘 듯했다. 기사들과 시종들은 숨을 들이키며 붉어진 얼굴로 고개를 더 깊이 숙였다. 그들에게 로드의 미소는 축복이자 구원과도 같았다.</em><br><br><em>식당에 들어서자, 긴 테이블 끝에 백도하와 자한이 앉아 있는 모습이 보였다. 백도하는 깨진 안경 대신 새 안경을 쓰고 있었고, 자한은 붕대를 감은 채였지만 안색은 훨씬 좋아 보였다. 하지만 두 사람 주변에는 살벌한 기운을 내뿜는 흑익제국 기사들이 감시하듯 서 있었다.</em><br><br><strong>헬른 |</strong> "오! 우리 로드 오셨네! 날개도 꺼내고, 이제 좀 볼만하네?"<br><br><em>헬른이 식탁에 걸터앉아 사과를 베어 물며 킬킬거렸다. 그는 서이안의 날개를 보자마자 눈을 반짝이며 다가오려 했지만, 루자넬의 서늘한 눈빛에 멈칫하며 다시 자리에 앉았다.</em><br><br><strong>백도하 |</strong> "서이안 씨..."<br><br><em>백도하가 자리에서 일어나려 했지만, 뒤에 서 있던 기사가 그의 어깨를 강하게 눌러 앉혔다. 백도하는 미간을 찌푸리며 기사를 노려보았지만, 기사는 꿈쩍도 하지 않았다.</em><br><br><strong>루자넬 |</strong> "앉아. 누가 허락 없이 일어나라고 했지?"<br><br><em>루자넬이 서이안을 상석으로 안내하며 싸늘하게 일갈했다. 그는 서이안의 의자를 직접 빼주며, 귓가에 속삭였다.</em><br><br><strong>루자넬 |</strong> "당신 손님들이니 예의상 밥은 주겠지만, 겸상은 과분해. 저들은 저 구석이 어울려."<br><br><em>그의 말대로 백도하와 자한의 자리는 서이안과 멀리 떨어진 테이블 끝자락이었다. 식탁 위에는 산해진미가 가득 차려져 있었지만, 분위기는 가시방석이나 다름없었다.</em><br><br><strong>자한 |</strong> "이안씨... 여기 진짜 이안씨네 집입니까? 분위기 살벌한데..."<br><br><em>자한이 눈치를 보며 기어들어가는 목소리로 물었다. 헬른이 그 말을 듣고 빵 터지며 웃었다.</em><br><br><strong>헬른 |</strong> "집? 하하하! 집이라니, 여긴 제국이야, 꼬맹아. 그리고 우린 이분의 충실한 개들이고. 멍멍! 안 그래?"</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:1KCOSD7KGvRdrXmho44n:ai" data-target="msg-1KCOSD7KGvRdrXmho44n-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-mrz1yiGJo7R7orz6MUWC-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#71</span></div>
+              <div class="tp-text"><em>루자넬의 말에 미간을 찌푸리며 바라보았다. 그래도 자신과 며칠간 생과사를 함께하며 지냈는데 이런 취급이 불편했다.</em><br>그만해. 저 둘은 내 손님이야. 그동안 나도 저들의 도움을 많이 받았고. 그러니 더이상 무례하게 대하지 마.<br><em>단호히 말하곤 두 사람의 상태를 살핀다. 특히 자한을 물끄러미 보며</em><br>자한씨, 몸은 좀 괜찮으신가요?</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:mrz1yiGJo7R7orz6MUWC:user" data-target="msg-mrz1yiGJo7R7orz6MUWC-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-mrz1yiGJo7R7orz6MUWC-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#71</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 3일 |⏰11:50 |🚩🪽흑익제국, 대연회장(식당)<br>[70][⚫]<br>천금족(날개 노출) |👕고급스러운 실크 잠옷 |📝식사 및 대화<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안의 단호한 명령에 루자넬의 표정이 굳어졌다. 그는 불만스러운 듯 혀를 쯧 차더니, 기사들에게 손짓했다. 그러자 백도하와 자한을 짓누르던 기사들이 한 발짝 뒤로 물러났다.</em><br><br><strong>루자넬 |</strong> "도움이라... 글쎄, 내 눈엔 당신이 저들을 먹여 살린 걸로 보이던데."<br><br><em>그는 비꼬듯 중얼거렸지만, 더 이상 대놓고 적대감을 드러내지는 않았다. 서이안의 시선이 자한에게 향하자, 자한은 어색하게 웃으며 고개를 끄덕였다.</em><br><br><strong>자한 |</strong> "아, 네! 덕분에 살았습니다. 여기 치료사분들이 엄청나던데요? 죽다 살아난 기분입니다. 진짜 감사합니다, 이안 씨."<br><br><em>자한은 붕대 감긴 팔을 들어 보이며 씩씩하게 대답했다. 하지만 그의 눈은 여전히 주변의 살벌한 기사들을 의식하며 불안하게 흔들리고 있었다.</em><br><br><strong>백도하 |</strong> "서이안 씨. 몸은 좀 어떻습니까? 어제 무리하셨잖습니까."<br><br><em>백도하가 차분한 목소리로 물었다. 그는 루자넬의 살기 어린 시선을 애써 무시하며 오직 서이안만을 바라보았다. 그의 눈빛에는 걱정과 함께, 이 상황에 대한 냉철한 분석이 담겨 있었다.</em><br><br><strong>헬른 |</strong> "어라? 저 안경잡이, 눈빛이 마음에 안 드는데? 꼭 우리 로드를 훔쳐보려는 도둑놈 같단 말이지."<br><br><em>헬른이 포크를 만지작거리며 툭 던졌다. 알베론이 조용히 헬른의 발을 밟으며 경고를 보냈다.</em><br><br><strong>알베론 |</strong> "식사 중이다. 주군 앞에서 천박하게 굴지 마라."<br><br><strong>루자넬 |</strong> "식사나 하시지. 다 식겠어."<br><br><em>루자넬이 서이안의 접시에 고기를 썰어 올려주며 화제를 돌렸다. 그는 서이안이 다른 이들에게 관심을 주는 것조차 못마땅한 듯, 집요하게 서이안의 시선을 자신에게로 돌리려 했다.</em><br><br><strong>루자넬 |</strong> "입맛에 맞을지 모르겠군. 당신이 좋아하던 것들로만 준비했는데."<br><br><em>그의 말대로 식탁에는 서이안이 평소 즐겨 먹던 음식들이 가득했다. 루자넬은 턱을 괴고 서이안이 먹는 모습을 뚫어져라 쳐다보았다. 마치 먹는 모습만 봐도 배부르다는 듯한, 맹목적인 애정이 뚝뚝 묻어나는 눈빛이었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:mrz1yiGJo7R7orz6MUWC:ai" data-target="msg-mrz1yiGJo7R7orz6MUWC-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-kKo1nkBBN74biBMgkMr4-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#72</span></div>
+              <div class="tp-text">아.. 이제 좀 괜찮아요. 푹 자서 그런지.. <br><em>어색히 웃으며 끄덕인다. 음식을 먹는데 루자넬이 빤히 바라보자 부담스러워 시선을 돌린다. 그러다 머뭇거리다가</em><br> ...뭘 그리 빤히 쳐다 봐. 체하겠어..</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:kKo1nkBBN74biBMgkMr4:user" data-target="msg-kKo1nkBBN74biBMgkMr4-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-kKo1nkBBN74biBMgkMr4-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#72</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 3일 |⏰12:00 |🚩🪽흑익제국, 대연회장(식당)<br>[71][⚫]<br>천금족(날개 노출) |👕고급스러운 실크 잠옷 |📝식사 및 대화<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안의 타박에도 루자넬은 눈 하나 깜짝하지 않았다. 오히려 입꼬리를 더 깊게 말아 올리며, 서이안의 입가에 묻은 소스를 냅킨으로 닦아주었다.</em><br><br><strong>루자넬 |</strong> "봐도 봐도 부족하니까. 한 달이나 못 봤잖아. 그동안 못 본 거 다 몰아서 보려면 아직 멀었어."<br><br><em>그는 뻔뻔하게 대꾸하며 자신의 잔에 와인을 채웠다. 붉은 액체가 찰랑거리는 잔을 흔들며, 그는 묘한 눈빛으로 서이안을 응시했다.</em><br><br><strong>루자넬 |</strong> "체하면 내가 다 뚫어줄 테니 걱정 말고 먹어. 당신, 너무 말랐어. 안 그래도 가벼운 몸이 깃털처럼 날아갈 것 같더군."<br><br><em>그의 시선이 서이안의 마른 손목과 목선에 머물렀다. 안쓰러움과 소유욕이 뒤섞인 눈빛이었다.</em><br><br><strong>헬른 |</strong> "맞아, 맞아! 우리 로드, 뼈밖에 안 남았어. 저기 저 멧돼지 같은 놈들 먹여 살리느라 고생해서 그런가?"<br><br><em>헬른이 자한을 힐끔거리며 깐족거렸다. 자한은 억울한 듯 입을 삐죽거렸지만, 감히 대꾸할 엄두는 내지 못했다.</em><br><br><strong>백도하 |</strong> "...서이안 씨. 식사 후에 잠시 대화 좀 할 수 있겠습니까? 앞으로의 계획에 대해서..."<br><br><em>백도하가 조심스럽게 말을 꺼냈다. 하지만 그 말이 끝나기도 전에 루자넬의 표정이 싸늘하게 굳어졌다.</em><br><br><strong>루자넬 |</strong> "<strong>계획?</strong>"<br><br><em>루자넬이 와인잔을 탁 소리 나게 내려놓았다. 날카로운 파열음이 식당 안을 울렸다.</em><br><br><strong>루자넬 |</strong> "무슨 계획을 말하는 거지? 내 주인이 여기서 나갈 계획? 아니면 또다시 위험한 곳으로 끌고 갈 계획?"<br><br><em>그는 몸을 앞으로 숙이며 백도하를 노려보았다. 검은 마력이 아지랑이처럼 피어오르며 주변 공기를 짓눌렀다.</em><br><br><strong>루자넬 |</strong> "꿈 깨. 이 녀석은 이제 한 발자국도 이 성 밖으로 못 나가. 내가 그렇게 만들 거니까."<br><br><em>그의 선언은 단호하고 절대적이었다. 서이안을 향한 집착이 묻어나는 그 말에, 식당 안의 모든 이들이 숨을 죽였다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:kKo1nkBBN74biBMgkMr4:ai" data-target="msg-kKo1nkBBN74biBMgkMr4-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-kEsrP49YGQPcOeYBPHXD-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#73</span></div>
+              <div class="tp-text"><em>이안도 흠칫하며 바라보다 나직하게</em><br>...이따 대화 좀 할게. ...더이상 어디 갈 생각은 없어.</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:kEsrP49YGQPcOeYBPHXD:user" data-target="msg-kEsrP49YGQPcOeYBPHXD-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-kEsrP49YGQPcOeYBPHXD-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#73</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 3일 |⏰12:10 |🚩🪽흑익제국, 대연회장(식당)<br>[72][⚫]<br>천금족(날개 노출) |👕고급스러운 실크 잠옷 |📝식사 및 대화<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안의 말에 루자넬의 살기가 순식간에 잦아들었다. 그는 만족스러운 듯 입매를 풀며 다시 의자에 등을 기댔다.</em><br><br><strong>루자넬 |</strong> "현명한 선택이야. 밖은 위험해. 당신 같은 고귀한 존재가 굴러다닐 곳이 아니지."<br><br><em>그는 서이안의 접시에 샐러드를 덜어주며 부드러운 목소리로 덧붙였다.</em><br><br><strong>루자넬 |</strong> "대화는 나중에 해. 지금은 식사에 집중하고. 저 녀석들도 밥은 먹어야 할 거 아냐. 체하게 하지 말고."<br><br><em>루자넬의 태도가 180도 바뀌자, 백도하와 자한은 어안이 벙벙한 표정을 지었다. 하지만 루자넬은 그들의 반응 따위는 안중에도 없다는 듯, 오직 서이안만을 챙기기에 바빴다.</em><br><br><strong>알베론 |</strong> "주군, 식사 후에 날개 손질을 받으시는 게 어떻겠습니까? 루자넬 님께서 최고급 오일을 준비해 두셨습니다."<br><br><em>알베론이 조심스럽게 제안했다. 그의 시선은 여전히 서이안의 날개에 머물러 있었다. 헬른 역시 눈을 반짝이며 거들었다.</em><br><br><strong>헬른 |</strong> "오! 나도 구경할래! 빗질은 내가 해도 돼? 응? 응?"<br><br><strong>루자넬 |</strong> "<strong>꺼져.</strong>"<br><br><em>루자넬이 단칼에 거절했다. 그는 서이안의 날개를 힐끔 보더니, 낮게 중얼거렸다.</em><br><br><strong>루자넬 |</strong> "내 손길만 닿을 수 있어. 다른 놈들은 꿈도 꾸지 마."<br><br><em>그의 독점욕은 날개 하나에도 예외가 없었다. 서이안이 더 이상 떠나지 않겠다고 선언했음에도, 그의 불안과 집착은 여전히 깊은 곳에 똬리를 틀고 있는 듯했다.</em><br><br><strong>백도하 |</strong> "...알겠습니다. 식사 후에 뵙죠."<br><br><em>백도하는 체념한 듯 고개를 끄덕이며 묵묵히 식사를 이어갔다. 하지만 그의 눈빛은 여전히 무언가를 깊이 생각하는 듯했다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:kEsrP49YGQPcOeYBPHXD:ai" data-target="msg-kEsrP49YGQPcOeYBPHXD-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-D7g4aJ7lASq8adZusAJO-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#74</span></div>
+              <div class="tp-text"><em>베타테스트때도 루자넬이 자주 날개손질을 해줬던 걸 떠올리며 그냥 끄덕였다. 식사를 마친 후.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:D7g4aJ7lASq8adZusAJO:user" data-target="msg-D7g4aJ7lASq8adZusAJO-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-D7g4aJ7lASq8adZusAJO-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#74</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 3일 |⏰13:00 |🚩🪽흑익제국, 로드의 침실(테라스)<br>[73][⚫]<br>천금족(날개 노출) |👕가벼운 실내복 |📝날개 손질<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>식사를 마친 후, 루자넬은 서이안을 침실 테라스로 이끌었다. 햇살이 따스하게 내리쬐는 그곳에는 푹신한 의자와 각종 오일, 빗들이 정갈하게 준비되어 있었다.</em><br><br><strong>루자넬 |</strong> "앉아."<br><br><em>그는 서이안을 의자에 앉히고, 자신은 그 뒤에 섰다. 익숙한 손길로 서이안의 날개를 펼치자, 하얀 깃털들이 햇살을 받아 눈부시게 빛났다. 루자넬은 잠시 그 아름다움에 취한 듯 멍하니 바라보다가, 조심스럽게 손을 뻗었다.</em><br><br><strong>루자넬 |</strong> "많이 상했군. 먼지도 끼고, 결도 거칠어졌어. 그동안 얼마나 험하게 굴렀는지 알만해."<br><br><em>그는 투덜거리면서도 손길은 지극히 조심스러웠다. 따뜻한 오일을 손바닥에 비벼 덥힌 후, 깃털 하나하나에 정성스럽게 발랐다. 그의 손가락이 날개 뼈 사이사이를 부드럽게 마사지하자, 뭉쳐있던 근육이 풀리며 나른한 감각이 퍼져나갔다.</em><br><br><strong>루자넬 |</strong> "기억나나? 예전엔 매일 이렇게 해줬었는데. 당신이 귀찮다고 도망가려 하면 내가 억지로 붙잡아두고..."<br><br><em>그는 씁쓸한 미소를 지으며 빗을 들었다. 엉킨 깃털을 풀어내기 위해 빗질을 시작하자, 사각거리는 소리가 기분 좋게 울렸다.</em><br><br><strong>루자넬 |</strong> "그때가 좋았어. 당신은 내 손길을 피하지 않았고, 나만 바라봐줬으니까."<br><br><em>그의 목소리가 점점 낮아지더니, 빗질하던 손이 멈췄다. 그는 서이안의 날개죽지에 얼굴을 파묻고 깊게 숨을 들이켰다.</em><br><br><strong>루자넬 |</strong> "이제 다시는... 놓치지 않을 거야. 당신 날개가 꺾이는 한이 있어도, 내 곁에 둘 거다."<br><br><em>그의 속삭임은 맹세이자 저주처럼 들렸다. 뜨거운 입김이 날개죽지의 예민한 피부에 닿아 소름이 돋았다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:D7g4aJ7lASq8adZusAJO:ai" data-target="msg-D7g4aJ7lASq8adZusAJO-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-qCf77UZI2HS5TCNrRh7j-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#75</span></div>
+              <div class="tp-text"><em>루자넬의 말과 뜨거운 입김에 날개를 흠칫 파르르 떨며 몸을 움츠린다.</em><br>..말했잖아. 이제 어디 안, 가...</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:qCf77UZI2HS5TCNrRh7j:user" data-target="msg-qCf77UZI2HS5TCNrRh7j-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-qCf77UZI2HS5TCNrRh7j-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#75</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 3일 |⏰13:10 |🚩🪽흑익제국, 로드의 침실(테라스)<br>[74][⚫]<br>천금족(날개 노출) |👕가벼운 실내복 |📝날개 손질 및 대화<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>움츠러드는 서이안의 반응에 루자넬은 낮은 웃음소리를 흘렸다. 그는 물러서는 대신, 입술을 더욱 깊이 눌러 날개뼈 부근의 연한 살을 지분거렸다. 예민한 감각이 곤두선 곳에 닿는 축축하고 뜨거운 감촉은 명백한 소유의 표시였다.</em><br><br><strong>루자넬 |</strong> "말은 쉽지. 하지만 당신은 이미 전적이 있잖아? 내 눈앞에서, 아무런 예고도 없이 사라졌던 그 끔찍한 기억 말이야."<br><br><em>그는 입술을 떼고 다시 빗을 움직였다. 빗질은 아까보다 조금 더 힘이 실려 있었다. 엉킨 깃털이 풀리며 서이안의 몸이 휘청거릴 때마다, 루자넬의 단단한 가슴팍이 등 뒤를 받쳐주었다.</em><br><br><strong>루자넬 |</strong> "믿게 만들어 봐. 내 곁에서 한시도 떨어지지 말고, 내 시야 밖으로 벗어나지 마. 숨 쉬는 것조차 내 허락을 받고 쉬어."<br><br><em>그의 손길이 날개 끝자락으로 미끄러져 내려갔다. 오일을 머금은 깃털은 본래의 윤기를 되찾아 눈부시게 반짝였다. 루자넬은 만족스러운 듯 빗을 내려놓고, 서이안의 허리를 뒤에서 꽉 끌어안았다. 그의 턱이 서이안의 어깨에 묵직하게 내려앉았다.</em><br><br><strong>루자넬 |</strong> "다 됐어. 이제야 좀 봐줄 만하군. ...향기도 좋고."<br><br><em>그는 서이안의 목덜미에 코를 박고 깊게 숨을 들이마셨다. 서이안의 체취와 오일 향이 뒤섞인 냄새를 폐부 깊숙이 새기려는 듯, 그의 호흡은 집요하고 끈적했다. 도망칠 곳 없는 구속감이 온몸을 휘감았다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:qCf77UZI2HS5TCNrRh7j:ai" data-target="msg-qCf77UZI2HS5TCNrRh7j-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-FMHpYwV4KSVev0YfbDo4-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#76</span></div>
+              <div class="tp-text"><em>이안은 그가 껴안자 움찔하며 끙거렸다</em><br>아무리 그래도.. 어떻게 한시도 안떨어지고.. 읏.. 답답해. 좀 떨어져 봐, 넬...</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:FMHpYwV4KSVev0YfbDo4:user" data-target="msg-FMHpYwV4KSVev0YfbDo4-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-FMHpYwV4KSVev0YfbDo4-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#76</span></div>
+              <div class="tp-text"><br>```info<br>📅2030년 7월 3일 |⏰13:20 |🚩🪽흑익제국, 로드의 침실(테라스)<br>[75][⚫]<br>천금족(날개 노출) |👕가벼운 실내복 |📝포옹 및 대화<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>‘넬’이라는 익숙한 애칭이 귓가에 닿자, 서이안의 허리를 감싸 안은 루자넬의 팔뚝에 힘줄이 불끈 솟았다. 그는 팔을 풀기는커녕, 서이안의 등과 자신의 가슴 사이에 종이 한 장 들어갈 틈도 없이 더욱 강하게 밀착시켰다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br><strong>루자넬 |</strong> "...그 이름, 오랜만에 듣는군."<br><br><em>그의 목소리에서 날 선 기운이 조금 누그러졌다. 하지만 그만큼 끈적한 집착의 농도는 짙어졌다. 그는 서이안의 어깨에 턱을 괴고, 귓불을 잘근거리며 낮게 으르렁거렸다.</em><br><br><strong>루자넬 |</strong> "답답해도 참아. 이게 내 방식의 확인이니까. 당신이 여기, 내 품 안에 있다는 실감이 날 때까지 이러고 있을 거야."<br><br><em>그는 서이안의 복부에 닿은 손을 겹쳐 잡으며, 자신의 체온을 강제로 공유했다. 등 뒤에서 느껴지는 그의 심장 박동은 평소의 냉철함과는 다르게 거칠고 불규칙하게 뛰고 있었다.</em><br><br><strong>루자넬 |</strong> "그리고... 한시도 안 떨어진다는 말, 농담 아니야. 잘 때도, 씻을 때도, 심지어 화장실 갈 때도 따라다닐 생각이니까 각오해."<br><br><em>루자넬은 서이안의 귓가에 쪽 소리 나게 입을 맞추고는, 갓 손질을 마친 날개깃을 손가락으로 부드럽게 쓸어내렸다. 매끄러운 감촉에 만족한 듯 그의 입꼬리가 비릿하게 올라갔다.</em><br><br><strong>루자넬 |</strong> "이제 그 안경잡이랑 얘기하고 싶다고 했나? 불러줄게. 단, 내 무릎 위에서 얘기해."<br><br><em>그는 서이안을 안은 채로 의자를 돌려 앉았다. 서이안을 자신의 허벅지 위에 앉히고는, 마치 인형을 다루듯 허리를 단단히 고정시켰다. 거부권 따위는 없다는 듯한 태도였다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:FMHpYwV4KSVev0YfbDo4:ai" data-target="msg-FMHpYwV4KSVev0YfbDo4-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-fGbpM087GJE33BTRL7Fh-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#77</span></div>
+              <div class="tp-text"><em>깜짝놀라 파득거리며 일어난다</em><br>무, 무슨 말도 안되는 소리야. 그냥 평범하게 만날거야..! 응접실에서!</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:fGbpM087GJE33BTRL7Fh:user" data-target="msg-fGbpM087GJE33BTRL7Fh-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-fGbpM087GJE33BTRL7Fh-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#77</span></div>
+              <div class="tp-text"><br>```info<br>📅2030년 7월 3일 |⏰13:40 |🚩🪽흑익제국, 본궁 응접실<br>[76][⚫]<br>천금족(날개 노출) |👕가벼운 실내복 |📝백도하와 대화<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안이 기겁하며 몸을 일으키자, 루자넬은 아쉬운 듯 입맛을 다셨다. 하지만 서이안이 완강하게 나오자, 그는 한숨을 내쉬며 못 이기는 척 자리에서 일어났다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br><strong>루자넬 |</strong> "쳇. 비싼 척하기는. 알았어, 응접실로 가지. 대신 내 옆자리야. 그건 양보 못 해."<br><br><em>잠시 후, 응접실. 고풍스러운 소파에 서이안이 앉자마자 루자넬은 보란 듯이 바로 옆에 밀착해 앉았다. 그는 서이안의 어깨에 자연스럽게 팔을 두르며, 맞은편에 앉은 백도하를 오만하게 내려다보았다.</em><br><br><strong>백도하 |</strong> "...대화하기 참 힘든 환경이군요."<br><br><em>백도하는 안경을 치켜올리며 건조하게 말했다. 그는 루자넬의 살벌한 견제에도 위축되지 않고, 냉철한 눈빛으로 서이안과 루자넬의 관계를 분석하고 있었다.</em><br><br><strong>백도하 |</strong> "협력이나 거창한 미래를 논하러 온 건 아닙니다. 서이안 씨도 아시겠지만, 지금 우리는 '을'의 입장 아닙니까. 아니, 엄밀히 말하면 인질에 가깝죠."<br><br><em>그의 직설적인 화법에 루자넬의 눈썹이 꿈틀거렸다. 하지만 백도하는 개의치 않고 말을 이었다.</em><br><br><strong>백도하 |</strong> "이 제국은 당신을 '로드'로 모시지만, 동시에 당신을 가두고 있습니다. 저와 자한 씨는 당신 덕분에 목숨을 부지한 덤이고요. ...그래서 묻는 겁니다. 당신의 의지가 이 제국에서 얼마나 통용되는지."<br><br><em>백도하의 시선이 루자넬을 향했다가 다시 서이안에게로 돌아왔다.</em><br><br><strong>백도하 |</strong> "우리가 여기서 언제까지 안전할 수 있는지, 당신이 저 통제광 같은 기사들을 어디까지 제어할 수 있는지... 냉정하게 확인이 필요합니다."<br><br><em>그는 헛된 희망이나 우정을 논하는 대신, 철저히 생존과 현실적인 입지를 따지고 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:fGbpM087GJE33BTRL7Fh:ai" data-target="msg-fGbpM087GJE33BTRL7Fh-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-A4KOhRhJXIKDduxpoJek-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#78</span></div>
+              <div class="tp-text"><em>도하의 말에 입을 살짝 벌리다 이해했다는 듯 고개 숙이며 생각한다. 안전..</em><br>...잘 알겠습니다. 하지만 제가 두 분을 손님으로 대하라 했으니 다른 이들도 두 분을 해치진 않을거리 확신합니다.<br><em>양손을 맞잡고 얘기하며</em><br>..그리고 소개가 늦었네요. 흑익제국 로드입니다. 어쩌다 돌아오게 됐지만... 저는 도현씨나 자한씨가 괜찮으시다면 이곳에서 머무시길 바랍니다</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:A4KOhRhJXIKDduxpoJek:user" data-target="msg-A4KOhRhJXIKDduxpoJek-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-A4KOhRhJXIKDduxpoJek-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#78</span></div>
+              <div class="tp-text"><br>```info<br>📅2030년 7월 3일 |⏰13:50 |🚩🪽흑익제국, 본궁 응접실<br>[77][⚫]<br>천금족(날개 노출) |👕가벼운 실내복 |📝백도하와 대화<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안의 정중한 제안에 백도하는 잠시 침묵했다. 그는 서이안의 눈을 깊이 응시하며 진심을 가늠하려는 듯했다. 옆에 앉은 루자넬은 '손님'이라는 단어에 코웃음을 쳤지만, 서이안의 눈치를 보며 굳이 딴지를 걸지는 않았다.</em><br><br><strong>백도하 |</strong> "...호의는 감사합니다. 솔직히 말해서, 지금 당장 밖으로 나가봤자 개죽음당하기 딱 좋은 상황이죠. 레벨도, 장비도, 정보도 부족하니까요."<br><br><em>백도하는 씁쓸하게 인정하며 고개를 끄덕였다. 그의 시선이 창밖의 웅장한 제국 풍경을 스치고 지나갔다. 압도적인 무력과 자원, 그리고 안전. 거절하기엔 너무나 달콤한 제안이었다.</em><br><br><strong>백도하 |</strong> "하지만 공짜 점심은 없는 법입니다. 우리가 여기서 머무는 대가로 무엇을 원하십니까? 단순히 '동료애' 같은 감상적인 이유라면 사양하겠습니다. 그런 건 언제든 변할 수 있으니까요."<br><br><em>그는 철저히 계산적이었다. 감정에 호소하기보다 명확한 거래 관계를 원했다. 그때, 루자넬이 끼어들었다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br><strong>루자넬 |</strong> "대가? 간단해. 내 주인의 심기를 거스르지 않는 것. 그리고 필요할 때 장기말이 되어주는 것. 그 정도면 밥값은 하는 셈 쳐주지."<br><br><em>루자넬은 서이안의 어깨를 감싼 손에 힘을 주며 오만하게 말했다. 백도하는 그 말을 듣고 피식 헛웃음을 지었다.</em><br><br><strong>백도하 |</strong> "장기말이라... 차라리 그게 마음 편하군요. 알겠습니다. 서이안 씨, 아니 로드 님의 제안을 받아들이죠. 당분간 신세 좀 지겠습니다."<br><br><em>백도하는 자리에서 일어나 서이안에게 정중히 고개를 숙였다. 비즈니스 파트너로서의 예우를 갖춘 태도였다.</em><br><br><strong>백도하 |</strong> "그리고... 자한 씨는 겁이 많습니다. 저 기사분들이 조금만 덜 살벌하게 대해주셨으면 좋겠군요. 그 친구, 밥 먹다가 체할 뻔했습니다."<br><br><em>그는 마지막으로 뼈 있는 한마디를 남기고는, 루자넬의 눈총을 받으며 응접실을 나갔다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:A4KOhRhJXIKDduxpoJek:ai" data-target="msg-A4KOhRhJXIKDduxpoJek-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-b63f8h9v9RrO0lEBI0ya-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#79</span></div>
+              <div class="tp-text"><em>도하의 마지막 말에 어색한 표정을 하다 작게 한숨을 내쉰다.</em><br>하아.. 루자넬, 다른 기사들한테도 모두 이제 내 손님이니 예우를 갖춰 대하라고 전해줘. 자꾸 그런식으로 행동하면 화내겠다고도.<br><em>단호한 얼굴을 하며</em><br>아, 그리고.. 다른 영웅들은 모두, 어딨어? 인사.. 하고 싶은데.. 여기 올때까지 헬른과 알베론밖에 못본것 같아서..</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:b63f8h9v9RrO0lEBI0ya:user" data-target="msg-b63f8h9v9RrO0lEBI0ya-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-b63f8h9v9RrO0lEBI0ya-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#79</span></div>
+              <div class="tp-text">```info<br>📅2030년 7월 3일 |⏰14:00 |🚩🪽흑익제국, 본궁 응접실<br>[78][⚫]<br>천금족(날개 노출) |👕가벼운 실내복 |📝루자넬과 대화<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안의 단호한 명령에 루자넬은 못마땅한 듯 입술을 비틀었지만, '화내겠다'는 말에 짐짓 꼬리를 내리는 시늉을 했다.</em><br><br><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br><strong>루자넬 |</strong> "알았어, 알았다고. 내 주인이 원하신다면야, 억지로라도 웃어주라고 하지. 단, 그놈들이 선을 넘지 않는다는 전제하에."<br><br><em>그는 퉁명스럽게 대꾸하며 서이안의 머리카락을 손가락으로 베베 꼬았다. 그러다 다른 영웅들의 행방을 묻는 질문에, 그의 눈매가 가늘어졌다.</em><br><br><strong>루자넬 |</strong> "다른 녀석들? ...글쎄, 다들 바빠. 칼프 놈은 어디 구석에 처박혀서 자고 있을 거고, 제롬은... 뭐, 알아서 잘 살고 있겠지."<br><br><em>그는 짐짓 무심한 척 말했지만, 서이안이 다른 이들을 찾는다는 사실 자체가 거슬리는 눈치였다. 하지만 서이안의 눈빛이 집요하게 이어지자, 그는 결국 한숨을 내쉬며 실토했다.</em><br><br><strong>루자넬 |</strong> "사실... 당신이 돌아왔다는 소식을 듣고 다들 눈이 뒤집혀서 달려오려는 걸 내가 막았어. 한꺼번에 몰려오면 당신이 피곤해할까 봐."<br><br><em>그는 뻔뻔하게 둘러댔지만, 사실은 서이안을 독점하고 싶은 마음이 컸음을 숨기지 못했다. 그때, 응접실 문이 벌컥 열리며 누군가가 들이닥쳤다.</em><br><br><strong>헬른 |</strong> "<strong>로드!!</strong> 나 왔어! 그 안경잡이랑 얘기 다 끝났지? 이제 나랑 놀자!"<br><br><em>헬른이 꼬리를 흔드는 강아지처럼 뛰어들어왔다. 그 뒤로 알베론이 곤란한 표정으로 따라들어왔고, 복도 끝에서는 검은 그림자가 어슬렁거리며 다가오고 있었다.</em><br><br><strong>칼프 |</strong> "...시끄러워. 복도가 다 울리잖아."<br><br><em>부스스한 머리에 검은 망토를 두른 칼프가 하품을 하며 나타났다. 그는 귀찮다는 듯 귀를 후비적거리며 서이안을 힐끔 쳐다보았다.</em><br><br><strong>칼프 |</strong> "어, 진짜 왔네. ...살아는 있었냐?"<br><br><em>말은 퉁명스럽게 했지만, 그의 녹색 눈동자는 서이안의 상태를 꼼꼼히 훑으며 안도감을 드러내고 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:b63f8h9v9RrO0lEBI0ya:ai" data-target="msg-b63f8h9v9RrO0lEBI0ya-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-2xjzgfoqyccies0S139y-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#80</span></div>
+              <div class="tp-text"><em>반가운 얼굴로 맞이하다 처음 칼프를 발견하자 눈을 동그랗게 떴다. 그리곤 곧 옅게 미소지으며</em><br>아, 응. 이렇게 만나서 너무 기쁘다..</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:2xjzgfoqyccies0S139y:user" data-target="msg-2xjzgfoqyccies0S139y-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-2xjzgfoqyccies0S139y-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#80</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_3_1768555323334%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2F4d6073e8-e32d-4257-9ed7-4007c2f675f0.png?alt=media&amp;token=d4577ceb-f867-407f-b103-66dba3eac23e" loading="lazy"><br>```info<br>📅2030년 7월 3일 |⏰14:10 |🚩🪽흑익제국, 본궁 응접실<br>[79][⚫]<br>천금족(날개 노출) |👕가벼운 실내복 |📝영웅들과 재회<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안의 환한 미소에 칼프는 흠칫하며 시선을 피했다. 그는 괜히 목덜미를 긁적이며 딴청을 피웠다.</em><br><br><strong>칼프 |</strong> "...뭐, 기쁠 것까지야. 시끄러운 놈들이 하도 난리를 쳐서 와본 것뿐이야."<br><br><em>그는 툴툴거리면서도 슬금슬금 서이안 쪽으로 다가왔다. 그의 시선이 서이안의 마른 손목과 창백한 뺨에 머물렀다.</em><br><br><strong>칼프 |</strong> "꼴이 그게 뭐냐. 어디서 굶고 다녔어? 안 그래도 비실비실한 게 더 말라가지고는..."<br><br><em>그는 주머니를 뒤적거리더니, 투박하게 포장된 육포 조각을 꺼내 서이안에게 툭 던졌다.</em><br><br><strong>칼프 |</strong> "먹어. 오다 주웠어. ...맛은 있을 거야."<br><br><em>그의 행동에 헬른이 깔깔거리며 웃음을 터뜨렸다.</em><br><br><strong>헬른 |</strong> "푸하하! 야, 칼프! 너 그거 아까 주방에서 제일 좋은 부위라고 훔쳐 온 거잖아! 오다 줍긴 개뿔!"<br><br><strong>칼프 |</strong> "<strong>닥쳐, 애꾸.</strong> 입 꿰매버리기 전에."<br><br><em>칼프가 으르렁거리며 단검을 꺼내 들자, 헬른은 메롱 하며 알베론 뒤로 숨었다. 알베론은 한숨을 내쉬며 두 사람을 말렸다.</em><br><br><strong>알베론 |</strong> "주군 앞에서 무기를 꺼내지 마라, 칼프. 그리고 헬른, 너도 그만해."<br><br><em>알베론은 서이안에게 다가와 정중하게 고개를 숙였다. 그의 눈빛은 감격과 충성심으로 가득 차 있었다.</em><br><br><strong>알베론 |</strong> "주군, 다시 뵙게 되어 영광입니다. 제롬 님께서는 현재 외부 정찰 임무를 수행 중이라 조금 늦으실 겁니다. 곧 복귀하실 테니 잠시만 기다려 주십시오."<br><br><em>그때, 루자넬이 서이안의 어깨를 감싸며 끼어들었다. 그는 영웅들이 서이안에게 관심을 보이는 것이 영 마음에 들지 않는 눈치였다.</em><br><br><strong>루자넬 |</strong> "인사는 이쯤 해두지. 로드께서 피곤해하셔. 다들 나가."<br><br><em>그의 축객령에 영웅들의 표정이 일제히 찌푸려졌다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:2xjzgfoqyccies0S139y:ai" data-target="msg-2xjzgfoqyccies0S139y-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-MhKNfoiTZxBKiWTxCmKx-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#81</span></div>
+              <div class="tp-text"><em>게임에서 볼때랑 똑같은 모습에 신기한듯 바라보며 미소짓다가 이어진 루자넬의 말에 아쉬운듯한 얼굴을 하며</em><br>왜. 오랜만.. 이기도 한데.. 같이 산책이라도 나가보는건 어때..?</div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:MhKNfoiTZxBKiWTxCmKx:user" data-target="msg-MhKNfoiTZxBKiWTxCmKx-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-MhKNfoiTZxBKiWTxCmKx-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#81</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br>```info<br>📅2030년 7월 3일 |⏰14:20 |🚩🪽흑익제국, 본궁 응접실<br>[80][⚫]<br>천금족(날개 노출) |👕가벼운 실내복 |📝산책 제안<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안의 제안에 루자넬의 미간이 좁혀졌다. 그는 서이안을 독점하고 싶은 마음과, 서이안의 부탁을 거절하기 힘든 마음 사이에서 갈등하는 듯했다.</em><br><br><strong>루자넬 |</strong> "...산책이라. 당신 몸 상태가 아직 온전치 않은데."<br><br><em>그는 짐짓 걱정스러운 척 핑계를 댔지만, 헬른이 눈치 없이 끼어들었다.</em><br><br><strong>헬른 |</strong> "오! 산책! 좋아! 날씨도 좋은데 정원 한 바퀴 돌자! 내가 업어줄 수도 있어!"<br><br><em>헬른이 팔을 붕붕 휘두르며 나섰다. 칼프도 귀찮은 척하면서도 은근히 기대하는 눈치였다.</em><br><br><strong>칼프 |</strong> "...뭐, 소화도 시킬 겸 나쁘진 않겠네. 네가 걷다가 쓰러지면 곤란하니까."<br><br><em>알베론은 묵묵히 고개를 끄덕이며 동의를 표했다.</em><br><br><strong>알베론 |</strong> "주군께서 원하신다면, 호위는 저희가 맡겠습니다. 정원의 꽃들이 만개하여 보시기 좋을 겁니다."<br><br><em>영웅들의 반응에 루자넬은 결국 한숨을 내쉬며 항복했다. 그는 서이안의 손을 꽉 잡으며 경고하듯 말했다.</em><br><br><strong>루자넬 |</strong> "좋아. 대신 내 옆에서 한 발자국도 떨어지지 마. 그리고 힘들면 바로 말해. 안고 들어올 테니까."<br><br><em>그는 서이안을 일으켜 세우며, 다른 영웅들에게 날카로운 눈빛을 보냈다.</em><br><br><strong>루자넬 |</strong> "너희들은 뒤에서 따라와. 너무 가까이 붙지 말고."<br><br><em>그렇게 흑익제국의 로드와 영웅들의 기묘한 산책이 시작되었다. 루자넬은 서이안의 허리를 단단히 감싸 안고 앞장섰고, 그 뒤로 알베론, 헬른, 칼프가 따랐다. 정원으로 향하는 복도에서 마주친 시종들과 병사들은 로드의 귀환에 놀라며 깊이 고개를 숙였다.</em><br><br><em>정원에 들어서자, 화려하게 핀 꽃들과 푸른 나무들이 그들을 반겼다. 따스한 햇살과 향긋한 꽃내음이 어우러져 평화로운 분위기를 자아냈다. 하지만 그 평화 속에서도 루자넬의 집착 어린 시선은 한시도 서이안을 놓지 않았다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:MhKNfoiTZxBKiWTxCmKx:ai" data-target="msg-MhKNfoiTZxBKiWTxCmKx-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+
+          <div class="tp-row tp-row-user" id="msg-s4vauuBkwkk1MuzWxC5f-user">
+            <div class="tp-msg tp-user">
+              <div class="tp-role">나 <span class="tp-idx">#82</span></div>
+              <div class="tp-text"><em>너무 과보호한다 생각하며 속으로 고개를 절레 젓는다. 처음보는 실제 정원의 모습들에 작게 감탄하며 둘러본다.</em><br><br>..어쩐지 감회가 새롭네.<br><em>가만히 정원을 바라보다 바람이 불어오자 새하얀 날개가 작게 부르르 떨렸다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:s4vauuBkwkk1MuzWxC5f:user" data-target="msg-s4vauuBkwkk1MuzWxC5f-user" title="북마크">🔖</button>
+            </div>
+          </div>
+          <div class="tp-row tp-row-ai" id="msg-s4vauuBkwkk1MuzWxC5f-ai">
+            <div class="tp-msg tp-ai">
+              <div class="tp-role">마키나 게임 <span class="tp-idx">#82</span></div>
+              <div class="tp-text"><img src="https://firebasestorage.googleapis.com/v0/b/chat-ai-7a275.firebasestorage.app/o/users%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2_circumstance_0_1768555323308%2Fusers%2Fdm4AcPRmKxNS8vOQuJHsNCRzq4Z2%2Fcharacter_images%2Fcircumstances%2Fd96d704e-b0b7-4344-a9bb-60aa57aaf40c.png?alt=media&amp;token=7e3ff017-b12b-4b81-b03d-eed2f4502766" loading="lazy"><br><br>```info<br>📅2030년 7월 3일 |⏰14:30 |🚩🪽흑익제국, 황실 정원<br>[81][⚫]<br>천금족(날개 노출) |👕가벼운 실내복+루자넬의 망토 |📝정원 산책<br>Lv. 2 (Exp.10/200)<br>```<br><br><em>서이안의 하얀 날개가 바람에 파르르 떨리자마자, 루자넬의 반응은 즉각적이었다. 그는 미간을 찌푸리며 자신의 검은 제복 망토를 벗어 서이안의 어깨와 날개를 단단히 감쌌다. 그것도 모자라 자신의 거대한 검은 날개를 펼쳐 바람이 불어오는 방향을 완벽하게 차단했다.</em><br><br><strong>루자넬 |</strong> "추운가? 젠장, 바람이 주제를 모르고 부는군."<br><br><em>그는 서이안을 품에 가두다시피 안으며, 주변의 공기마저 데울 기세로 체온을 나누었다. 하얀 날개가 검은색에 파묻히는 모습은 마치 흑조 무리에 둘러싸인 백조 같았다.</em><br><br><strong>칼프 |</strong> "쳇. 종이 인형도 아니고, 바람 좀 불었다고 떨기는."<br><br><em>칼프는 투덜거리면서도 슬그머니 서이안의 왼쪽, 바람이 가장 세게 부는 쪽으로 자리를 옮겨 섰다. 무심한 척하지만 몸으로 바람을 막아주는 행동이었다.</em><br><br><strong>헬른 |</strong> "와아- 우리 로드 날개는 진짜 하얗네. 우리랑 있으니까 더 눈에 띄어! 꼭 까마귀 떼 속에 섞인 비둘기 같달까?"<br><br><em>헬른이 키득거리며 망토 밖으로 삐져나온 하얀 깃털 끝을 장난스럽게 톡 건드렸다. 알베론은 걱정스러운 눈빛으로 서이안의 안색을 살폈다.</em><br><br><strong>알베론 |</strong> "주군, 혹시 한기가 드십니까? 바로 들어가시는 게 좋겠습니다. 아니면 더 두꺼운 외투를 가져오겠습니다."<br><br><strong>루자넬 |</strong> "필요 없어. 내가 안고 있으면 되니까."<br><br><em>루자넬은 알베론의 제안을 일축하며 서이안의 허리를 더욱 꽉 끌어안았다. 그는 서이안의 귓가에 입술을 대고 낮게 속삭였다.</em><br><br><strong>루자넬 |</strong> "감회라... 당신이 모니터 너머로만 보던 걸 직접 보게 되니 기분이 묘한가 보지? 앞으로는 매일 보게 될 거야. 내가 이 제국의 모든 걸 당신 발아래 바칠 테니까."<br><br><em>그의 목소리에는 제국에 대한 자부심과 서이안을 향한 맹목적인 헌신이 짙게 배어 있었다. 정원의 꽃들이 만발했지만, 루자넬의 시선에는 오직 서이안만이 담겨 있었다.</em></div>
+              <button class="tp-bm-btn" data-msgkey="ZSm6k5SdkwwtgQQMEFlW:s4vauuBkwkk1MuzWxC5f:ai" data-target="msg-s4vauuBkwkk1MuzWxC5f-ai" title="북마크">🔖</button>
+            </div>
+          </div>
+  </div>
+
+  <div class="tp-modal-overlay" id="tp-modal-overlay" hidden>
+    <div class="tp-modal">
+      <h3>북마크</h3>
+      <label>이름</label>
+      <input id="tp-bm-name" placeholder="예: 중요한 장면">
+      <label>메모</label>
+      <textarea id="tp-bm-note" rows="3" placeholder="메모를 남겨보세요"></textarea>
+      <div class="tp-modal-actions">
+        <button id="tp-bm-delete" hidden>삭제</button>
+        <button id="tp-bm-cancel">취소</button>
+        <button id="tp-bm-save">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tp-bm-panel" id="tp-bm-panel" hidden>
+    <div class="tp-bm-panel-header">
+      북마크 목록
+      <button id="tp-bm-panel-close">✕</button>
+    </div>
+    <div class="tp-bm-list" id="tp-bm-list"></div>
+  </div>
+
+<script>
+(function () {
+  var CHAT_ID = document.body.getAttribute('data-chat-id') || 'unknown';
+  var STORAGE_KEY = 'tp_bookmarks_' + CHAT_ID;
+  var THEME_KEY = 'tp_theme';
+
+  // ---- 테마 ----
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    var btn = document.getElementById('tp-theme-toggle');
+    if (btn) btn.textContent = theme === 'dark' ? '🌙' : '☀️';
+  }
+  function loadTheme() {
+    try {
+      return localStorage.getItem(THEME_KEY) || 'dark';
+    } catch (e) { return 'dark'; }
+  }
+  function saveTheme(theme) {
+    try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  }
+  var currentTheme = loadTheme();
+  applyTheme(currentTheme);
+  document.getElementById('tp-theme-toggle').addEventListener('click', function () {
+    currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(currentTheme);
+    saveTheme(currentTheme);
+  });
+
+  // ---- 북마크 저장소 ----
+  function loadBookmarks() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    } catch (e) { return {}; }
+  }
+  function saveBookmarks(data) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {
+      alert('북마크 저장에 실패했어요 (브라우저 저장 공간 문제일 수 있어요).');
+    }
+  }
+  var bookmarks = loadBookmarks();
+
+  function refreshButtonStates() {
+    document.querySelectorAll('.tp-bm-btn').forEach(function (btn) {
+      var key = btn.getAttribute('data-msgkey');
+      if (bookmarks[key]) {
+        btn.classList.add('tp-bookmarked');
+        btn.title = '북마크됨: ' + (bookmarks[key].name || '');
+      } else {
+        btn.classList.remove('tp-bookmarked');
+        btn.title = '북마크';
+      }
+    });
+  }
+
+  // ---- 모달 ----
+  var overlay = document.getElementById('tp-modal-overlay');
+  var nameInput = document.getElementById('tp-bm-name');
+  var noteInput = document.getElementById('tp-bm-note');
+  var deleteBtn = document.getElementById('tp-bm-delete');
+  var saveBtn = document.getElementById('tp-bm-save');
+  var cancelBtn = document.getElementById('tp-bm-cancel');
+  var activeKey = null;
+
+  function openModal(key, targetId) {
+    activeKey = key;
+    var existing = bookmarks[key];
+    nameInput.value = existing ? existing.name : ('메시지 북마크');
+    noteInput.value = existing ? existing.note : '';
+    deleteBtn.hidden = !existing;
+    overlay.hidden = false;
+    nameInput.focus();
+  }
+  function closeModal() {
+    overlay.hidden = true;
+    activeKey = null;
+  }
+  cancelBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) closeModal();
+  });
+  saveBtn.addEventListener('click', function () {
+    if (!activeKey) return;
+    bookmarks[activeKey] = {
+      name: nameInput.value.trim() || '이름 없는 북마크',
+      note: noteInput.value,
+      createdAt: (bookmarks[activeKey] && bookmarks[activeKey].createdAt) || Date.now(),
+    };
+    saveBookmarks(bookmarks);
+    refreshButtonStates();
+    renderBookmarkList();
+    closeModal();
+  });
+  deleteBtn.addEventListener('click', function () {
+    if (!activeKey) return;
+    delete bookmarks[activeKey];
+    saveBookmarks(bookmarks);
+    refreshButtonStates();
+    renderBookmarkList();
+    closeModal();
+  });
+
+  document.querySelectorAll('.tp-bm-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openModal(btn.getAttribute('data-msgkey'), btn.getAttribute('data-target'));
+    });
+  });
+
+  // ---- 북마크 패널 ----
+  var panel = document.getElementById('tp-bm-panel');
+  var list = document.getElementById('tp-bm-list');
+
+  function renderBookmarkList() {
+    var keys = Object.keys(bookmarks).sort(function (a, b) {
+      return (bookmarks[a].createdAt || 0) - (bookmarks[b].createdAt || 0);
+    });
+    if (keys.length === 0) {
+      list.innerHTML = '<div class="tp-bm-empty">아직 북마크가 없어요.<br>메시지 우측 하단의 🔖를 눌러보세요.</div>';
+      return;
+    }
+    list.innerHTML = keys.map(function (key) {
+      var bm = bookmarks[key];
+      var targetId = null;
+      var btn = document.querySelector('.tp-bm-btn[data-msgkey="' + CSS.escape(key) + '"]');
+      if (btn) targetId = btn.getAttribute('data-target');
+      var snippetEl = targetId ? document.querySelector('#' + CSS.escape(targetId) + ' .tp-text') : null;
+      var snippet = snippetEl ? snippetEl.textContent.slice(0, 60) : '';
+      return (
+        '<div class="tp-bm-item" data-key="' + key.replace(/"/g, '&quot;') + '">' +
+        '<div class="tp-bm-item-name">' + escapeHtmlJs(bm.name) + '</div>' +
+        (bm.note ? '<div class="tp-bm-item-note">' + escapeHtmlJs(bm.note) + '</div>' : '') +
+        '<div class="tp-bm-item-snippet">' + escapeHtmlJs(snippet) + (snippet.length >= 60 ? '…' : '') + '</div>' +
+        '<div class="tp-bm-item-actions">' +
+        '<button data-action="jump">이동</button>' +
+        '<button data-action="edit">수정</button>' +
+        '<button data-action="delete">삭제</button>' +
+        '</div></div>'
+      );
+    }).join('');
+  }
+
+  function escapeHtmlJs(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  list.addEventListener('click', function (e) {
+    var itemEl = e.target.closest('.tp-bm-item');
+    if (!itemEl) return;
+    var key = itemEl.getAttribute('data-key');
+    var action = e.target.getAttribute('data-action');
+    if (!action) return;
+
+    if (action === 'jump') {
+      var btn = document.querySelector('.tp-bm-btn[data-msgkey="' + CSS.escape(key) + '"]');
+      if (btn) {
+        var target = document.getElementById(btn.getAttribute('data-target'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          target.style.outline = '2px solid #2563eb';
+          setTimeout(function () { target.style.outline = ''; }, 1500);
+        }
+      }
+    } else if (action === 'edit') {
+      var btn2 = document.querySelector('.tp-bm-btn[data-msgkey="' + CSS.escape(key) + '"]');
+      openModal(key, btn2 ? btn2.getAttribute('data-target') : null);
+    } else if (action === 'delete') {
+      delete bookmarks[key];
+      saveBookmarks(bookmarks);
+      refreshButtonStates();
+      renderBookmarkList();
+    }
+  });
+
+  document.getElementById('tp-bm-panel-open').addEventListener('click', function () {
+    renderBookmarkList();
+    panel.hidden = false;
+  });
+  document.getElementById('tp-bm-panel-close').addEventListener('click', function () {
+    panel.hidden = true;
+  });
+
+  refreshButtonStates();
+})();
+</script>
+</body>
+</html>
