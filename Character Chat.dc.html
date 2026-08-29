@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Character Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;800&family=IBM+Plex+Sans+KR:wght@200;300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #131316; }
+  body { font-family: "IBM Plex Sans KR", sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: oklch(0.55 0.15 252); color: #fff; }
+</style>
+</helmet>
+<div style="min-height: 100vh; background: {{ bg }}; color: {{ fg }}; transition: background 500ms ease, color 500ms ease;">
+  <div style="max-width: 1060px; margin: 0 auto; padding: 0 clamp(22px, 5vw, 56px) 140px;">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 26px 0 14px; border-bottom: 2px solid {{ accent }}; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;">
+      <span style="display: flex; align-items: center; gap: 9px; opacity: 0.4;"><span style="width: 6px; height: 6px; background: {{ accent }}; display: block; border-radius: 50%; opacity: 2;"></span>archive</span>
+      <button onClick="{{ toggleTheme }}" style="cursor: pointer; border: 0; background: none; color: inherit; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; padding: 0; opacity: 0.45;" style-hover="opacity: 1;">{{ themeLabel }}</button>
+    </div>
+
+    <header style="padding: clamp(70px, 16vh, 150px) 0 clamp(46px, 8vh, 84px);">
+      <h1 style="font-family: Archivo, sans-serif; margin: 0; font-size: clamp(46px, 9.5vw, 108px); font-weight: 800; line-height: 0.93; letter-spacing: -0.035em; text-transform: uppercase;">Character<br /><span style="color: {{ accent }};">Chat</span></h1>
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; margin-top: clamp(28px, 5vh, 46px); flex-wrap: wrap;">
+        <div style="font-size: 13px; font-weight: 300; line-height: 1.75; opacity: 0.46; max-width: 30ch;">기록해둔 캐릭터 대화 모음. 이름을 누르면 해당 로그가 열립니다.</div>
+      </div>
+    </header>
+
+    <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-bottom: 18px; font-family: 'IBM Plex Mono', monospace;">
+      <sc-for list="{{ tags }}" as="t" hint-placeholder-count="6">
+        <button onClick="{{ t.onClick }}" style="cursor: pointer; display: inline-flex; align-items: baseline; gap: 5px; padding: 6px 12px 5px; border: 1px solid {{ t.border }}; border-radius: 6px; background: transparent; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; white-space: nowrap; transition: all 180ms ease; color: {{ t.color }}; opacity: {{ t.opacity }};" style-hover="opacity: 1;">{{ t.label }}<span style="font-size: 9px; opacity: 0.55;">{{ t.count }}</span></button>
+      </sc-for>
+    </div>
+
+    <div style="display: grid; grid-template-columns: {{ gridCols }}; gap: {{ gridGap }}; padding-top: 14px;">
+      <sc-for list="{{ shown }}" as="c" hint-placeholder-count="12">
+        <a onClick="{{ c.onOpen }}" style="cursor: pointer; position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 26px; min-height: {{ tileMinH }}; padding: {{ tilePad }}; border: 1px solid {{ tileBorder }}; background: {{ tileBg }}; transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;" style-hover="background: rgba(255,255,255,0.045); border-color: {{ accent }}; box-shadow: inset 0 3px 0 {{ accent }};">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;">
+            <span style="opacity: 0.28;">{{ c.num }}</span>
+            <span style="color: {{ accent }}; opacity: 0.65;">log</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <span style="font-size: {{ tileName }}; font-weight: 400; letter-spacing: -0.015em; line-height: 1.28; text-wrap: pretty;">{{ c.name }}</span>
+            <span style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <sc-for list="{{ c.tags }}" as="tg" hint-placeholder-count="2">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase; padding: 4px 10px 3px; border: 1px solid {{ accentBorder }}; border-radius: 6px; background: transparent; color: {{ accent }}; white-space: nowrap;">{{ tg }}</span>
+              </sc-for>
+            </span>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="padding: 80px 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.3;">no entries</div>
+    </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ hasDetail }}" hint-placeholder-val="{{ false }}">
+      <div style="padding-top: 6px;">
+        <button onClick="{{ close }}" style="cursor: pointer; border: 0; background: none; color: inherit; padding: 0 0 34px; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.42;" style-hover="opacity: 1;">← index</button>
+
+        <sc-if value="{{ hasImage }}" hint-placeholder-val="{{ false }}">
+          <div style="height: clamp(250px, 36vw, 400px); margin-top: 34px; margin-bottom: -78px; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 58%, #000 100%); mask-image: linear-gradient(to bottom, transparent 0%, #000 58%, #000 100%);">
+            <div style="width: 100%; height: 100%; background-image: {{ heroBg }}; background-size: cover; background-position: {{ heroPos }}; opacity: 0.9;"></div>
+          </div>
+        </sc-if>
+
+        <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding-left: 20px; padding-bottom: 18px; border-bottom: 1px solid {{ rule }};">
+          <span style="font-size: 28px; font-weight: 400; letter-spacing: -0.015em; text-shadow: 0 2px 6px rgba(0,0,0,0.9), 0 4px 20px rgba(0,0,0,0.85);">{{ detailName }}</span>
+          <span style="display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0;">
+            <sc-for list="{{ detailTags }}" as="tg" hint-placeholder-count="2">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase; padding: 4px 10px 3px; border: 1px solid {{ accentBorder }}; border-radius: 6px; background: {{ bg }}; color: {{ accent }};">{{ tg }}</span>
+            </sc-for>
+          </span>
+          <sc-if value="{{ hasDesc }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 8px 0 0; width: 100%; font-size: 14.5px; font-weight: 300; line-height: 1.7; opacity: 0.62; max-width: 46ch; text-wrap: pretty;">{{ detailDesc }}</p>
+          </sc-if>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; padding-top: 26px;">
+
+          <section style="border: 1px solid {{ rule }}; padding: 22px 22px 24px; display: flex; flex-direction: column; gap: 18px; background: rgba(255,255,255,0.012);">
+            <h2 style="margin: 0; font-family: Archivo, sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: {{ accent }};">Story</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 9px;">
+              <sc-for list="{{ story }}" as="s" hint-placeholder-count="1">
+                <a href="{{ s.file }}" style="display: block; padding: 13px 22px; border: 1px solid {{ rule }}; background: rgba(255,255,255,0.03); font-size: 14px; font-weight: 400; transition: all 180ms ease;" style-hover="border-color: {{ accent }}; background: rgba(255,255,255,0.06);">{{ s.label }}</a>
+              </sc-for>
+              <sc-if value="{{ noStory }}" hint-placeholder-val="{{ false }}">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.26; padding: 6px 0;">empty</span>
+              </sc-if>
+            </div>
+          </section>
+
+          <section style="border: 1px solid {{ rule }}; padding: 22px 22px 24px; display: flex; flex-direction: column; gap: 18px; background: rgba(255,255,255,0.012);">
+            <h2 style="margin: 0; font-family: Archivo, sans-serif; font-size: 13px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: {{ accent }};">Extra <span style="font-family: 'IBM Plex Sans KR', sans-serif; font-weight: 400; letter-spacing: 0.06em; opacity: 0.55;">외전</span></h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 9px;">
+              <sc-for list="{{ extra }}" as="e" hint-placeholder-count="3">
+                <a href="{{ e.file }}" style="display: block; padding: 13px 22px; border: 1px solid {{ rule }}; background: rgba(255,255,255,0.03); font-size: 14px; font-weight: 400; transition: all 180ms ease;" style-hover="border-color: {{ accent }}; background: rgba(255,255,255,0.06);">{{ e.label }}</a>
+              </sc-for>
+              <sc-if value="{{ noExtra }}" hint-placeholder-val="{{ false }}">
+                <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.26; padding: 6px 0;">empty</span>
+              </sc-if>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;chats&quot;:{&quot;editor&quot;:null,&quot;default&quot;:null,&quot;tsType&quot;:&quot;{name:string,tags:string[],desc?:string,image?:string,story:{label:string,file:string}[],extra:{label:string,file:string}[]}[]&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#4d8dff&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#4d8dff&quot;,&quot;#8f7bff&quot;,&quot;#3fb8b0&quot;,&quot;#d98f4a&quot;],&quot;section&quot;:&quot;Feel&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;보통&quot;,&quot;options&quot;:[&quot;촘촘&quot;,&quot;보통&quot;,&quot;여유&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Feel&quot;},&quot;blockStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;선만&quot;,&quot;options&quot;:[&quot;선만&quot;,&quot;채움&quot;,&quot;포인트 틴트&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Feel&quot;}}">
+const THEMES = {
+  dim:    { bg: "oklch(0.205 0.006 285)", fg: "oklch(0.935 0.004 285)", rule: "rgba(255,255,255,0.085)", accent: "oklch(0.72 0.15 252)", label: "Dim" },
+  darker: { bg: "oklch(0.13 0.005 285)",  fg: "oklch(0.86 0.004 285)",  rule: "rgba(255,255,255,0.062)", accent: "oklch(0.66 0.14 252)", label: "Darker" }
+};
+
+const DATA = [
+  { name: "마키나 게임", tags: ["로맨스", "판타지"], desc: "게임 속 세계로 가 제국을 키워라.", image: "images/makina-hero.png",
+    story: [{ label: "메인", file: "uploads/마키나게임 스토리.html" }],
+    extra: [] },
+  { name: "운현", tags: ["로맨스", "동양풍"], image: "images/unhyeon-hero.png", imagePos: "center 25%",
+    story: [{ label: "메인", file: "chats/unhyeon-main.html" }], extra: [] },
+  { name: "구룡성채", tags: ["현대", "느와르", "로맨스"], image: "images/gulyong-hero.png",
+    story: [{ label: "메인", file: "chats/gulyong-main.html" }], extra: [] },
+  { name: "가이드는 피곤해", tags: ["현대", "로맨스", "판타지"], image: "images/guide-tired-hero.png", imagePos: "center 28%",
+    story: [{ label: "메인", file: "chats/guide-tired-main.html" }], extra: [] },
+  { name: "황궁의 꽃", tags: ["판타지", "로맨스", "일상"], image: "images/hwanggung-hero.png", imagePos: "center 10%",
+    story: [{ label: "메인", file: "chats/hwanggung-main.html" }], extra: [] },
+  { name: "수인 쉐어하우스", tags: ["로맨스", "일상", "현대"], image: "images/suin-hero.gif",
+    story: [{ label: "여서원 동생", file: "chats/suin-yeoseowon-dongsaeng.html" }], extra: [] },
+  { name: "이무훤", tags: ["로맨스", "동양풍"],
+    story: [{ label: "메인", file: "chats/imuhwon-main.html" }], extra: [] },
+  { name: "도재언", tags: ["로맨스", "현대", "일상"], image: "images/dojaeeon-hero.png", imagePos: "center 18%", desc: "무정하고도 다정한 그 사람.",
+    story: [{ label: "이복형제", file: "chats/dojaeeon-ibokhyungje.html" }, { label: "감금 구출", file: "chats/dojaeeon-gamgeumguchul.html" }], extra: [] },
+  { name: "갓 오브 히어로즈", tags: ["판타지", "로맨스"], image: "images/goh-hero.png", imagePos: "center 5%", desc: "즐겨하던 게임 속 세상으로 떨어지다.",
+    story: [{ label: "메인", file: "chats/goh-main.html" }, { label: "루샤 19", file: "chats/goh-rusha19.html" }], extra: [] },
+];
+
+class Component extends DCLogic {
+  state = { theme: "dim", tag: "all", open: null };
+
+  componentDidMount() {
+    try {
+      const t = localStorage.getItem("cc-theme");
+      if (t && THEMES[t]) this.setState({ theme: t });
+    } catch (e) {}
+  }
+
+  toggle = () => {
+    const next = this.state.theme === "dim" ? "darker" : "dim";
+    try { localStorage.setItem("cc-theme", next); } catch (e) {}
+    this.setState({ theme: next });
+  };
+
+  renderVals() {
+    const base = THEMES[this.state.theme];
+    const ac = this.props.accent ?? base.accent;
+    const th = { ...base, accent: ac };
+
+    const D = { "촘촘": { min: 196, minH: 132, pad: "16px 16px 15px", name: 17, gap: 8 },
+                "보통": { min: 238, minH: 168, pad: "20px 20px 18px", name: 20, gap: 10 },
+                "여유": { min: 300, minH: 214, pad: "26px 26px 24px", name: 23, gap: 14 } };
+    const d = D[this.props.density ?? "보통"] || D["보통"];
+
+    const BS = { "선만": { bg: "transparent", border: th.rule },
+                 "채움": { bg: "rgba(255,255,255,0.045)", border: th.rule },
+                 "포인트 틴트": { bg: "color-mix(in oklch, " + ac + " 9%, transparent)", border: "color-mix(in oklch, " + ac + " 28%, transparent)" } };
+    const bs = BS[this.props.blockStyle ?? "선만"] || BS["선만"];
+    const data = (this.props.chats ?? DATA).map(d => ({
+      ...d, tags: d.tags || [], story: d.story || [], extra: d.extra || []
+    }));
+    const active = this.state.tag;
+
+    const counts = {};
+    data.forEach(d => d.tags.forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+    const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
+
+    const tags = [{ key: "all", label: "All", count: data.length }]
+      .concat(names.map(n => ({ key: n, label: n, count: counts[n] })))
+      .map(t => ({
+        label: t.label,
+        count: t.count,
+        onClick: () => this.setState({ tag: t.key }),
+        color: t.key === active ? th.accent : "inherit",
+        border: t.key === active ? th.accent : th.rule,
+        opacity: t.key === active ? 1 : 0.5
+      }));
+
+    const shown = data
+      .filter(d => active === "all" || d.tags.indexOf(active) !== -1)
+      .map((d, i) => ({ ...d, num: String(i + 1).padStart(2, "0"),
+        onOpen: () => this.setState({ open: d.name }) }));
+
+    const cur = data.find(d => d.name === this.state.open) || null;
+
+    return {
+      detail: cur,
+      hasDetail: !!cur,
+      isList: !cur,
+      detailName: cur ? cur.name : "",
+      detailTags: cur ? cur.tags : [],
+      heroBg: cur && cur.image ? 'url("' + cur.image + '")' : "none",
+      heroPos: cur && cur.imagePos ? cur.imagePos : "center 34%",
+      hasImage: !!(cur && cur.image),
+      detailDesc: cur && cur.desc ? cur.desc : "",
+      hasDesc: !!(cur && cur.desc),
+      story: cur ? cur.story : [],
+      extra: cur ? cur.extra : [],
+      noStory: !!cur && cur.story.length === 0,
+      noExtra: !!cur && cur.extra.length === 0,
+      close: () => this.setState({ open: null }),
+      bg: th.bg, fg: th.fg, rule: th.rule, accent: th.accent,
+      accentBorder: "color-mix(in oklch, " + ac + " 45%, transparent)",
+      gridCols: "repeat(auto-fill, minmax(" + d.min + "px, 1fr))",
+      gridGap: d.gap + "px",
+      tileMinH: d.minH + "px",
+      tilePad: d.pad,
+      tileName: d.name + "px",
+      tileBg: bs.bg,
+      tileBorder: bs.border,
+      themeLabel: th.label,
+      toggleTheme: this.toggle,
+      countLabel: data.length + " entries",
+      tags, shown,
+      isEmpty: shown.length === 0
+    };
+  }
+}
+
+</script>
+</body>
+</html>
