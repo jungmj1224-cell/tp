@@ -25,7 +25,6 @@
 
     <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 26px 0 14px; border-bottom: 2px solid {{ accent }}; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;">
       <span style="display: flex; align-items: center; gap: 9px; opacity: 0.4;"><span style="width: 6px; height: 6px; background: {{ accent }}; display: block; border-radius: 50%; opacity: 2;"></span>archive</span>
-      <button onClick="{{ toggleTheme }}" style="cursor: pointer; border: 0; background: none; color: inherit; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; padding: 0; opacity: 0.45;" style-hover="opacity: 1;">{{ themeLabel }}</button>
     </div>
 
     <header style="padding: clamp(70px, 16vh, 150px) 0 clamp(46px, 8vh, 84px);">
@@ -42,14 +41,19 @@
       </sc-for>
     </div>
 
-    <div style="display: grid; grid-template-columns: {{ gridCols }}; gap: {{ gridGap }}; padding-top: 14px;">
+    <style>@media (max-width: 560px) { .cc-grid { grid-template-columns: repeat(2, 1fr) !important; } }</style>
+    <div class="cc-grid" style="display: grid; grid-template-columns: {{ gridCols }}; gap: {{ gridGap }}; padding-top: 14px;">
       <sc-for list="{{ shown }}" as="c" hint-placeholder-count="12">
-        <a onClick="{{ c.onOpen }}" style="cursor: pointer; position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 26px; min-height: {{ tileMinH }}; padding: {{ tilePad }}; border: 1px solid {{ tileBorder }}; background: {{ tileBg }}; transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;" style-hover="background: rgba(255,255,255,0.045); border-color: {{ accent }}; box-shadow: inset 0 3px 0 {{ accent }};">
-          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;">
+        <a onClick="{{ c.onOpen }}" style="cursor: pointer; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 26px; min-height: {{ tileMinH }}; padding: {{ tilePad }}; border: 1px solid {{ tileBorder }}; background: {{ tileBg }}; transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;" style-hover="border-color: {{ accent }}; box-shadow: inset 0 3px 0 {{ accent }};">
+          <sc-if value="{{ c.hasImage }}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; inset: 0; background-image: {{ c.thumbBg }}; background-size: {{ c.thumbZoom }}; background-position: {{ c.imagePos }}; opacity: 0.32;"></div>
+            <div style="position: absolute; inset: 0; background: linear-gradient(180deg, {{ bg }} 0%, transparent 38%, transparent 62%, {{ bg }} 100%);"></div>
+          </sc-if>
+          <div style="position: relative; z-index: 1; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;">
             <span style="opacity: 0.28;">{{ c.num }}</span>
             <span style="color: {{ accent }}; opacity: 0.65;">log</span>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 14px;">
+          <div style="position: relative; z-index: 1; display: flex; flex-direction: column; gap: 14px;">
             <span style="font-size: {{ tileName }}; font-weight: 400; letter-spacing: -0.015em; line-height: 1.28; text-wrap: pretty;">{{ c.name }}</span>
             <span style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
               <sc-for list="{{ c.tags }}" as="tg" hint-placeholder-count="2">
@@ -71,7 +75,7 @@
         <button onClick="{{ close }}" style="cursor: pointer; border: 0; background: none; color: inherit; padding: 0 0 34px; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.42;" style-hover="opacity: 1;">← index</button>
 
         <sc-if value="{{ hasImage }}" hint-placeholder-val="{{ false }}">
-          <div style="height: clamp(250px, 36vw, 400px); margin-top: 34px; margin-bottom: -78px; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 58%, #000 100%); mask-image: linear-gradient(to bottom, transparent 0%, #000 58%, #000 100%);">
+          <div style="height: clamp(250px, 36vw, 400px); margin-top: 34px; margin-bottom: -94px; overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 58%, #000 100%); mask-image: linear-gradient(to bottom, transparent 0%, #000 58%, #000 100%);">
             <div style="width: 100%; height: 100%; background-image: {{ heroBg }}; background-size: cover; background-position: {{ heroPos }}; opacity: 0.9;"></div>
           </div>
         </sc-if>
@@ -84,7 +88,7 @@
             </sc-for>
           </span>
           <sc-if value="{{ hasDesc }}" hint-placeholder-val="{{ false }}">
-            <p style="margin: 8px 0 0; width: 100%; font-size: 14.5px; font-weight: 300; line-height: 1.7; opacity: 0.62; max-width: 46ch; text-wrap: pretty;">{{ detailDesc }}</p>
+            <p style="margin: 20px 0 0; width: 100%; font-size: 14.5px; font-weight: 300; line-height: 1.7; opacity: 0.62; max-width: 46ch; text-wrap: pretty;">{{ detailDesc }}</p>
           </sc-if>
         </div>
 
@@ -138,15 +142,15 @@ const DATA = [
     story: [{ label: "메인", file: "chats/gulyong-main.html" }], extra: [] },
   { name: "가이드는 피곤해", tags: ["현대", "로맨스", "판타지"], image: "images/guide-tired-hero.png", imagePos: "center 28%",
     story: [{ label: "메인", file: "chats/guide-tired-main.html" }], extra: [] },
-  { name: "황궁의 꽃", tags: ["판타지", "로맨스", "일상"], image: "images/hwanggung-hero.png", imagePos: "center 10%",
+  { name: "황궁의 꽃", tags: ["판타지", "로맨스", "일상"], image: "images/hwanggung-hero.png", imagePos: "center 22%", desc: "제국에 끌려온 당신. 무사히 살아남을 수 있을까?",
     story: [{ label: "메인", file: "chats/hwanggung-main.html" }], extra: [] },
   { name: "수인 쉐어하우스", tags: ["로맨스", "일상", "현대"], image: "images/suin-hero.gif",
     story: [{ label: "여서원 동생", file: "chats/suin-yeoseowon-dongsaeng.html" }], extra: [] },
   { name: "이무훤", tags: ["로맨스", "동양풍"],
     story: [{ label: "메인", file: "chats/imuhwon-main.html" }], extra: [] },
-  { name: "도재언", tags: ["로맨스", "현대", "일상"], image: "images/dojaeeon-hero.png", imagePos: "center 18%", desc: "무정하고도 다정한 그 사람.",
+  { name: "도재언", tags: ["로맨스", "현대", "일상"], image: "images/dojaeeon-hero.png", imagePos: "center 22%", thumbZoom: "160%", desc: "무정하고도 다정한 그 사람.",
     story: [{ label: "이복형제", file: "chats/dojaeeon-ibokhyungje.html" }, { label: "감금 구출", file: "chats/dojaeeon-gamgeumguchul.html" }], extra: [] },
-  { name: "갓 오브 히어로즈", tags: ["판타지", "로맨스"], image: "images/goh-hero.png", imagePos: "center 5%", desc: "즐겨하던 게임 속 세상으로 떨어지다.",
+  { name: "갓 오브 히어로즈", tags: ["판타지", "로맨스"], image: "images/goh-hero.png", imagePos: "center 15%", desc: "즐겨하던 게임 속 세상으로 떨어지다.",
     story: [{ label: "메인", file: "chats/goh-main.html" }, { label: "루샤 19", file: "chats/goh-rusha19.html" }], extra: [] },
 ];
 
@@ -176,7 +180,7 @@ class Component extends DCLogic {
                 "여유": { min: 300, minH: 214, pad: "26px 26px 24px", name: 23, gap: 14 } };
     const d = D[this.props.density ?? "보통"] || D["보통"];
 
-    const BS = { "선만": { bg: "transparent", border: th.rule },
+    const BS = { "선만": { bg: "rgba(255,255,255,0.045)", border: th.rule },
                  "채움": { bg: "rgba(255,255,255,0.045)", border: th.rule },
                  "포인트 틴트": { bg: "color-mix(in oklch, " + ac + " 9%, transparent)", border: "color-mix(in oklch, " + ac + " 28%, transparent)" } };
     const bs = BS[this.props.blockStyle ?? "선만"] || BS["선만"];
@@ -203,6 +207,10 @@ class Component extends DCLogic {
     const shown = data
       .filter(d => active === "all" || d.tags.indexOf(active) !== -1)
       .map((d, i) => ({ ...d, num: String(i + 1).padStart(2, "0"),
+        hasImage: !!d.image,
+        thumbBg: d.image ? 'url("' + d.image + '")' : "none",
+        imagePos: d.imagePos || "center 30%",
+        thumbZoom: d.thumbZoom || "cover",
         onOpen: () => this.setState({ open: d.name }) }));
 
     const cur = data.find(d => d.name === this.state.open) || null;
