@@ -46,7 +46,7 @@
       <sc-for list="{{ shown }}" as="c" hint-placeholder-count="12">
         <a onClick="{{ c.onOpen }}" style="cursor: pointer; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 26px; min-height: {{ tileMinH }}; padding: {{ tilePad }}; border: 1px solid {{ tileBorder }}; background: {{ tileBg }}; transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;" style-hover="border-color: {{ accent }}; box-shadow: inset 0 3px 0 {{ accent }};">
           <sc-if value="{{ c.hasImage }}" hint-placeholder-val="{{ false }}">
-            <div style="position: absolute; inset: 0; background-image: {{ c.thumbBg }}; background-size: {{ c.thumbZoom }}; background-position: {{ c.imagePos }}; opacity: 0.32;"></div>
+            <div style="position: absolute; inset: 0; background-image: {{ c.thumbBg }}; background-size: {{ c.thumbZoom }}; background-position: {{ c.imagePos }}; opacity: 0.52;"></div>
             <div style="position: absolute; inset: 0; background: linear-gradient(180deg, {{ bg }} 0%, transparent 38%, transparent 62%, {{ bg }} 100%);"></div>
           </sc-if>
           <div style="position: relative; z-index: 1; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;">
