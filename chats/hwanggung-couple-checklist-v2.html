@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>리브론 & 루 Observation Ledger</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --c1: #1a1a24;
+    --c2: #e88d9b;
+    --ink: #1c1a17;
+    --paper: #efece4;
+    --rule: #c9c4b6;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Noto Serif KR', serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: transparent;
+    font-family: var(--serif);
+    color: var(--ink);
+  }
+  body {
+    display: flex; justify-content: center;
+    min-height: 100vh; padding: 20px;
+  }
+  .cc2-scroll::-webkit-scrollbar { width: 0; }
+  .cc2-row { transition: background-color .15s; cursor: pointer; }
+  .cc2-row:hover { background-color: rgba(0,0,0,0.035); }
+
+  .cc2-frame {
+    width: 390px; height: 720px; max-width: 100%;
+    position: relative; overflow: hidden;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    box-shadow: 10px 10px 0 rgba(28,26,23,0.14);
+  }
+  .cc2-page {
+    position: absolute; inset: 0;
+    background: var(--paper);
+    display: flex; flex-direction: column;
+    opacity: 0; visibility: hidden;
+    transition: opacity .22s ease;
+  }
+  .cc2-page.active { opacity: 1; visibility: visible; }
+
+  .cc2-home-body {
+    flex: 1; display: flex; flex-direction: column;
+    justify-content: center; padding: 0 34px;
+  }
+  .cc2-eyebrow {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em; color: #7d7768;
+  }
+  .cc2-hr { height: 1px; background: var(--ink); margin: 12px 0 26px; }
+  .cc2-names {
+    display: flex; align-items: baseline; gap: 10px;
+    font-size: 30px; font-weight: 700; line-height: 1.25;
+  }
+  .cc2-names .n1 { color: var(--c1); }
+  .cc2-names .heart { font-size: 17px; color: var(--c2); opacity: 0.8; }
+  .cc2-names .n2 { color: var(--c2); }
+  .cc2-cta {
+    margin-top: 46px; padding: 15px 0;
+    border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.18em;
+    cursor: pointer; width: 100%;
+  }
+
+  .cc2-listhead { flex: none; padding: 18px 20px 0; background: var(--paper); }
+  .cc2-listhead-top { display: flex; align-items: center; gap: 12px; }
+  .cc2-back {
+    background: none; border: none; cursor: pointer;
+    font-family: var(--mono); font-size: 15px; color: var(--ink); padding: 0;
+  }
+  .cc2-listhead-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; color: #7d7768; }
+  .cc2-listhead-cols {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 0 8px; border-bottom: 1px solid var(--ink);
+  }
+  .cc2-col-label { flex: 1; font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; color: #7d7768; }
+  .cc2-col-name { width: 34px; text-align: center; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; }
+  .cc2-col-name.n1 { color: var(--c1); }
+  .cc2-col-name.n2 { color: var(--c2); }
+
+  .cc2-list { list-style: none; margin: 0; padding: 0 20px 28px; overflow-y: auto; flex: 1; min-height: 0; }
+  .cc2-item { border-bottom: 1px solid var(--rule); }
+  .cc2-row { display: flex; align-items: center; gap: 8px; padding: 13px 0; }
+  .cc2-idx { font-family: var(--mono); font-size: 9.5px; color: #a29b8a; flex: none; width: 20px; }
+  .cc2-text { flex: 1; font-size: 13px; line-height: 1.45; }
+  .cc2-markwrap { width: 34px; display: flex; justify-content: center; }
+  .cc2-mark { width: 15px; height: 15px; flex: none; border: 1.2px solid var(--rule); background: transparent; display: block; }
+  .cc2-mark.on.c1 { border-color: var(--c1); background: var(--c1); }
+  .cc2-mark.on.c2 { border-color: var(--c2); background: var(--c2); }
+
+  .cc2-detail { padding: 0 0 14px 10px; display: none; flex-direction: column; gap: 9px; }
+  .cc2-detail.open { display: flex; }
+  .cc2-detail-block { border-left: 2px solid; padding-left: 10px; }
+  .cc2-detail-block.c1 { border-color: var(--c1); }
+  .cc2-detail-block.c2 { border-color: var(--c2); }
+  .cc2-detail-name { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; }
+  .cc2-detail-name.c1 { color: var(--c1); }
+  .cc2-detail-name.c2 { color: var(--c2); }
+  .cc2-detail-text { font-size: 12px; line-height: 1.6; color: #4a463d; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div style="padding:12px 14px 0;"><a href="../Character Chat.dc.html" onclick="if(history.length&gt;1){history.back();return false;}" title="목록으로" style="position:fixed;top:56px;left:14px;z-index:49;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid rgba(255,255,255,0.14);background:rgba(20,20,24,0.9);backdrop-filter:blur(6px);color:#e9e9ee;text-decoration:none;font-size:15px;line-height:1;">←</a></div>
+
+<div class="cc2-frame">
+
+  <div class="cc2-page active" data-page="home">
+    <div class="cc2-home-body">
+      <div class="cc2-eyebrow">OBSERVATION LEDGER</div>
+      <div class="cc2-hr"></div>
+      <div class="cc2-names">
+        <span class="n1">리브론</span>
+        <span class="heart">♥</span>
+        <span class="n2">루</span>
+      </div>
+      <button class="cc2-cta" data-goto="list">COUPLE CHECKLIST →</button>
+    </div>
+  </div>
+
+  <div class="cc2-page" data-page="list">
+    <div class="cc2-listhead">
+      <div class="cc2-listhead-top">
+        <button class="cc2-back" data-goto="home">←</button>
+        <div class="cc2-listhead-title">COUPLE CHECKLIST</div>
+      </div>
+      <div class="cc2-listhead-cols">
+        <span class="cc2-col-label">LIST</span>
+        <span class="cc2-col-name n1">리브론</span>
+        <span class="cc2-col-name n2">루</span>
+      </div>
+    </div>
+    <ul class="cc2-list cc2-scroll" id="cc2-list"></ul>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var CHAR1_NAME = "리브론";
+  var CHAR2_NAME = "루";
+  var data = [{"text": "스킨십을 먼저 시작하는 사람", "c1on": true, "c2on": false, "c1c": "기다려봐야 세월아 네월아 굼뜨기 짝이 없는데 내가 먼저 안 하면 언제 해?", "c2c": "손 닿는 곳마다 먼저 덥석덥석 잡아당기는 건 너잖아.."}, {"text": "먼저 고백한 사람", "c1on": true, "c2on": false, "c1c": "네 녀석이 멍청하게 도망칠 생각이나 하니까 내가 친히 묶어둔 거지.", "c2c": "그땐 네가 하도 못되게 굴어서 가출했던 건데.. 그래도 고백은 먼저 해줬지."}, {"text": "침대에서 주도권을 쥐는 쪽", "c1on": true, "c2on": false, "c1c": "이 몸이 리드하지 않으면 네가 감당이나 하겠어? 안쪽까지 싹 녹아내리는 주제에.", "c2c": "항상 제멋대로 몰아붙이면서.. 힘으로 이길 수가 없는걸."}, {"text": "질투가 더 많은 사람", "c1on": true, "c2on": false, "c1c": "내 걸 넘보는 새끼들 목을 따는 건 황제로서 당연한 권리다. 질투 따위가 아니야.", "c2c": "아서 친구들한테까지 살기 뿜어대면서 무슨.. 질투 대마왕이면서."}, {"text": "싸우고 먼저 사과하는 쪽", "c1on": true, "c2on": false, "c1c": "...내가 사과 안 하면 네가 밥도 안 먹고 삐쳐 있으니까 어쩔 수 없이 해주는 거다.", "c2c": "매번 툴툴거리면서 맛있는 거 쥐여주며 사과하는 건 리비 쪽이지."}, {"text": "애정 표현에 더 솔직한 사람", "c1on": false, "c2on": true, "c1c": "하, 난 행동으로 다 보여주는데 굳이 입으로 낯간지러운 소릴 해야 해?", "c2c": "사랑한다고 말해달라고 조르는 건 언제나 리브론 쪽이면서 그래."}, {"text": "아이들을 더 엄하게 훈육하는 쪽", "c1on": true, "c2on": false, "c1c": "황실 핏줄이면 제 앞가림은 똑바로 해야지. 특히 아서 놈은 더 굴려야 해.", "c2c": "애들 훈련시킬 때마다 너무 무섭게 굴어서 내가 중간에서 말리기 바빠."}, {"text": "아이들에게 약해서 져주는 쪽", "c1on": false, "c2on": true, "c1c": "난 봐줄 생각 눈곱만큼도 없다. 징징대면 훈련 시간만 두 배로 늘릴 뿐이지.", "c2c": "엘시가 애교 부리거나 세이가 울망거리면 결국 다 들어주면서 모른 척하긴."}, {"text": "아침에 먼저 일어나는 사람", "c1on": true, "c2on": false, "c1c": "아침잠에 취해서 새 모양으로 웅크리고 퍼질러 자는 놈을 두고 내가 안 일어나고 배겨?", "c2c": "난 아침잠이 많은걸.. 리비가 매번 안아 올려서 깨워주잖아."}, {"text": "외출할 때 준비가 더 오래 걸리는 사람", "c1on": false, "c2on": true, "c1c": "난 제복 걸치고 검 차면 끝인데, 넌 털 고르듯 옷 매무새 다듬느라 반나절이잖아.", "c2c": "황후 정장 챙겨 입는 게 얼마나 복잡한데.. 넌 너무 대충 입으려고 해서 문제야."}, {"text": "상대의 애칭을 더 자주 부르는 사람", "c1on": true, "c2on": false, "c1c": "'루'라고 부르는 게 입에 붙었으니까 그렇지. 딴 놈들이 그렇게 부르면 혀를 뽑겠지만.", "c2c": "난 평소엔 리브론이라고 부르다가 가끔만 리비라고 부르는데.."}, {"text": "선물을 더 자주 주는 사람", "c1on": true, "c2on": false, "c1c": "보물창고에 굴러다니는 거 가져다 던져주는 게 뭐 대수라고. 마음에 드는 건 다 네 거다.", "c2c": "말은 그렇게 툭 던져도 항상 내가 좋아하는 보석이나 간식만 골라오잖아."}, {"text": "기념일을 더 잘 챙기는 사람", "c1on": false, "c2on": true, "c1c": "날짜 따위 아르센이 적어주면 보는 거지, 굳이 머릿속에 담아둬야 하나?", "c2c": "건국제나 생일 손수건 자수 놓아서 챙겨준 건 늘 나였거든?"}, {"text": "스킨십 요구가 더 많은 사람", "c1on": true, "c2on": false, "c1c": "부부끼리 살 맞대고 있는 게 뭐가 문제야? 틈만 나면 도망치려는 네가 이상한 거지.", "c2c": "서재에서 일할 때도 굳이 무릎에 앉혀두고선.. 틈만 나면 물고 빨잖아."}, {"text": "상대방의 건강을 더 걱정하는 사람", "c1on": false, "c2on": true, "c1c": "난 소드마스터라 감기 따위 안 걸려. 비실거리는 네 몸뚱이나 신경 써.", "c2c": "다쳤을 때 혼자 끙끙 앓는 거 보면 속 터져. 밥 거를 때마다 챙기는 것도 나야."}, {"text": "비밀이 더 많은 사람", "c1on": false, "c2on": true, "c1c": "난 숨기는 거 없다. 황제가 숨길 게 뭐가 있어? 수상한 건 네 과거지.", "c2c": "...내 치유력이나 원래 세계 이야기는 너무 엄청난 비밀이었으니까 어쩔 수 없었어."}, {"text": "체력이 더 좋은 사람", "c1on": true, "c2on": false, "c1c": "비교할 걸 해라. 밤새도록 널 안고도 다음 날 군사 훈련 지휘할 수 있는 게 나다.", "c2c": "...그 체력 때문에 매번 다음 날 허리 아파서 일어나는 건 나라고."}, {"text": "잠버릇이 더 고약한 사람", "c1on": true, "c2on": false, "c1c": "내 잠버릇이 어때서? 널 품에 꽉 가두고 자는 건 도망 못 치게 지키는 거다.", "c2c": "잠결에 너무 꽉 끌어안아서 가끔 숨 막혀.. 뼈 부러지는 줄 알았어."}, {"text": "더 눈물이 많은 사람", "c1on": false, "c2on": true, "c1c": "내가 피는 흘려도 눈물 따윌 흘릴 것 같아? 우는 건 허구한 날 훌쩍이는 너지.", "c2c": "나 임신했을 때 입덧 대신 겪으면서 감격해서 글썽인 건 누구였더라?"}, {"text": "장난을 더 많이 치는 사람", "c1on": true, "c2on": false, "c1c": "네가 당황해서 파닥거리는 꼴이 제국에서 제일 볼만한 구경거리인데 어쩌겠어.", "c2c": "툭하면 털 뽑는다고 협박하거나 머리 헝클어뜨리고.. 아주 장난꾸러기야."}, {"text": "화가 났을 때 더 무서운 사람", "c1on": true, "c2on": false, "c1c": "황제의 분노를 감당할 수 있는 놈은 이 제국에 없다. 너 빼고는.", "c2c": "평소엔 네가 무서운데, 내가 진짜 정색하고 입 다물면 네가 더 쩔쩔매잖아."}, {"text": "음식을 더 가리는 사람", "c1on": true, "c2on": false, "c1c": "비린내 나는 생선 따윌 왜 먹어? 난 고기 말고는 풀떼기도 거들떠보기 싫다.", "c2c": "식탐은 내가 더 많지만, 편식은 네가 훨씬 심해. 야채도 좀 먹으라니까."}, {"text": "더 낭만적인 사람", "c1on": false, "c2on": true, "c1c": "달빛 아래서 춤추고 꽃잎 날리는 짓거리가 밥 먹여주나? 난 실용적인 게 좋다.", "c2c": "손수건에 늑대랑 새 자수 놓아서 줬을 때 눈물 글썽이며 키스해놓고 낭만이 없대."}, {"text": "상대방을 더 과보호하는 사람", "c1on": true, "c2on": false, "c1c": "바람만 불어도 날아갈 것처럼 조그만 새새끼인데 눈을 뗄 수가 있어야지.", "c2c": "아이들이랑 놀러 갈 때도 기사단을 몇 겹으로 붙이려고 해서 말리느라 혼났어."}, {"text": "더 뻔뻔한 사람", "c1on": true, "c2on": false, "c1c": "황제는 제국 그 자체다. 내가 법인데 뻔뻔할 게 뭐가 있어?", "c2c": "아이들 앞에서도 민망한 소리 아무렇지 않게 내뱉는 거 보면 진짜 뻔뻔해."}, {"text": "손재주가 더 좋은 사람", "c1on": false, "c2on": true, "c1c": "칼 휘두르고 목 자르는 손으로 자수나 바느질 따윌 어떻게 해?", "c2c": "검술은 최고일지 몰라도, 섬세하게 뭐 만드는 건 내가 훨씬 낫지."}, {"text": "사교성이 더 좋은 사람", "c1on": false, "c2on": true, "c1c": "귀족 놈들 아첨 떠는 주둥이를 왜 받아줘? 거슬리면 베어버리면 그만인데.", "c2c": "다과회나 연회에서 귀족들 달래고 분위기 푸는 건 언제나 내 몫이야."}, {"text": "불안감을 더 많이 느끼는 사람", "c1on": true, "c2on": false, "c1c": "...네가 또 어디론가 날아가 버릴까 봐 감시하는 것뿐이다. 불안한 게 아니라.", "c2c": "예전엔 내가 사라질까 봐 늘 안절부절못했잖아. 이젠 많이 나아졌지만."}, {"text": "주사가 더 심한 사람", "c1on": true, "c2on": false, "c1c": "술 마시고 피비린내 풍기면서 성질부리는 게 내 방식이다. 감당은 네가 하고.", "c2c": "술 취해서 들어오면 온몸에 키스마크 남기면서 놔주질 않아서 정말 곤란해."}, {"text": "더 참을성이 없는 사람", "c1on": true, "c2on": false, "c1c": "원하는 게 있으면 그 자리에서 당장 쥐어야지, 기다리는 건 성미에 안 맞아.", "c2c": "각인도 그렇고 스킨십도 그렇고, 하고 싶은 건 무조건 바로 해야 직성이 풀리지."}, {"text": "상대방의 약점을 더 잘 아는 사람", "c1on": true, "c2on": false, "c1c": "네 목덜미랑 날개뼈 밑이 제일 약한 거, 내가 쑤셔 박을 때마다 확인하잖아.", "c2c": "어디 만지면 내가 힘 빠지는지 귀신같이 알고 괴롭히는 못된 사람.."}, {"text": "아이들이 더 잘 따르는 사람", "c1on": false, "c2on": true, "c1c": "아서 놈이나 엘시는 나보다 네 치맛자락만 붙잡고 늘어지더군. 괘씸하게.", "c2c": "치마 안 입거든? 그리고 애들이 널 무서워하면서도 제일 존경하고 있어."}, {"text": "외모 관리에 더 신경 쓰는 사람", "c1on": false, "c2on": true, "c1c": "타고난 미모가 제국 제일인데 거울 따윌 왜 봐? 대충 서 있어도 완벽한데.", "c2c": "옷 매무새나 머리칼 다듬는 건 내가 챙겨주니까 네가 편하게 있는 거지."}, {"text": "고집이 더 센 사람", "c1on": true, "c2on": false, "c1c": "내 말이 곧 제국의 법이다. 내 뜻을 꺾을 수 있는 놈은 아무도 없어.", "c2c": "내가 단식투쟁이라도 해야 겨우 꺾이면서.. 진짜 황소고집이야."}, {"text": "스킨십 수위가 더 높은 사람", "c1on": true, "c2on": false, "c1c": "부부 사이에 낯 뜨거운 게 어디 있어? 안쪽 끝까지 박아 넣고 묶어둬야 안심이지.", "c2c": "낮부터 침실로 끌고 와서 노팅까지 해놓고선.. 진짜 못 말려."}, {"text": "먼저 유혹하는 사람", "c1on": false, "c2on": true, "c1c": "...네가 맹하게 눈 뜨고 옷깃만 살짝 흘려도 그게 유혹인 줄 알아라.", "c2c": "난 가만히 있었는데 네가 혼자 흥분해서 덮쳐놓고 남 탓하긴."}, {"text": "상대를 더 통제하려는 사람", "c1on": true, "c2on": false, "c1c": "내 시야 밖으로 벗어나는 꼴은 죽어도 못 봐. 넌 내 품 안에서만 숨 쉬어.", "c2c": "각인까지 해놓고선 아직도 황궁 밖으로 나갈 땐 따라오려고 하잖아."}, {"text": "서로가 없으면 못 사는 쪽", "c1on": true, "c2on": true, "c1c": "네가 없으면 이 제국도, 황좌도 다 불태워버리고 미쳐버렸을 거다.", "c2c": "너 없으면 나도 이 낯선 세계에서 혼자 살아갈 수 없었을 거야, 리브론."}];
+
+  document.querySelectorAll('[data-goto]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var target = btn.getAttribute('data-goto');
+      document.querySelectorAll('.cc2-page').forEach(function (p) {
+        p.classList.toggle('active', p.getAttribute('data-page') === target);
+      });
+    });
+  });
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  var list = document.getElementById('cc2-list');
+  data.forEach(function (d, i) {
+    var li = document.createElement('li');
+    li.className = 'cc2-item';
+
+    var row = document.createElement('div');
+    row.className = 'cc2-row';
+
+    var idx = document.createElement('span');
+    idx.className = 'cc2-idx';
+    idx.textContent = String(i + 1).padStart(2, '0');
+
+    var text = document.createElement('span');
+    text.className = 'cc2-text';
+    text.textContent = d.text;
+
+    var m1wrap = document.createElement('span');
+    m1wrap.className = 'cc2-markwrap';
+    var m1 = document.createElement('span');
+    m1.className = 'cc2-mark c1' + (d.c1on ? ' on' : '');
+    m1wrap.appendChild(m1);
+
+    var m2wrap = document.createElement('span');
+    m2wrap.className = 'cc2-markwrap';
+    var m2 = document.createElement('span');
+    m2.className = 'cc2-mark c2' + (d.c2on ? ' on' : '');
+    m2wrap.appendChild(m2);
+
+    row.appendChild(idx);
+    row.appendChild(text);
+    row.appendChild(m1wrap);
+    row.appendChild(m2wrap);
+
+    var detail = document.createElement('div');
+    detail.className = 'cc2-detail';
+    detail.innerHTML =
+      '<div class="cc2-detail-block c1"><div class="cc2-detail-name c1">' + escapeHtml(CHAR1_NAME) + '</div><div class="cc2-detail-text">' + escapeHtml(d.c1c) + '</div></div>' +
+      '<div class="cc2-detail-block c2"><div class="cc2-detail-name c2">' + escapeHtml(CHAR2_NAME) + '</div><div class="cc2-detail-text">' + escapeHtml(d.c2c) + '</div></div>';
+
+    row.addEventListener('click', function () {
+      detail.classList.toggle('open');
+    });
+
+    li.appendChild(row);
+    li.appendChild(detail);
+    list.appendChild(li);
+  });
+})();
+</script>
+
+</body>
+</html>
